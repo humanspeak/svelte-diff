@@ -1,0 +1,66 @@
+# Svelte Diff
+
+> A Svelte 5 text-diff component with semantic cleanup, expected-pattern matching, typed custom renderers, reactive updates, and timing callbacks.
+
+## Install
+
+```bash
+npm install @humanspeak/svelte-diff
+```
+
+`@humanspeak/svelte-diff` is the Svelte 5 component package. It accepts `originalText` and `modifiedText`, computes a diff reactively, and renders removed, inserted, equal, and expected segments.
+
+Use this library when the desired result is a rendered text diff inside a Svelte application. Use a lower-level algorithm library when you need patch creation, patch application, non-UI diff data, or non-Svelte runtimes.
+
+## Minimal example
+
+```svelte
+<script lang="ts">
+    import SvelteDiff from '@humanspeak/svelte-diff'
+</script>
+
+<SvelteDiff originalText="The old text" modifiedText="The new text" />
+```
+
+## Important behavior
+
+- `cleanupSemantic` improves readability and takes precedence over efficiency cleanup.
+- `cleanupEfficiency` defaults to `4`; set it to `0` to skip efficiency cleanup.
+- Expected patterns use named capture groups such as `(?<year>\\d{4})` inside `originalText`.
+- Child snippets override the corresponding `renderers` entry, which overrides built-in markup.
+- `onProcessing` receives timing, raw diff tuples, and optional expected-pattern captures.
+
+Canonical docs root: https://diff.svelte.page/docs
+Per-page markdown mirrors: https://diff.svelte.page/docs/<slug>.md
+Full reference (single document): https://diff.svelte.page/llms-full.txt
+
+## Documentation
+
+- [SvelteDiff API](https://diff.svelte.page/docs/api/svelte-diff.md) — https://diff.svelte.page/docs/api/svelte-diff
+- [Types and Exports](https://diff.svelte.page/docs/api/types.md) — https://diff.svelte.page/docs/api/types
+- [Getting Started](https://diff.svelte.page/docs/getting-started.md) — https://diff.svelte.page/docs/getting-started
+- [Cleanup Modes](https://diff.svelte.page/docs/guides/cleanup.md) — https://diff.svelte.page/docs/guides/cleanup
+- [Custom Rendering](https://diff.svelte.page/docs/guides/custom-rendering.md) — https://diff.svelte.page/docs/guides/custom-rendering
+- [Expected Patterns](https://diff.svelte.page/docs/guides/expected-patterns.md) — https://diff.svelte.page/docs/guides/expected-patterns
+- [Timing and Performance](https://diff.svelte.page/docs/guides/performance.md) — https://diff.svelte.page/docs/guides/performance
+- [Migration Guide](https://diff.svelte.page/docs/migration.md) — https://diff.svelte.page/docs/migration
+
+Canonical examples root: https://diff.svelte.page/examples
+Per-example markdown mirrors: https://diff.svelte.page/examples/<slug>.md
+
+## Examples
+
+- [Interactive Examples](https://diff.svelte.page/examples.md) — https://diff.svelte.page/examples
+- [Basic Diff](https://diff.svelte.page/examples/basic-diff.md) — https://diff.svelte.page/examples/basic-diff
+- [Cleanup Modes](https://diff.svelte.page/examples/cleanup-modes.md) — https://diff.svelte.page/examples/cleanup-modes
+- [Custom Snippets](https://diff.svelte.page/examples/custom-snippets.md) — https://diff.svelte.page/examples/custom-snippets
+- [Expected Patterns](https://diff.svelte.page/examples/expected-patterns.md) — https://diff.svelte.page/examples/expected-patterns
+- [Live Editor](https://diff.svelte.page/examples/live-editor.md) — https://diff.svelte.page/examples/live-editor
+- [Timing](https://diff.svelte.page/examples/timing.md) — https://diff.svelte.page/examples/timing
+
+## External links
+
+- [npm](https://www.npmjs.com/package/@humanspeak/svelte-diff)
+- [GitHub](https://github.com/humanspeak/svelte-diff)
+- [Issue tracker](https://github.com/humanspeak/svelte-diff/issues)
+- [Humanspeak](https://humanspeak.com)

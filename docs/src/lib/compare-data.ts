@@ -1,42 +1,4 @@
-/**
- * Data for the /compare pages. Types mirror `@humanspeak/docs-kit`'s
- * compare types exactly (ComparisonFeature / Competitor / ComparisonOurs)
- * so this file can move onto docs-kit's CompareIndexV2 / ComparisonPageV2
- * unchanged when this site migrates — only the type import line changes.
- */
-
-export interface ComparisonFeature {
-    name: string
-    us: string | boolean
-    them: string | boolean
-    note?: string
-}
-
-export interface Competitor {
-    slug: string
-    name: string
-    tagline: string
-    description: string
-    website?: string
-    github?: string
-    npm?: string
-    type: string
-    approach: string
-    features: ComparisonFeature[]
-    prosUs: string[]
-    prosThem: string[]
-    consUs: string[]
-    consThem: string[]
-    verdict: string
-    keywords: string[]
-}
-
-export interface ComparisonOurs {
-    name: string
-    npmPackage: string
-    slug: string
-    url: string
-}
+import type { Competitor, ComparisonOurs } from '@humanspeak/docs-kit'
 
 export const ours: ComparisonOurs = {
     name: 'Svelte Diff',

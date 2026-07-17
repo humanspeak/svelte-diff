@@ -1,13 +1,13 @@
 <script lang="ts">
     import '../app.css'
-    import { ModeWatcher } from 'mode-watcher'
+    import { RootLayout } from '@humanspeak/docs-kit'
+    import favicon from '$lib/assets/logo.svg'
+    import { docsConfig } from '$lib/docs-config'
+    import githubStats from '$lib/github-stats.json'
 
     const { children } = $props()
 </script>
 
-<!-- Per-page <svelte:head> lives in each route (the homepage carries the
-     site-default meta) so nested pages like /compare/* can set their own
-     titles and canonicals without duplicate tags. -->
-<ModeWatcher />
-
-{@render children?.()}
+<RootLayout config={docsConfig} {favicon} stars={githubStats.stars}>
+    {@render children?.()}
+</RootLayout>

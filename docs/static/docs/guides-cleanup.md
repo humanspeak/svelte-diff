@@ -1,0 +1,66 @@
+<!-- Source: https://diff.svelte.page/docs/guides/cleanup -->
+
+# Cleanup Modes
+
+> Choose semantic cleanup, efficiency cleanup, or raw diff output for the right balance of readability and fidelity.
+
+**Source:** [https://diff.svelte.page/docs/guides/cleanup](https://diff.svelte.page/docs/guides/cleanup)
+
+---
+
+The core algorithm finds a valid sequence of edits. Cleanup passes reorganize that sequence without changing the final text.
+
+## Semantic cleanup
+
+```svelte
+<SvelteDiff {originalText} {modifiedText} cleanupSemantic />
+```
+
+Semantic cleanup shifts edit boundaries toward natural-looking word and phrase boundaries. Use it for prose, review screens, changelogs, and other output read by people.
+
+It may produce a slightly larger edit than the mathematically smallest diff if that edit is easier to understand.
+
+## Efficiency cleanup
+
+```svelte
+<SvelteDiff
+    {originalText}
+    {modifiedText}
+    cleanupEfficiency={4}
+/>
+```
+
+Efficiency cleanup removes operationally trivial equalities. The number becomes the algorithm's edit-cost setting. `4` is the component default.
+
+Higher values make small equal regions more likely to be absorbed into surrounding edits. Lower values preserve more fine-grained equalities.
+
+## Raw output
+
+Disable both cleanup paths when exact algorithm output matters:
+
+```svelte
+<SvelteDiff
+    {originalText}
+    {modifiedText}
+    cleanupSemantic={false}
+    cleanupEfficiency={0}
+/>
+```
+
+## Precedence
+
+Semantic cleanup wins when enabled. The component does not run semantic and efficiency cleanup in sequence.
+
+| Configuration | Cleanup pass |
+|---|---|
+| `cleanupSemantic={true}` | semantic |
+| `cleanupSemantic={false}`, `cleanupEfficiency={4}` | efficiency |
+| `cleanupSemantic={false}`, `cleanupEfficiency={0}` | none |
+
+## Choosing a mode
+
+- Use **semantic** for prose and human review.
+- Use **efficiency** for compact technical diffs and a balanced default.
+- Use **raw** when consuming the rendered segmentation as a debugging aid or comparing it with another diff implementation.
+
+Open the [cleanup modes example](/examples/cleanup-modes) to see all three render the same input side by side.
