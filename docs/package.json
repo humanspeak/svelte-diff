@@ -26,7 +26,7 @@
         "@cloudflare/workers-types": "^5.20260715.1",
         "@eslint/compat": "^2.1.0",
         "@eslint/js": "^10.0.1",
-        "@humanspeak/svelte-diff": "file:..",
+        "@humanspeak/svelte-diff": "workspace:*",
         "@internationalized/date": "^3.12.2",
         "@lucide/svelte": "^1.24.0",
         "@sveltejs/adapter-auto": "^7.0.1",
