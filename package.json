@@ -1,6 +1,6 @@
 {
-    "name": "@humanspeak/svelte-diff-match-patch",
-    "version": "0.1.4",
+    "name": "@humanspeak/svelte-diff",
+    "version": "0.1.5",
     "description": "A powerful, customizable diff-match-patch library for Svelte with TypeScript support",
     "keywords": [
         "svelte",
@@ -13,11 +13,11 @@
     ],
     "homepage": "https://diff.svelte.page",
     "bugs": {
-        "url": "https://github.com/humanspeak/svelte-diff-match-patch/issues"
+        "url": "https://github.com/humanspeak/svelte-diff/issues"
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/humanspeak/svelte-diff-match-patch.git"
+        "url": "git+https://github.com/humanspeak/svelte-diff.git"
     },
     "funding": {
         "type": "github",
@@ -49,7 +49,7 @@
         "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
         "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
         "dev": "vite dev",
-        "dev:all": "concurrently -k -n pkg,docs -c green,cyan \"pnpm -w -r --filter @humanspeak/svelte-diff-match-patch run dev:pkg\" \"pnpm --filter docs run dev\"",
+        "dev:all": "concurrently -k -n pkg,docs -c green,cyan \"pnpm -w -r --filter @humanspeak/svelte-diff run dev:pkg\" \"pnpm --filter docs run dev\"",
         "dev:pkg": "svelte-kit sync && svelte-package --watch",
         "format": "prettier --write .",
         "lint": "prettier --check . && eslint .",

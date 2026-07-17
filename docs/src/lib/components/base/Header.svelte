@@ -26,7 +26,7 @@
         <Button
             variant="ghost"
             size="icon"
-            href="https://github.com/humanspeak/svelte-diff-match-patch"
+            href="https://github.com/humanspeak/svelte-diff"
             target="_blank"
         >
             <i class="fa-brands fa-github text-xl"></i>
@@ -34,7 +34,7 @@
         <Button
             variant="ghost"
             size="icon"
-            href="https://www.npmjs.com/package/@humanspeak/svelte-diff-match-patch"
+            href="https://www.npmjs.com/package/@humanspeak/svelte-diff"
             target="_blank"
         >
             <i class="fa-brands fa-npm text-xl"></i>

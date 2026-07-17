@@ -40,8 +40,8 @@ export interface ComparisonOurs {
 
 export const ours: ComparisonOurs = {
     name: 'Svelte Diff',
-    npmPackage: '@humanspeak/svelte-diff-match-patch',
-    slug: 'svelte-diff-match-patch',
+    npmPackage: '@humanspeak/svelte-diff',
+    slug: 'svelte-diff',
     url: 'https://diff.svelte.page'
 }
 
@@ -68,7 +68,7 @@ export const competitors: Competitor[] = [
         name: 'jsdiff',
         tagline: 'Hand-Rolled Rendering vs Drop-In Component',
         description:
-            'jsdiff (the npm "diff" package) is the default answer for text diffing in JavaScript — and it is excellent at computing diffs. But it renders nothing: every Svelte project that uses it re-implements the same change-object-to-markup loop. @humanspeak/svelte-diff-match-patch is that missing rendering layer as a Svelte 5 component.',
+            'jsdiff (the npm "diff" package) is the default answer for text diffing in JavaScript — and it is excellent at computing diffs. But it renders nothing: every Svelte project that uses it re-implements the same change-object-to-markup loop. @humanspeak/svelte-diff is that missing rendering layer as a Svelte 5 component.',
         website: 'https://github.com/kpdecker/jsdiff',
         github: 'https://github.com/kpdecker/jsdiff',
         npm: 'diff',
@@ -131,12 +131,12 @@ export const competitors: Competitor[] = [
             'Styling, escaping, and edge cases are your responsibility'
         ],
         verdict:
-            'Choose jsdiff when you need diff data — in Node, a CLI, or a fully custom UI you want to build from scratch. Choose @humanspeak/svelte-diff-match-patch when the goal is a diff on screen in a Svelte app: it is the component you would otherwise hand-roll around a diff library, with cleanup, reactivity, and rendering already done.',
+            'Choose jsdiff when you need diff data — in Node, a CLI, or a fully custom UI you want to build from scratch. Choose @humanspeak/svelte-diff when the goal is a diff on screen in a Svelte app: it is the component you would otherwise hand-roll around a diff library, with cleanup, reactivity, and rendering already done.',
         keywords: [
             'jsdiff svelte',
             'svelte text diff',
             'render diff in svelte',
-            'jsdiff vs svelte-diff-match-patch',
+            'jsdiff vs svelte-diff',
             'svelte diff component'
         ]
     },
@@ -145,7 +145,7 @@ export const competitors: Competitor[] = [
         name: 'diff-match-patch',
         tagline: 'Raw Algorithm vs Wired-Up Component',
         description:
-            "Google's diff-match-patch is the canonical text-diffing algorithm — and it is exactly what @humanspeak/svelte-diff-match-patch runs internally (via the TypeScript port diff-match-patch-ts). The difference is everything around the algorithm: reactivity, cleanup wiring, rendering, and types, packaged as a Svelte 5 component instead of an imperative API you integrate by hand.",
+            "Google's diff-match-patch is the canonical text-diffing algorithm — and it is exactly what @humanspeak/svelte-diff runs internally (via the TypeScript port diff-match-patch-ts). The difference is everything around the algorithm: reactivity, cleanup wiring, rendering, and types, packaged as a Svelte 5 component instead of an imperative API you integrate by hand.",
         website: 'https://github.com/google/diff-match-patch',
         github: 'https://github.com/google/diff-match-patch',
         npm: 'diff-match-patch',
@@ -211,7 +211,7 @@ export const competitors: Competitor[] = [
             'No bundled TypeScript types'
         ],
         verdict:
-            'If you were about to wire diff-match-patch into a Svelte component by hand — recomputing on prop changes, running cleanup, mapping operations to styled spans — that wrapper is literally what @humanspeak/svelte-diff-match-patch is, built on a maintained TypeScript port. Reach for the raw library only when you need its fuzzy match / patch APIs or you are working outside Svelte.',
+            'If you were about to wire diff-match-patch into a Svelte component by hand — recomputing on prop changes, running cleanup, mapping operations to styled spans — that wrapper is literally what @humanspeak/svelte-diff is, built on a maintained TypeScript port. Reach for the raw library only when you need its fuzzy match / patch APIs or you are working outside Svelte.',
         keywords: [
             'diff-match-patch svelte',
             'google diff match patch',
@@ -280,11 +280,11 @@ export const competitors: Competitor[] = [
             'Heavier payload than a single-purpose component'
         ],
         verdict:
-            'Choose diff2html to display git patches — PR-style file views with side-by-side layout. Choose @humanspeak/svelte-diff-match-patch to compare two strings inline in a Svelte app, without generating patch text as an intermediate step.',
+            'Choose diff2html to display git patches — PR-style file views with side-by-side layout. Choose @humanspeak/svelte-diff to compare two strings inline in a Svelte app, without generating patch text as an intermediate step.',
         keywords: [
             'diff2html svelte',
             'svelte git diff view',
-            'diff2html vs svelte-diff-match-patch',
+            'diff2html vs svelte-diff',
             'svelte diff viewer',
             'svelte side by side diff'
         ]

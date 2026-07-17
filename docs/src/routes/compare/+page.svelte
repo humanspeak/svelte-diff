@@ -5,7 +5,7 @@
 
     const title = 'Svelte Diff vs jsdiff, diff-match-patch & diff2html — Comparisons'
     const description =
-        'Honest, side-by-side comparisons of @humanspeak/svelte-diff-match-patch — the Svelte 5 diff component — against jsdiff, Google diff-match-patch, and diff2html. Feature matrices, pros and cons, verdicts. No spin.'
+        'Honest, side-by-side comparisons of @humanspeak/svelte-diff — the Svelte 5 diff component — against jsdiff, Google diff-match-patch, and diff2html. Feature matrices, pros and cons, verdicts. No spin.'
 
     const jsonLd = JSON.stringify({
         '@context': 'https://schema.org',
@@ -24,7 +24,7 @@
                         name: 'Is there a Svelte component for rendering text diffs?',
                         acceptedAnswer: {
                             '@type': 'Answer',
-                            text: 'Yes — @humanspeak/svelte-diff-match-patch is a Svelte 5 runes-native diff component. Pass it two strings and it renders the diff, with semantic cleanup, custom rendering via Svelte snippets, expected-pattern matching for dynamic regions, and full TypeScript support.'
+                            text: 'Yes — @humanspeak/svelte-diff is a Svelte 5 runes-native diff component. Pass it two strings and it renders the diff, with semantic cleanup, custom rendering via Svelte snippets, expected-pattern matching for dynamic regions, and full TypeScript support.'
                         }
                     },
                     {
@@ -32,7 +32,7 @@
                         name: 'Should I use jsdiff or a diff component in a Svelte app?',
                         acceptedAnswer: {
                             '@type': 'Answer',
-                            text: 'jsdiff computes diff data but renders nothing — in a Svelte app you would hand-roll the rendering loop, cleanup, and reactivity yourself. If the goal is a diff on screen, @humanspeak/svelte-diff-match-patch does that as a single drop-in Svelte 5 component. Use jsdiff directly when you need diff data in Node, a CLI, or a fully custom UI.'
+                            text: 'jsdiff computes diff data but renders nothing — in a Svelte app you would hand-roll the rendering loop, cleanup, and reactivity yourself. If the goal is a diff on screen, @humanspeak/svelte-diff does that as a single drop-in Svelte 5 component. Use jsdiff directly when you need diff data in Node, a CLI, or a fully custom UI.'
                         }
                     },
                     {
@@ -40,7 +40,7 @@
                         name: "Is Google's diff-match-patch library still maintained?",
                         acceptedAnswer: {
                             '@type': 'Answer',
-                            text: 'The diff-match-patch npm package last shipped in 2019 and Google archived the upstream repository. @humanspeak/svelte-diff-match-patch runs the same algorithm via the maintained TypeScript port diff-match-patch-ts, wrapped in a Svelte 5 component.'
+                            text: 'The diff-match-patch npm package last shipped in 2019 and Google archived the upstream repository. @humanspeak/svelte-diff runs the same algorithm via the maintained TypeScript port diff-match-patch-ts, wrapped in a Svelte 5 component.'
                         }
                     }
                 ]
@@ -78,7 +78,7 @@
             block. That answer exists because there was no dominant Svelte-native diff component.
         </p>
         <p>
-            <b>@humanspeak/svelte-diff-match-patch</b> is that component — Svelte 5 runes-native, TypeScript-first,
+            <b>@humanspeak/svelte-diff</b> is that component — Svelte 5 runes-native, TypeScript-first,
             built on the diff-match-patch algorithm, with semantic cleanup, snippet-based rendering, and
             expected-pattern matching built in. Below are honest, side-by-side comparisons against everything
             you would otherwise reach for. Feature matrices, pros and cons, verdicts. No spin.
@@ -92,7 +92,7 @@
                     <Card.Header>
                         <div class="flex items-center justify-between gap-2">
                             <Card.Title class="text-xl">
-                                svelte-diff-match-patch <span class="text-muted-foreground">vs</span>
+                                svelte-diff <span class="text-muted-foreground">vs</span>
                                 {competitor.name}
                             </Card.Title>
                             <Badge variant="secondary">{competitor.type}</Badge>
@@ -118,7 +118,7 @@
     <div class="bg-muted/50 mt-10 rounded-lg border p-6">
         <h2 class="mb-2 text-lg font-bold">Try it in 30 seconds</h2>
         <pre class="bg-background overflow-x-auto rounded border p-3 font-mono text-sm"><code
-                >npm i -S @humanspeak/svelte-diff-match-patch</code
+                >npm i -S @humanspeak/svelte-diff</code
             ></pre>
         <p class="text-muted-foreground mt-3 text-sm">
             Or play with the <a href="/" class="text-primary underline underline-offset-4"

@@ -1,7 +1,7 @@
 <script lang="ts">
     import { localStore } from '$lib/state/localStore.svelte'
     import { Textarea } from '$lib/shadcn/components/ui/textarea/index.js'
-    import SvelteDiffMatchPatch, { type SvelteDiffMatchPatchTiming, type SvelteDiffMatchPatchDiff } from '@humanspeak/svelte-diff-match-patch'
+    import SvelteDiffMatchPatch, { type SvelteDiffMatchPatchTiming, type SvelteDiffMatchPatchDiff } from '@humanspeak/svelte-diff'
     import * as Card from '$lib/shadcn/components/ui/card/index.js'
     import MainContainer from '$lib/components/MainContainer.svelte'
 
@@ -87,9 +87,9 @@ From wicked puns and stupid jokes to anvils that drop on your head.`)
             "description": "A powerful diff parser for Svelte 5 that transforms text into diffs with TypeScript support and extensive testing coverage.",
             "license": "MIT",
             "url": "https://diff.svelte.page",
-            "downloadUrl": "https://www.npmjs.com/package/@humanspeak/svelte-diff-match-patch",
+            "downloadUrl": "https://www.npmjs.com/package/@humanspeak/svelte-diff",
             "requirements": "Svelte 5.0 or higher",
-            "releaseNotes": "https://github.com/humanspeak/svelte-diff-match-patch/releases",
+            "releaseNotes": "https://github.com/humanspeak/svelte-diff/releases",
             "keywords": "svelte, diff-match-patch, parser, typescript, documentation"
         }
     </script>
