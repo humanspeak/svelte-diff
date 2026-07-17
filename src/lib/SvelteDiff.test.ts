@@ -1,7 +1,7 @@
 import { render, waitFor } from '@testing-library/svelte'
 import { createRawSnippet } from 'svelte'
 import { describe, expect, it, vi } from 'vitest'
-import SvelteDiffMatchPatch from './SvelteDiffMatchPatch.svelte'
+import SvelteDiff from './SvelteDiff.svelte'
 
 const textSnippet = (className: string) =>
     createRawSnippet<[string]>((text) => ({
@@ -10,9 +10,9 @@ const textSnippet = (className: string) =>
 
 // Note: Svelte 5 snippets cannot be directly tested as functions, so we focus on prop and DOM behavior
 
-describe('SvelteDiffMatchPatch component', () => {
+describe('SvelteDiff component', () => {
     it('renders a basic diff between two strings', () => {
-        const { container } = render(SvelteDiffMatchPatch, {
+        const { container } = render(SvelteDiff, {
             originalText: 'hello world',
             modifiedText: 'hello brave world'
         })
@@ -22,7 +22,7 @@ describe('SvelteDiffMatchPatch component', () => {
     })
 
     it('applies rendererClasses for styling', () => {
-        const { container } = render(SvelteDiffMatchPatch, {
+        const { container } = render(SvelteDiff, {
             originalText: 'foo shoo',
             modifiedText: 'bar shoo',
             rendererClasses: {
@@ -38,7 +38,7 @@ describe('SvelteDiffMatchPatch component', () => {
 
     it('calls onProcessing with timing info', async () => {
         const onProcessing = vi.fn()
-        render(SvelteDiffMatchPatch, {
+        render(SvelteDiff, {
             originalText: 'a',
             modifiedText: 'b',
             onProcessing
@@ -53,7 +53,7 @@ describe('SvelteDiffMatchPatch component', () => {
     })
 
     it('uses default values for optional props', () => {
-        const { component } = render(SvelteDiffMatchPatch, {
+        const { component } = render(SvelteDiff, {
             originalText: 'foo',
             modifiedText: 'bar'
         })
@@ -63,7 +63,7 @@ describe('SvelteDiffMatchPatch component', () => {
     it('accepts all documented props', () => {
         const onProcessing = vi.fn()
         expect(() =>
-            render(SvelteDiffMatchPatch, {
+            render(SvelteDiff, {
                 originalText: 'a',
                 modifiedText: 'b',
                 timeout: 2,
@@ -77,9 +77,9 @@ describe('SvelteDiffMatchPatch component', () => {
     })
 })
 
-describe('SvelteDiffMatchPatch snippet precedence', () => {
+describe('SvelteDiff snippet precedence', () => {
     it('renders child snippets passed directly as props', () => {
-        const { container } = render(SvelteDiffMatchPatch, {
+        const { container } = render(SvelteDiff, {
             originalText: 'foo shoo',
             modifiedText: 'bar shoo',
             remove: textSnippet('child-remove'),
@@ -92,7 +92,7 @@ describe('SvelteDiffMatchPatch snippet precedence', () => {
     })
 
     it('child snippet wins over the matching renderers entry', () => {
-        const { container } = render(SvelteDiffMatchPatch, {
+        const { container } = render(SvelteDiff, {
             originalText: 'foo shoo',
             modifiedText: 'bar shoo',
             remove: textSnippet('child-remove'),
@@ -107,7 +107,7 @@ describe('SvelteDiffMatchPatch snippet precedence', () => {
     })
 
     it('falls back per segment type: renderers entry, then built-in rendering', () => {
-        const { container } = render(SvelteDiffMatchPatch, {
+        const { container } = render(SvelteDiff, {
             originalText: 'foo shoo',
             modifiedText: 'bar shoo',
             renderers: { remove: textSnippet('renderers-remove') },
@@ -118,9 +118,9 @@ describe('SvelteDiffMatchPatch snippet precedence', () => {
     })
 })
 
-describe('SvelteDiffMatchPatch expected patterns', () => {
+describe('SvelteDiff expected patterns', () => {
     it('renders expected regions with default styling and title attribute', () => {
-        const { container } = render(SvelteDiffMatchPatch, {
+        const { container } = render(SvelteDiff, {
             originalText: 'Copyright (?<year>\\d{4}) MIT',
             modifiedText: 'Copyright 2024 MIT'
         })
@@ -131,7 +131,7 @@ describe('SvelteDiffMatchPatch expected patterns', () => {
     })
 
     it('falls back to normal diff with cleaned template when regex does not match', () => {
-        const { container } = render(SvelteDiffMatchPatch, {
+        const { container } = render(SvelteDiff, {
             originalText: 'Copyright (?<year>\\d{4}) MIT',
             modifiedText: 'completely different text'
         })
@@ -143,7 +143,7 @@ describe('SvelteDiffMatchPatch expected patterns', () => {
     })
 
     it('renders expected regions even when text2 has extra content (partial match)', () => {
-        const { container } = render(SvelteDiffMatchPatch, {
+        const { container } = render(SvelteDiff, {
             originalText: 'Copyright (?<year>\\d{4}) (?<holder>.+)',
             modifiedText: 'MIT License\n\nCopyright (c) 2024 Jason Kummerl'
         })
@@ -160,7 +160,7 @@ describe('SvelteDiffMatchPatch expected patterns', () => {
 
     it('passes captures to onProcessing as 3rd arg', async () => {
         const onProcessing = vi.fn()
-        render(SvelteDiffMatchPatch, {
+        render(SvelteDiff, {
             originalText: 'Copyright (?<year>\\d{4}) MIT',
             modifiedText: 'Copyright 2024 MIT',
             onProcessing
@@ -174,7 +174,7 @@ describe('SvelteDiffMatchPatch expected patterns', () => {
     })
 
     it('applies rendererClasses.expected with title still present', () => {
-        const { container } = render(SvelteDiffMatchPatch, {
+        const { container } = render(SvelteDiff, {
             originalText: 'Copyright (?<year>\\d{4}) MIT',
             modifiedText: 'Copyright 2024 MIT',
             rendererClasses: { expected: 'test-expected' }
@@ -185,7 +185,7 @@ describe('SvelteDiffMatchPatch expected patterns', () => {
     })
 
     it('no change in behavior when no capture groups in originalText', () => {
-        const { container } = render(SvelteDiffMatchPatch, {
+        const { container } = render(SvelteDiff, {
             originalText: 'hello world',
             modifiedText: 'hello brave world'
         })

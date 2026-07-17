@@ -14,7 +14,7 @@ certain dynamic regions (dates, names, versions) are expected to differ.
 
 @example Basic usage with CSS classes
 ```svelte
-<SvelteDiffMatchPatch
+<SvelteDiff
   originalText={oldValue}
   modifiedText={newValue}
   cleanupSemantic={true}
@@ -28,18 +28,18 @@ certain dynamic regions (dates, names, versions) are expected to differ.
 
 @example Custom snippet rendering
 ```svelte
-<SvelteDiffMatchPatch originalText={a} modifiedText={b}>
+<SvelteDiff originalText={a} modifiedText={b}>
   {#snippet remove(text)}<del class="diff-remove">{text}</del>{/snippet}
   {#snippet insert(text)}<ins class="diff-insert">{text}</ins>{/snippet}
   {#snippet equal(text)}<span>{text}</span>{/snippet}
   {#snippet expected(text, groupName)}<mark title={groupName}>{text}</mark>{/snippet}
   {#snippet lineBreak()}<br />{/snippet}
-</SvelteDiffMatchPatch>
+</SvelteDiff>
 ```
 
 @example Expected patterns (named capture groups)
 ```svelte
-<SvelteDiffMatchPatch
+<SvelteDiff
   originalText={'Copyright (?<year>\\d{4}) (?<holder>.+)'}
   modifiedText={'Copyright 2024 Jason Kummerl'}
 />
@@ -62,7 +62,7 @@ certain dynamic regions (dates, names, versions) are expected to differ.
 
 <script lang="ts">
     import { DiffMatchPatch } from 'diff-match-patch-ts'
-    import type { SvelteDiffMatchPatchProps } from './index.js'
+    import type { SvelteDiffProps } from './index.js'
     import {
         type DisplayDiff,
         parseExpectedPatterns,
@@ -85,7 +85,7 @@ certain dynamic regions (dates, names, versions) are expected to differ.
         lineBreak,
         renderers = {},
         rendererClasses = {}
-    }: SvelteDiffMatchPatchProps = $props()
+    }: SvelteDiffProps = $props()
 
     let displayDiffs = $state<DisplayDiff[]>([])
     const dmp = $state<DiffMatchPatch>(new DiffMatchPatch())

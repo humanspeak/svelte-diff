@@ -63,7 +63,7 @@ yarn add @humanspeak/svelte-diff
 
 ```svelte
 <script lang="ts">
-    import SvelteDiffMatchPatch from '@humanspeak/svelte-diff'
+    import SvelteDiff from '@humanspeak/svelte-diff'
 
     let originalText = $state(`I am the very model of a modern Major-General,
 I've information vegetable, animal, and mineral,
@@ -81,7 +81,7 @@ From wicked puns and stupid jokes to anvils that drop on your head.`)
     }
 </script>
 
-<SvelteDiffMatchPatch
+<SvelteDiff
     {originalText}
     {modifiedText}
     timeout={1}
@@ -111,11 +111,7 @@ From wicked puns and stupid jokes to anvils that drop on your head.`)
 The package is written in TypeScript and includes full type definitions:
 
 ```typescript
-import type {
-    SvelteDiffMatchPatchTiming,
-    SvelteDiffMatchPatchDiff,
-    SvelteDiffMatchPatchProps
-} from '@humanspeak/svelte-diff'
+import type { SvelteDiffTiming, SvelteDiffTuple, SvelteDiffProps } from '@humanspeak/svelte-diff'
 ```
 
 ## Props
@@ -137,7 +133,7 @@ You can customize how the diff is rendered using Svelte snippets. This gives you
 
 ```svelte
 <script lang="ts">
-    import SvelteDiffMatchPatch from '@humanspeak/svelte-diff'
+    import SvelteDiff from '@humanspeak/svelte-diff'
 
     let originalText = $state(`I am the very model of a modern Major-General,
 I've information vegetable, animal, and mineral,
@@ -150,7 +146,7 @@ I'm quite adept at funny gags, comedic theory I have read,
 From wicked puns and stupid jokes to anvils that drop on your head.`)
 </script>
 
-<SvelteDiffMatchPatch {originalText} {modifiedText}>
+<SvelteDiff {originalText} {modifiedText}>
     {#snippet remove(text: string)}
         <span class="diff-snippet-remove">{text}</span>
     {/snippet}
@@ -163,7 +159,7 @@ From wicked puns and stupid jokes to anvils that drop on your head.`)
     {#snippet lineBreak()}
         <br /><br />
     {/snippet}
-</SvelteDiffMatchPatch>
+</SvelteDiff>
 
 <style>
     :global(.diff-snippet-remove) {
@@ -202,7 +198,7 @@ Sometimes parts of your text are _supposed_ to differ — like the year and copy
 Use standard `(?<name>pattern)` syntax directly in your `originalText`:
 
 ```svelte
-<SvelteDiffMatchPatch
+<SvelteDiff
     originalText={`Copyright (?<year>\\d{4}) (?<holder>.+)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -267,11 +263,11 @@ The `onProcessing` callback receives captured values as its third argument:
 | expected | `text`, `groupName` | Renders matched capture regions with group name |
 
 ```svelte
-<SvelteDiffMatchPatch {originalText} {modifiedText}>
+<SvelteDiff {originalText} {modifiedText}>
     {#snippet expected(text: string, groupName: string)}
         <span class="expected" title={groupName}>{text}</span>
     {/snippet}
-</SvelteDiffMatchPatch>
+</SvelteDiff>
 ```
 
 If no capture groups are present in `originalText`, the component behaves exactly as before — no changes needed to existing code.
@@ -282,19 +278,16 @@ The component emits a `processing` event with timing and diff information:
 
 ```svelte
 <script lang="ts">
-    import type {
-        SvelteDiffMatchPatchTiming,
-        SvelteDiffMatchPatchDiff
-    } from '@humanspeak/svelte-diff'
+    import type { SvelteDiffTiming, SvelteDiffTuple } from '@humanspeak/svelte-diff'
 
-    const onProcessing = (timing: SvelteDiffMatchPatchTiming, diff: SvelteDiffMatchPatchDiff) => {
+    const onProcessing = (timing: SvelteDiffTiming, diff: SvelteDiffTuple) => {
         console.log('Diff computation time:', timing.computeTime)
         console.log('Cleanup time:', timing.cleanupTime)
         console.log('Total changes:', diff.length)
     }
 </script>
 
-<SvelteDiffMatchPatch {originalText} {modifiedText} {onProcessing} />
+<SvelteDiff {originalText} {modifiedText} {onProcessing} />
 ```
 
 ## Cleanup Algorithms
