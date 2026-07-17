@@ -3,8 +3,8 @@
 language: en-US
 tone_instructions: >-
     Prioritize actionable correctness, security, accessibility, performance, and lifecycle
-    regressions. Explain concrete failure paths. Skip findings already covered by Trunk/CI and
-    avoid speculation. Follow nearby project patterns and preserve the public library API.
+    regressions. Explain concrete failure paths, avoid speculation, and skip findings covered by
+    Trunk/CI. Follow project patterns and preserve the public API.
 early_access: false
 enable_free_tier: true
 reviews:
