@@ -1,8 +1,16 @@
 import type { Diff } from 'diff-match-patch-ts'
 import type { Snippet } from 'svelte'
-import SvelteDiffMatchPatch from './SvelteDiffMatchPatch.svelte'
+import SvelteDiff from './SvelteDiff.svelte'
 
-export default SvelteDiffMatchPatch
+export default SvelteDiff
+/** The diff component, also available as a named export alongside the default. */
+export { SvelteDiff }
+/**
+ * @deprecated Use {@link SvelteDiff} instead. `SvelteDiffMatchPatch` is a
+ * backward-compatible alias kept from before the component was renamed, and may
+ * be removed in a future major version.
+ */
+export const SvelteDiffMatchPatch = SvelteDiff
 export type { CaptureRange, DisplayDiff, PatternMatchResult } from './expectedPatterns.js'
 /**
  * Custom Svelte 5 snippets for rendering each diff segment type.
@@ -13,13 +21,13 @@ export type { CaptureRange, DisplayDiff, PatternMatchResult } from './expectedPa
  *
  * @example
  * ```svelte
- * <SvelteDiffMatchPatch originalText={a} modifiedText={b}>
+ * <SvelteDiff originalText={a} modifiedText={b}>
  *   {#snippet remove(text)}<del>{text}</del>{/snippet}
  *   {#snippet insert(text)}<ins>{text}</ins>{/snippet}
  *   {#snippet equal(text)}<span>{text}</span>{/snippet}
  *   {#snippet expected(text, groupName)}<mark title={groupName}>{text}</mark>{/snippet}
  *   {#snippet lineBreak()}<br />{/snippet}
- * </SvelteDiffMatchPatch>
+ * </SvelteDiff>
  * ```
  */
 export type Renderers = {
@@ -44,7 +52,7 @@ export type Renderers = {
  *
  * @example
  * ```svelte
- * <SvelteDiffMatchPatch
+ * <SvelteDiff
  *   originalText={a}
  *   modifiedText={b}
  *   rendererClasses={{
@@ -70,9 +78,9 @@ export type RendererClasses = {
 /**
  * Timing information from a diff computation, in milliseconds.
  *
- * Passed as the first argument to the {@link SvelteDiffMatchPatchProps.onProcessing | onProcessing} callback.
+ * Passed as the first argument to the {@link SvelteDiffProps.onProcessing | onProcessing} callback.
  */
-export type SvelteDiffMatchPatchTiming = {
+export type SvelteDiffTiming = {
     /** Time spent in the core `diff_main` algorithm (ms). */
     main: number
     /** Time spent in semantic or efficiency cleanup (ms). */
@@ -80,6 +88,11 @@ export type SvelteDiffMatchPatchTiming = {
     /** Total wall-clock time for the entire diff operation (ms). */
     total: number
 }
+/**
+ * @deprecated Use {@link SvelteDiffTiming} instead. Backward-compatible alias
+ * kept from before the component was renamed.
+ */
+export type SvelteDiffMatchPatchTiming = SvelteDiffTiming
 
 /**
  * A single diff tuple from the diff-match-patch algorithm.
@@ -87,8 +100,13 @@ export type SvelteDiffMatchPatchTiming = {
  * Re-exported from `diff-match-patch-ts` for convenience.
  * Each tuple is `[operation, text]` where operation is `-1` (remove), `0` (equal), or `1` (insert).
  */
-export type SvelteDiffMatchPatchDiff = Diff
-export interface SvelteDiffMatchPatchProps {
+export type SvelteDiffTuple = Diff
+/**
+ * @deprecated Use {@link SvelteDiffTuple} instead. Backward-compatible alias
+ * kept from before the component was renamed.
+ */
+export type SvelteDiffMatchPatchDiff = SvelteDiffTuple
+export interface SvelteDiffProps {
     /**
      * The original (left-side) string to compare.
      *
@@ -96,7 +114,7 @@ export interface SvelteDiffMatchPatchProps {
      *
      * ## Example
      * ```svelte
-     * <SvelteDiffMatchPatch originalText={oldValue} ... />
+     * <SvelteDiff originalText={oldValue} ... />
      * ```
      */
     originalText: string
@@ -107,7 +125,7 @@ export interface SvelteDiffMatchPatchProps {
      *
      * ## Example
      * ```svelte
-     * <SvelteDiffMatchPatch modifiedText={newValue} ... />
+     * <SvelteDiff modifiedText={newValue} ... />
      * ```
      */
     modifiedText: string
@@ -120,7 +138,7 @@ export interface SvelteDiffMatchPatchProps {
      *
      * ## Example
      * ```svelte
-     * <SvelteDiffMatchPatch timeout={2} ... />
+     * <SvelteDiff timeout={2} ... />
      * ```
      */
     timeout?: number
@@ -132,7 +150,7 @@ export interface SvelteDiffMatchPatchProps {
      *
      * ## Example
      * ```svelte
-     * <SvelteDiffMatchPatch cleanupSemantic={true} ... />
+     * <SvelteDiff cleanupSemantic={true} ... />
      * ```
      */
     cleanupSemantic?: boolean
@@ -144,7 +162,7 @@ export interface SvelteDiffMatchPatchProps {
      *
      * ## Example
      * ```svelte
-     * <SvelteDiffMatchPatch cleanupEfficiency={8} ... />
+     * <SvelteDiff cleanupEfficiency={8} ... />
      * ```
      */
     cleanupEfficiency?: number
@@ -158,7 +176,7 @@ export interface SvelteDiffMatchPatchProps {
      *
      * ## Example
      * ```svelte
-     * <SvelteDiffMatchPatch
+     * <SvelteDiff
      *   originalText={template}
      *   modifiedText={actual}
      *   onProcessing={(timing, diffs, captures) => {
@@ -169,8 +187,8 @@ export interface SvelteDiffMatchPatchProps {
      * ```
      */
     onProcessing?: (
-        _timing: SvelteDiffMatchPatchTiming,
-        _diffs: SvelteDiffMatchPatchDiff[],
+        _timing: SvelteDiffTiming,
+        _diffs: SvelteDiffTuple[],
         _captures?: Record<string, string>
     ) => void
     /**
@@ -181,9 +199,9 @@ export interface SvelteDiffMatchPatchProps {
      *
      * ## Example
      * ```svelte
-     * <SvelteDiffMatchPatch ...>
+     * <SvelteDiff ...>
      *   {#snippet remove(text: string)}<del>{text}</del>{/snippet}
-     * </SvelteDiffMatchPatch>
+     * </SvelteDiff>
      * ```
      */
     remove?: Snippet<[string]>
@@ -228,7 +246,7 @@ export interface SvelteDiffMatchPatchProps {
      *
      * ## Example
      * ```svelte
-     * <SvelteDiffMatchPatch ... renderers={{ remove: myRemove, insert: myInsert }} />
+     * <SvelteDiff ... renderers={{ remove: myRemove, insert: myInsert }} />
      * ```
      *
      * @see rendererClasses for simple CSS class-based styling
@@ -263,7 +281,7 @@ export interface SvelteDiffMatchPatchProps {
      * ## Example
      *
      * ```svelte
-     * <SvelteDiffMatchPatch
+     * <SvelteDiff
      *   originalText={a}
      *   modifiedText={b}
      *   rendererClasses={{
@@ -278,3 +296,8 @@ export interface SvelteDiffMatchPatchProps {
      */
     rendererClasses?: RendererClasses
 }
+/**
+ * @deprecated Use {@link SvelteDiffProps} instead. Backward-compatible alias
+ * kept from before the component was renamed.
+ */
+export type SvelteDiffMatchPatchProps = SvelteDiffProps

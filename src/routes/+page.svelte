@@ -1,5 +1,5 @@
 <script lang="ts">
-    import SvelteDiffMatchPatch from '$lib/index.js'
+    import SvelteDiff from '$lib/index.js'
 
     let text1 = $state(`I am the very model of a modern Major-General,
 I've information vegetable, animal, and mineral,
@@ -125,7 +125,7 @@ From wicked puns and stupid jokes to anvils that drop on your head.`)
     <div class="border rounded p-4 bg-white">
         <h3 class="text-lg font-medium mb-2">Diff Result:</h3>
         <div data-testid="diff-result" class="prose max-w-none">
-            <SvelteDiffMatchPatch
+            <SvelteDiff
                 originalText={text1}
                 modifiedText={text2}
                 timeout={diffTimeout}
