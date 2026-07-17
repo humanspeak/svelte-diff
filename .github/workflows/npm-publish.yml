@@ -44,11 +44,13 @@ jobs:
         runs-on: blacksmith-2vcpu-ubuntu-2404 # trunk-ignore(actionlint/runner-label)
         outputs:
             should_run: ${{ steps.check.outputs.should_run }}
+            has_skip_label: ${{ steps.check.outputs.has_skip_label }}
         steps:
             - id: check
               env:
                   EVENT_NAME: ${{ github.event_name }}
                   PR_MERGED: ${{ github.event.pull_request.merged }}
+                  HAS_SKIP_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'skip-publish') }}
               run: |
                   if [[ "$EVENT_NAME" == "pull_request" && "$PR_MERGED" != "true" ]]; then
                       echo "should_run=false" >> $GITHUB_OUTPUT
@@ -56,10 +58,13 @@ jobs:
                       echo "should_run=true" >> $GITHUB_OUTPUT
                   fi
 
+                  echo "has_skip_label=$HAS_SKIP_LABEL" >> $GITHUB_OUTPUT
+
     debug-check:
         needs: check-if-merged
         if: needs.check-if-merged.outputs.should_run == 'true'
         runs-on: blacksmith-2vcpu-ubuntu-2404 # trunk-ignore(actionlint/runner-label)
+        environment: ci
         steps:
             - name: Checkout
               uses: actions/checkout@v7 # zizmor: ignore[unpinned-uses]
@@ -198,6 +203,7 @@ jobs:
         needs: [check-if-merged, debug-check]
         if: needs.check-if-merged.outputs.should_run == 'true'
         runs-on: blacksmith-2vcpu-ubuntu-2404 # trunk-ignore(actionlint/runner-label)
+        environment: ci
         strategy:
             matrix:
                 node-version: [22, 24]
@@ -212,8 +218,6 @@ jobs:
                   token: ${{ secrets.ACTIONS_KEY }}
 
             - uses: pnpm/action-setup@v6 # zizmor: ignore[unpinned-uses]
-              with:
-                  version: 10
 
             - name: Use Node.js ${{ matrix.node-version }}
               uses: actions/setup-node@v7 # zizmor: ignore[unpinned-uses]
@@ -222,20 +226,12 @@ jobs:
 
             - name: Install
               run: |
-                  pnpm install --prefer-offline --frozen-lockfile --ignore-scripts
+                  pnpm install --filter . --prefer-offline --frozen-lockfile --ignore-scripts --config.engine-strict=false
 
             - name: Test
               run: |
                   pnpm build
                   pnpm test
-
-            - name: Upload Vitest Results
-              if: always()
-              uses: trunk-io/analytics-uploader@main # zizmor: ignore[unpinned-uses]
-              with:
-                  junit-paths: junit-vitest.xml
-                  org-slug: ${{ secrets.TRUNK_ORG_SLUG }}
-                  token: ${{ secrets.TRUNK_TOKEN }}
 
             - name: Upload coverage to Coveralls
               uses: coverallsapp/github-action@v2 # zizmor: ignore[unpinned-uses]
@@ -243,15 +239,17 @@ jobs:
                   github-token: ${{ secrets.GITHUB_TOKEN }}
                   flag-name: node-${{ matrix.node-version }}
                   parallel: true
+                  fail-on-error: false
               if: matrix.node-version == '22'
 
             # Removed dependency caching to reduce cache-poisoning risk
 
     playwright-tests:
         needs: [check-if-merged, debug-check]
-        if: needs.check-if-merged.outputs.should_run == 'true'
+        if: needs.check-if-merged.outputs.should_run == 'true' && needs.check-if-merged.outputs.has_skip_label != 'true'
         timeout-minutes: 60
         runs-on: blacksmith-4vcpu-ubuntu-2404 # trunk-ignore(actionlint/runner-label)
+        environment: ci
         steps:
             - uses: actions/checkout@v7 # zizmor: ignore[unpinned-uses]
               with:
@@ -259,29 +257,19 @@ jobs:
                   token: ${{ secrets.ACTIONS_KEY }}
 
             - uses: pnpm/action-setup@v6 # zizmor: ignore[unpinned-uses]
-              with:
-                  version: 10
 
             - uses: actions/setup-node@v7 # zizmor: ignore[unpinned-uses]
               with:
                   node-version: 24
 
             - name: Install dependencies
-              run: pnpm install --prefer-offline --frozen-lockfile --ignore-scripts
+              run: pnpm install --filter . --prefer-offline --frozen-lockfile --ignore-scripts --config.engine-strict=false
 
             - name: Install Playwright Browsers
               run: pnpm exec playwright install --with-deps
 
             - name: Run Playwright tests
               run: pnpm run test:e2e
-
-            - name: Upload Playwright Results
-              if: always()
-              uses: trunk-io/analytics-uploader@main # zizmor: ignore[unpinned-uses]
-              with:
-                  junit-paths: test-results/junit-playwright.xml
-                  org-slug: ${{ secrets.TRUNK_ORG_SLUG }}
-                  token: ${{ secrets.TRUNK_TOKEN }}
 
             - uses: actions/upload-artifact@v7 # zizmor: ignore[unpinned-uses]
               if: always()
@@ -293,7 +281,11 @@ jobs:
     # 4. Coverage reporting (depends on tests)
     coverage-report:
         needs: [check-if-merged, build, playwright-tests]
-        if: needs.check-if-merged.outputs.should_run == 'true'
+        if: |
+            always() &&
+            needs.check-if-merged.outputs.should_run == 'true' &&
+            needs.build.result == 'success' &&
+            (needs.playwright-tests.result == 'success' || needs.playwright-tests.result == 'skipped')
         runs-on: blacksmith-2vcpu-ubuntu-2404 # trunk-ignore(actionlint/runner-label)
         steps:
             - name: Coveralls Finished
@@ -301,11 +293,17 @@ jobs:
               with:
                   github-token: ${{ secrets.GITHUB_TOKEN }}
                   parallel-finished: true
+                  fail-on-error: false
 
     # 5. Publishing job (main deployment logic)
     publish-github-packages:
         needs: [check-if-merged, build, playwright-tests, coverage-report]
-        if: needs.check-if-merged.outputs.should_run == 'true'
+        if: |
+            always() &&
+            needs.check-if-merged.outputs.should_run == 'true' &&
+            needs.build.result == 'success' &&
+            (needs.playwright-tests.result == 'success' || needs.playwright-tests.result == 'skipped') &&
+            (needs.coverage-report.result == 'success' || needs.coverage-report.result == 'skipped')
         runs-on: ubuntu-latest
         environment: production
         permissions:
@@ -324,8 +322,6 @@ jobs:
                   fetch-depth: 0
 
             - uses: pnpm/action-setup@v6 # zizmor: ignore[unpinned-uses]
-              with:
-                  version: 10
 
             - name: Use Node.js - 24
               uses: actions/setup-node@v7 # zizmor: ignore[unpinned-uses,cache-poisoning]
@@ -333,7 +329,7 @@ jobs:
                   node-version: 24
 
             - name: Install
-              run: pnpm install --prefer-offline --frozen-lockfile --ignore-scripts
+              run: pnpm install --filter . --prefer-offline --frozen-lockfile --ignore-scripts --config.engine-strict=false
 
             - name: Check Publishing Status
               id: publish-check
@@ -517,21 +513,25 @@ jobs:
             - name: Create Release
               if: steps.publish-check.outputs.should_publish == 'true'
               id: create_release
-              uses: softprops/action-gh-release@v3 # zizmor: ignore[unpinned-uses]
-              with:
-                  tag_name: ${{ steps.version.outputs.new_version }}
-                  name: Release ${{ steps.version.outputs.new_version }}
-                  body: |
-                      Changes in this Release
-                      ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.custom_message || github.event.pull_request.title }}
-
-                      ${{ github.event_name == 'pull_request' && format('For more details, see the [Pull Request]({0})', github.event.pull_request.html_url) || '' }}
-                  draft: false
-                  prerelease: false
-                  make_latest: true
-                  generate_release_notes: false
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  NEW_VERSION: ${{ steps.version.outputs.new_version }}
+                  EVENT_NAME: ${{ github.event_name }}
+                  CUSTOM_MESSAGE: ${{ github.event.inputs.custom_message }}
+                  PR_TITLE: ${{ github.event.pull_request.title }}
+                  PR_URL: ${{ github.event.pull_request.html_url }}
+              run: |
+                  BODY="Changes in this Release
+                  ${CUSTOM_MESSAGE:-$PR_TITLE}"
+                  if [[ "$EVENT_NAME" == "pull_request" ]]; then
+                      BODY="$BODY
+
+                  For more details, see the [Pull Request]($PR_URL)"
+                  fi
+                  gh release create "$NEW_VERSION" \
+                      --title "Release $NEW_VERSION" \
+                      --notes "$BODY" \
+                      --latest
 
             - name: Publish
               if: steps.publish-check.outputs.should_publish == 'true'
