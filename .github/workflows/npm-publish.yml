@@ -62,7 +62,7 @@ jobs:
         runs-on: blacksmith-2vcpu-ubuntu-2404 # trunk-ignore(actionlint/runner-label)
         steps:
             - name: Checkout
-              uses: actions/checkout@v6 # zizmor: ignore[unpinned-uses]
+              uses: actions/checkout@v7 # zizmor: ignore[unpinned-uses]
               with:
                   persist-credentials: false
                   token: ${{ secrets.ACTIONS_KEY }}
@@ -152,7 +152,7 @@ jobs:
 
             - name: Upload Results
               if: failure() && github.event_name == 'pull_request'
-              uses: actions/github-script@v7 # zizmor: ignore[unpinned-uses]
+              uses: actions/github-script@v9 # zizmor: ignore[unpinned-uses]
               with:
                   github-token: ${{ secrets.ACTIONS_KEY }}
                   script: |
@@ -206,17 +206,17 @@ jobs:
             packages: write
         steps:
             - name: Checkout
-              uses: actions/checkout@v6 # zizmor: ignore[unpinned-uses]
+              uses: actions/checkout@v7 # zizmor: ignore[unpinned-uses]
               with:
                   persist-credentials: false
                   token: ${{ secrets.ACTIONS_KEY }}
 
-            - uses: pnpm/action-setup@v4 # zizmor: ignore[unpinned-uses]
+            - uses: pnpm/action-setup@v6 # zizmor: ignore[unpinned-uses]
               with:
                   version: 10
 
             - name: Use Node.js ${{ matrix.node-version }}
-              uses: actions/setup-node@v6 # zizmor: ignore[unpinned-uses]
+              uses: actions/setup-node@v7 # zizmor: ignore[unpinned-uses]
               with:
                   node-version: ${{ matrix.node-version }}
 
@@ -253,16 +253,16 @@ jobs:
         timeout-minutes: 60
         runs-on: blacksmith-4vcpu-ubuntu-2404 # trunk-ignore(actionlint/runner-label)
         steps:
-            - uses: actions/checkout@v6 # zizmor: ignore[unpinned-uses]
+            - uses: actions/checkout@v7 # zizmor: ignore[unpinned-uses]
               with:
                   persist-credentials: false
                   token: ${{ secrets.ACTIONS_KEY }}
 
-            - uses: pnpm/action-setup@v4 # zizmor: ignore[unpinned-uses]
+            - uses: pnpm/action-setup@v6 # zizmor: ignore[unpinned-uses]
               with:
                   version: 10
 
-            - uses: actions/setup-node@v6 # zizmor: ignore[unpinned-uses]
+            - uses: actions/setup-node@v7 # zizmor: ignore[unpinned-uses]
               with:
                   node-version: 24
 
@@ -283,7 +283,7 @@ jobs:
                   org-slug: ${{ secrets.TRUNK_ORG_SLUG }}
                   token: ${{ secrets.TRUNK_TOKEN }}
 
-            - uses: actions/upload-artifact@v4 # zizmor: ignore[unpinned-uses]
+            - uses: actions/upload-artifact@v7 # zizmor: ignore[unpinned-uses]
               if: always()
               with:
                   name: playwright-results
@@ -317,18 +317,18 @@ jobs:
 
         steps:
             - name: Checkout
-              uses: actions/checkout@v6 # zizmor: ignore[unpinned-uses]
+              uses: actions/checkout@v7 # zizmor: ignore[unpinned-uses]
               with:
                   persist-credentials: false
                   token: ${{ secrets.GITHUB_TOKEN }}
                   fetch-depth: 0
 
-            - uses: pnpm/action-setup@v4 # zizmor: ignore[unpinned-uses]
+            - uses: pnpm/action-setup@v6 # zizmor: ignore[unpinned-uses]
               with:
                   version: 10
 
             - name: Use Node.js - 24
-              uses: actions/setup-node@v6 # zizmor: ignore[unpinned-uses,cache-poisoning]
+              uses: actions/setup-node@v7 # zizmor: ignore[unpinned-uses,cache-poisoning]
               with:
                   node-version: 24
 
@@ -369,7 +369,7 @@ jobs:
 
             - name: Create Comment on Skip
               if: github.event_name == 'pull_request' && steps.publish-check.outputs.should_publish == 'false'
-              uses: actions/github-script@v7 # zizmor: ignore[unpinned-uses]
+              uses: actions/github-script@v9 # zizmor: ignore[unpinned-uses]
               with:
                   github-token: ${{ secrets.ACTIONS_KEY }}
                   script: |
@@ -383,7 +383,7 @@ jobs:
             - name: Import GPG key
               if: steps.publish-check.outputs.should_publish == 'true'
               id: import_gpg
-              uses: crazy-max/ghaction-import-gpg@v6 # zizmor: ignore[unpinned-uses]
+              uses: crazy-max/ghaction-import-gpg@v7 # zizmor: ignore[unpinned-uses]
               with:
                   gpg_private_key: ${{ secrets.ACTIONS_GPG_PRIVATE_KEY }}
                   passphrase: ${{ secrets.ACTIONS_GPG_PASSPHRASE }}
@@ -467,6 +467,18 @@ jobs:
                   NEW_VERSION="v${PACKAGE_VERSION}"
                   echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
 
+                  # Keep tombstone shims in lockstep with the canonical version
+                  for SHIM in tombstones/svelte-diff tombstones/svelte-diff-match-patch; do
+                      node -e "
+                          const fs = require('fs')
+                          const path = process.argv[1] + '/package.json'
+                          const pkg = JSON.parse(fs.readFileSync(path, 'utf8'))
+                          pkg.version = process.argv[2]
+                          pkg.dependencies['@humanspeak/svelte-diff'] = '^' + process.argv[2]
+                          fs.writeFileSync(path, JSON.stringify(pkg, null, 4) + '\n')
+                      " "$SHIM" "$PACKAGE_VERSION"
+                  done
+
                   # Escape special characters in PR title and URL
                   ESCAPED_TITLE=$(echo "$PR_TITLE" | sed 's/[`$"\]/\\&/g')
                   ESCAPED_URL=$(echo "$PR_URL" | sed 's/[`$"\]/\\&/g')
@@ -487,7 +499,7 @@ jobs:
                   fi
 
                   # Commit the version changes (and any refreshed README ecosystem block)
-                  git add package.json README.md
+                  git add package.json README.md tombstones/svelte-diff/package.json tombstones/svelte-diff-match-patch/package.json
                   git commit -m "Bump version to ${NEW_VERSION} [skip ci]"
 
                   # Create an annotated tag with release notes
@@ -505,7 +517,7 @@ jobs:
             - name: Create Release
               if: steps.publish-check.outputs.should_publish == 'true'
               id: create_release
-              uses: softprops/action-gh-release@v2 # zizmor: ignore[unpinned-uses]
+              uses: softprops/action-gh-release@v3 # zizmor: ignore[unpinned-uses]
               with:
                   tag_name: ${{ steps.version.outputs.new_version }}
                   name: Release ${{ steps.version.outputs.new_version }}
@@ -531,6 +543,20 @@ jobs:
                   # Publish using pnpm with OIDC (trusted publishing)
                   pnpm publish --provenance --access public --no-git-checks
 
+            - name: Publish tombstone shims
+              if: steps.publish-check.outputs.should_publish == 'true'
+              run: |
+                  # Shims re-export the canonical package under the old/alias names.
+                  # Best-effort: a shim failure must not trigger "Cleanup on failure"
+                  # and roll back the main release that already shipped.
+                  # The old-name shim carries a "deprecated" field in its manifest, so
+                  # each published version arrives pre-deprecated — no npm deprecate
+                  # call (or extra token) needed here.
+                  pnpm --dir tombstones/svelte-diff-match-patch publish --provenance --access public --no-git-checks ||
+                      echo "::warning::@humanspeak/svelte-diff-match-patch shim publish failed — publish manually from tombstones/"
+                  pnpm --dir tombstones/svelte-diff publish --provenance --access public --no-git-checks ||
+                      echo "::warning::svelte-diff alias publish failed — publish manually from tombstones/"
+
             - name: Cleanup on failure
               if: failure()
               env:
@@ -550,7 +576,7 @@ jobs:
 
             - name: Notify on failure
               if: failure()
-              uses: actions/github-script@v7 # zizmor: ignore[unpinned-uses]
+              uses: actions/github-script@v9 # zizmor: ignore[unpinned-uses]
               with:
                   github-token: ${{ secrets.ACTIONS_KEY }}
                   script: |

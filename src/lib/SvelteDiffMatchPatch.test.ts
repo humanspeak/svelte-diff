@@ -1,6 +1,12 @@
 import { render, waitFor } from '@testing-library/svelte'
+import { createRawSnippet } from 'svelte'
 import { describe, expect, it, vi } from 'vitest'
 import SvelteDiffMatchPatch from './SvelteDiffMatchPatch.svelte'
+
+const textSnippet = (className: string) =>
+    createRawSnippet<[string]>((text) => ({
+        render: () => `<span class="${className}">${text()}</span>`
+    }))
 
 // Note: Svelte 5 snippets cannot be directly tested as functions, so we focus on prop and DOM behavior
 
@@ -68,6 +74,47 @@ describe('SvelteDiffMatchPatch component', () => {
                 renderers: {}
             })
         ).not.toThrow()
+    })
+})
+
+describe('SvelteDiffMatchPatch snippet precedence', () => {
+    it('renders child snippets passed directly as props', () => {
+        const { container } = render(SvelteDiffMatchPatch, {
+            originalText: 'foo shoo',
+            modifiedText: 'bar shoo',
+            remove: textSnippet('child-remove'),
+            insert: textSnippet('child-insert'),
+            equal: textSnippet('child-equal')
+        })
+        expect(container.querySelector('.child-remove')).toBeTruthy()
+        expect(container.querySelector('.child-insert')).toBeTruthy()
+        expect(container.querySelector('.child-equal')).toBeTruthy()
+    })
+
+    it('child snippet wins over the matching renderers entry', () => {
+        const { container } = render(SvelteDiffMatchPatch, {
+            originalText: 'foo shoo',
+            modifiedText: 'bar shoo',
+            remove: textSnippet('child-remove'),
+            renderers: {
+                remove: textSnippet('renderers-remove'),
+                insert: textSnippet('renderers-insert')
+            }
+        })
+        expect(container.querySelector('.child-remove')).toBeTruthy()
+        expect(container.querySelector('.renderers-remove')).toBeFalsy()
+        expect(container.querySelector('.renderers-insert')).toBeTruthy()
+    })
+
+    it('falls back per segment type: renderers entry, then built-in rendering', () => {
+        const { container } = render(SvelteDiffMatchPatch, {
+            originalText: 'foo shoo',
+            modifiedText: 'bar shoo',
+            renderers: { remove: textSnippet('renderers-remove') },
+            rendererClasses: { insert: 'class-insert' }
+        })
+        expect(container.querySelector('.renderers-remove')).toBeTruthy()
+        expect(container.querySelector('.class-insert')).toBeTruthy()
     })
 })
 
@@ -142,7 +189,6 @@ describe('SvelteDiffMatchPatch expected patterns', () => {
             originalText: 'hello world',
             modifiedText: 'hello brave world'
         })
-        const expectedSpan = container.querySelector('span[title]')
         // No title attributes should be present (no expected regions)
         const titledSpans = container.querySelectorAll('span[title]')
         expect(titledSpans.length).toBe(0)

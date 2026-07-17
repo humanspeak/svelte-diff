@@ -1,6 +1,6 @@
 #:schema node_modules/wrangler/config-schema.json
 name = "svelte-page-diff"
-compatibility_date = "2025-01-09"
+compatibility_date = "2026-04-21"
 pages_build_output_dir = ".svelte-kit/cloudflare"
 compatibility_flags = ["nodejs_compat"]
 upload_source_maps = true

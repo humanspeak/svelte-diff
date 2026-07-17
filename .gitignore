@@ -33,3 +33,4 @@ junit-vitest.xml
 junit-playwright.xml
 .playwright-mcp/**
 .notes/**
+/.pnpm-store

@@ -35,8 +35,7 @@ From wicked puns and stupid jokes to anvils that drop on your head.`)
                 data-testid="text1"
                 bind:value={text1}
                 class="w-full h-48 p-2 border rounded"
-                rows="6"
-            ></textarea>
+                rows="6"></textarea>
         </div>
         <div>
             <label for="text2" class="block text-sm font-medium mb-2">Text Version 2:</label>
@@ -45,8 +44,7 @@ From wicked puns and stupid jokes to anvils that drop on your head.`)
                 data-testid="text2"
                 bind:value={text2}
                 class="w-full h-48 p-2 border rounded"
-                rows="6"
-            ></textarea>
+                rows="6"></textarea>
         </div>
     </div>
 

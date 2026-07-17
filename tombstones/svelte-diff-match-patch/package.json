@@ -1,0 +1,48 @@
+{
+    "name": "@humanspeak/svelte-diff-match-patch",
+    "version": "0.1.5",
+    "description": "Renamed to @humanspeak/svelte-diff. This package re-exports it so existing installs keep working.",
+    "keywords": [
+        "svelte",
+        "diff",
+        "diff-match-patch",
+        "svelte5",
+        "sveltekit"
+    ],
+    "homepage": "https://diff.svelte.page",
+    "bugs": {
+        "url": "https://github.com/humanspeak/svelte-diff/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/humanspeak/svelte-diff.git",
+        "directory": "tombstones/svelte-diff-match-patch"
+    },
+    "license": "MIT",
+    "author": "Humanspeak, Inc.",
+    "type": "module",
+    "exports": {
+        ".": {
+            "types": "./index.d.ts",
+            "svelte": "./index.js",
+            "default": "./index.js"
+        }
+    },
+    "main": "./index.js",
+    "svelte": "./index.js",
+    "types": "./index.d.ts",
+    "files": [
+        "index.js",
+        "index.d.ts"
+    ],
+    "dependencies": {
+        "@humanspeak/svelte-diff": "^0.1.5"
+    },
+    "peerDependencies": {
+        "svelte": "^5.0.0"
+    },
+    "publishConfig": {
+        "access": "public"
+    },
+    "deprecated": "Renamed to @humanspeak/svelte-diff — same component, new name. https://diff.svelte.page"
+}

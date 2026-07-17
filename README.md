@@ -1,18 +1,18 @@
-# @humanspeak/svelte-diff-match-patch
+# @humanspeak/svelte-diff
 
 A powerful, customizable diff-match-patch component for Svelte with TypeScript support.
 
-[![NPM version](https://img.shields.io/npm/v/@humanspeak/svelte-diff-match-patch.svg)](https://www.npmjs.com/package/@humanspeak/svelte-diff-match-patch)
-[![Build Status](https://github.com/humanspeak/svelte-diff-match-patch/actions/workflows/npm-publish.yml/badge.svg)](https://github.com/humanspeak/svelte-diff-match-patch/actions/workflows/npm-publish.yml)
-[![Coverage Status](https://coveralls.io/repos/github/humanspeak/svelte-diff-match-patch/badge.svg?branch=main)](https://coveralls.io/github/humanspeak/svelte-diff-match-patch?branch=main)
-[![License](https://img.shields.io/npm/l/@humanspeak/svelte-diff-match-patch.svg)](https://github.com/humanspeak/svelte-diff-match-patch/blob/main/LICENSE)
-[![Downloads](https://img.shields.io/npm/dm/@humanspeak/svelte-diff-match-patch.svg)](https://www.npmjs.com/package/@humanspeak/svelte-diff-match-patch)
-[![CodeQL](https://github.com/humanspeak/svelte-diff-match-patch/actions/workflows/codeql.yml/badge.svg)](https://github.com/humanspeak/svelte-diff-match-patch/actions/workflows/codeql.yml)
-[![Install size](https://packagephobia.com/badge?p=@humanspeak/svelte-diff-match-patch)](https://packagephobia.com/result?p=@humanspeak/svelte-diff-match-patch)
+[![NPM version](https://img.shields.io/npm/v/@humanspeak/svelte-diff.svg)](https://www.npmjs.com/package/@humanspeak/svelte-diff)
+[![Build Status](https://github.com/humanspeak/svelte-diff/actions/workflows/npm-publish.yml/badge.svg)](https://github.com/humanspeak/svelte-diff/actions/workflows/npm-publish.yml)
+[![Coverage Status](https://coveralls.io/repos/github/humanspeak/svelte-diff/badge.svg?branch=main)](https://coveralls.io/github/humanspeak/svelte-diff?branch=main)
+[![License](https://img.shields.io/npm/l/@humanspeak/svelte-diff.svg)](https://github.com/humanspeak/svelte-diff/blob/main/LICENSE)
+[![Downloads](https://img.shields.io/npm/dm/@humanspeak/svelte-diff.svg)](https://www.npmjs.com/package/@humanspeak/svelte-diff)
+[![CodeQL](https://github.com/humanspeak/svelte-diff/actions/workflows/codeql.yml/badge.svg)](https://github.com/humanspeak/svelte-diff/actions/workflows/codeql.yml)
+[![Install size](https://packagephobia.com/badge?p=@humanspeak/svelte-diff)](https://packagephobia.com/result?p=@humanspeak/svelte-diff)
 [![Code Style: Trunk](https://img.shields.io/badge/code%20style-trunk-blue.svg)](https://trunk.io)
 [![TypeScript](https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg)](http://www.typescriptlang.org/)
-[![Types](https://img.shields.io/npm/types/@humanspeak/svelte-diff-match-patch.svg)](https://www.npmjs.com/package/@humanspeak/svelte-diff-match-patch)
-[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/humanspeak/svelte-diff-match-patch/graphs/commit-activity)
+[![Types](https://img.shields.io/npm/types/@humanspeak/svelte-diff.svg)](https://www.npmjs.com/package/@humanspeak/svelte-diff)
+[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/humanspeak/svelte-diff/graphs/commit-activity)
 
 ## Features
 
@@ -49,21 +49,21 @@ A powerful, customizable diff-match-patch component for Svelte with TypeScript s
 ## Installation
 
 ```bash
-npm i -S @humanspeak/svelte-diff-match-patch
+npm i -S @humanspeak/svelte-diff
 ```
 
 Or with your preferred package manager:
 
 ```bash
-pnpm add @humanspeak/svelte-diff-match-patch
-yarn add @humanspeak/svelte-diff-match-patch
+pnpm add @humanspeak/svelte-diff
+yarn add @humanspeak/svelte-diff
 ```
 
 ## Basic Usage
 
 ```svelte
 <script lang="ts">
-    import SvelteDiffMatchPatch from '@humanspeak/svelte-diff-match-patch'
+    import SvelteDiffMatchPatch from '@humanspeak/svelte-diff'
 
     let originalText = $state(`I am the very model of a modern Major-General,
 I've information vegetable, animal, and mineral,
@@ -115,7 +115,7 @@ import type {
     SvelteDiffMatchPatchTiming,
     SvelteDiffMatchPatchDiff,
     SvelteDiffMatchPatchProps
-} from '@humanspeak/svelte-diff-match-patch'
+} from '@humanspeak/svelte-diff'
 ```
 
 ## Props
@@ -137,7 +137,7 @@ You can customize how the diff is rendered using Svelte snippets. This gives you
 
 ```svelte
 <script lang="ts">
-    import SvelteDiffMatchPatch from '@humanspeak/svelte-diff-match-patch'
+    import SvelteDiffMatchPatch from '@humanspeak/svelte-diff'
 
     let originalText = $state(`I am the very model of a modern Major-General,
 I've information vegetable, animal, and mineral,
@@ -285,7 +285,7 @@ The component emits a `processing` event with timing and diff information:
     import type {
         SvelteDiffMatchPatchTiming,
         SvelteDiffMatchPatchDiff
-    } from '@humanspeak/svelte-diff-match-patch'
+    } from '@humanspeak/svelte-diff'
 
     const onProcessing = (timing: SvelteDiffMatchPatchTiming, diff: SvelteDiffMatchPatchDiff) => {
         console.log('Diff computation time:', timing.computeTime)
@@ -328,18 +328,18 @@ The `cleanupEfficiency` level (0-4) controls how aggressively the algorithm:
 
 Part of the [Humanspeak](https://humanspeak.com) family of runes-native Svelte 5 packages:
 
-| Package | Description |
-| --- | --- |
-| [@humanspeak/svelte-markdown](https://markdown.svelte.page) | Runtime markdown renderer for Svelte |
-| [@humanspeak/svelte-virtual-list](https://virtuallist.svelte.page) | Virtual scrolling for Svelte |
-| [@humanspeak/svelte-motion](https://motion.svelte.page) | Framer Motion for Svelte 5 |
-| [@humanspeak/svelte-headless-table](https://table.svelte.page) | Headless data tables for Svelte |
-| **[@humanspeak/svelte-diff-match-patch](https://diff.svelte.page)** — _this package_ | Diff comparison for Svelte |
-| [@humanspeak/svelte-purify](https://purify.svelte.page) | HTML sanitisation for Svelte |
-| [@humanspeak/svelte-virtual-chat](https://virtualchat.svelte.page) | Virtual chat viewport for Svelte 5 |
-| [@humanspeak/memory-cache](https://memory.svelte.page) | In-memory cache for TypeScript |
-| [@humanspeak/svelte-json-view-lite](https://jsonview.svelte.page) | JSON tree viewer for Svelte 5 |
-| [@humanspeak/svelte-scoped-props](https://scoped.svelte.page) | Scoped class props for Svelte |
+| Package                                                                  | Description                          |
+| ------------------------------------------------------------------------ | ------------------------------------ |
+| [@humanspeak/svelte-markdown](https://markdown.svelte.page)              | Runtime markdown renderer for Svelte |
+| [@humanspeak/svelte-virtual-list](https://virtuallist.svelte.page)       | Virtual scrolling for Svelte         |
+| [@humanspeak/svelte-motion](https://motion.svelte.page)                  | Framer Motion for Svelte 5           |
+| [@humanspeak/svelte-headless-table](https://table.svelte.page)           | Headless data tables for Svelte      |
+| **[@humanspeak/svelte-diff](https://diff.svelte.page)** — _this package_ | Diff comparison for Svelte           |
+| [@humanspeak/svelte-purify](https://purify.svelte.page)                  | HTML sanitisation for Svelte         |
+| [@humanspeak/svelte-virtual-chat](https://virtualchat.svelte.page)       | Virtual chat viewport for Svelte 5   |
+| [@humanspeak/memory-cache](https://memory.svelte.page)                   | In-memory cache for TypeScript       |
+| [@humanspeak/svelte-json-view-lite](https://jsonview.svelte.page)        | JSON tree viewer for Svelte 5        |
+| [@humanspeak/svelte-scoped-props](https://scoped.svelte.page)            | Scoped class props for Svelte        |
 
 ## License
 
