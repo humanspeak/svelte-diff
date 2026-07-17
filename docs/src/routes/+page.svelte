@@ -22,9 +22,9 @@ From wicked puns and stupid jokes to anvils that drop on your head.`)
     let cleanupEfficiency = localStore<number>('cleanupEfficiency', 4)
 
 
-    const onProcessing = (timing: SvelteDiffMatchPatchTiming, diff: SvelteDiffMatchPatchDiff) => {
+    const onProcessing = (timing: SvelteDiffMatchPatchTiming, diffs: SvelteDiffMatchPatchDiff[]) => {
         console.log('timing', timing)
-        console.log('diff', diff)
+        console.log('diffs', diffs)
     }
 </script>
 
