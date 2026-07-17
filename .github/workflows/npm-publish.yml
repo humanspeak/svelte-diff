@@ -467,6 +467,18 @@ jobs:
                   NEW_VERSION="v${PACKAGE_VERSION}"
                   echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
 
+                  # Keep tombstone shims in lockstep with the canonical version
+                  for SHIM in tombstones/svelte-diff tombstones/svelte-diff-match-patch; do
+                      node -e "
+                          const fs = require('fs')
+                          const path = process.argv[1] + '/package.json'
+                          const pkg = JSON.parse(fs.readFileSync(path, 'utf8'))
+                          pkg.version = process.argv[2]
+                          pkg.dependencies['@humanspeak/svelte-diff'] = '^' + process.argv[2]
+                          fs.writeFileSync(path, JSON.stringify(pkg, null, 4) + '\n')
+                      " "$SHIM" "$PACKAGE_VERSION"
+                  done
+
                   # Escape special characters in PR title and URL
                   ESCAPED_TITLE=$(echo "$PR_TITLE" | sed 's/[`$"\]/\\&/g')
                   ESCAPED_URL=$(echo "$PR_URL" | sed 's/[`$"\]/\\&/g')
@@ -487,7 +499,7 @@ jobs:
                   fi
 
                   # Commit the version changes (and any refreshed README ecosystem block)
-                  git add package.json README.md
+                  git add package.json README.md tombstones/svelte-diff/package.json tombstones/svelte-diff-match-patch/package.json
                   git commit -m "Bump version to ${NEW_VERSION} [skip ci]"
 
                   # Create an annotated tag with release notes
@@ -530,6 +542,20 @@ jobs:
                   pnpm config set @humanspeak:registry https://registry.npmjs.org/
                   # Publish using pnpm with OIDC (trusted publishing)
                   pnpm publish --provenance --access public --no-git-checks
+
+            - name: Publish tombstone shims
+              if: steps.publish-check.outputs.should_publish == 'true'
+              run: |
+                  # Shims re-export the canonical package under the old/alias names.
+                  # Best-effort: a shim failure must not trigger "Cleanup on failure"
+                  # and roll back the main release that already shipped.
+                  # The old-name shim carries a "deprecated" field in its manifest, so
+                  # each published version arrives pre-deprecated — no npm deprecate
+                  # call (or extra token) needed here.
+                  pnpm --dir tombstones/svelte-diff-match-patch publish --provenance --access public --no-git-checks ||
+                      echo "::warning::@humanspeak/svelte-diff-match-patch shim publish failed — publish manually from tombstones/"
+                  pnpm --dir tombstones/svelte-diff publish --provenance --access public --no-git-checks ||
+                      echo "::warning::svelte-diff alias publish failed — publish manually from tombstones/"
 
             - name: Cleanup on failure
               if: failure()

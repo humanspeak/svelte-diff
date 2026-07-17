@@ -43,5 +43,6 @@
     },
     "publishConfig": {
         "access": "public"
-    }
+    },
+    "deprecated": "Renamed to @humanspeak/svelte-diff — same component, new name. https://diff.svelte.page"
 }
