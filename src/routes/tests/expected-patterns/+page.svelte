@@ -48,8 +48,7 @@ copies or substantial portions of the Software.`)
                 data-testid="text1"
                 bind:value={text1}
                 class="w-full h-48 p-2 border rounded font-mono text-sm"
-                rows="10"
-            ></textarea>
+                rows="10"></textarea>
         </div>
         <div>
             <label for="text2" class="block text-sm font-medium mb-2">Actual License:</label>
@@ -58,8 +57,7 @@ copies or substantial portions of the Software.`)
                 data-testid="text2"
                 bind:value={text2}
                 class="w-full h-48 p-2 border rounded font-mono text-sm"
-                rows="10"
-            ></textarea>
+                rows="10"></textarea>
         </div>
     </div>
 
