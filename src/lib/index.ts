@@ -174,20 +174,61 @@ export interface SvelteDiffMatchPatchProps {
         _captures?: Record<string, string>
     ) => void
     /**
-     * Custom Svelte snippets for rendering diff segments.
+     * Renders a **removed** (deleted) text segment. Receives the removed text.
      *
-     * Override the default rendering for `remove`, `insert`, `equal`, and `lineBreak` segments.
-     *
-     * If you provide this prop, you are responsible for all rendering and styling of diff segments.
+     * Declared inside the component tags as a child snippet. Takes precedence
+     * over `renderers.remove`.
      *
      * ## Example
      * ```svelte
      * <SvelteDiffMatchPatch ...>
-     *   {#snippet remove(text: string)}<span class="my-remove">{text}</span>{/snippet}
-     *   {#snippet insert(text: string)}<span class="my-insert">{text}</span>{/snippet}
-     *   {#snippet equal(text: string)}<span class="my-equal">{text}</span>{/snippet}
-     *   {#snippet lineBreak()}<br />{/snippet}
+     *   {#snippet remove(text: string)}<del>{text}</del>{/snippet}
      * </SvelteDiffMatchPatch>
+     * ```
+     */
+    remove?: Snippet<[string]>
+    /**
+     * Renders an **inserted** (added) text segment. Receives the inserted text.
+     *
+     * Declared inside the component tags as a child snippet. Takes precedence
+     * over `renderers.insert`.
+     */
+    insert?: Snippet<[string]>
+    /**
+     * Renders an **equal** (unchanged) text segment. Receives the unchanged text.
+     *
+     * Declared inside the component tags as a child snippet. Takes precedence
+     * over `renderers.equal`.
+     */
+    equal?: Snippet<[string]>
+    /**
+     * Renders an **expected** text segment (matched a named capture group).
+     * Receives `(text, groupName)`.
+     *
+     * Declared inside the component tags as a child snippet. Takes precedence
+     * over `renderers.expected`.
+     */
+    expected?: Snippet<[string, string]>
+    /**
+     * Renders a line break between diff lines. Receives no arguments.
+     *
+     * Declared inside the component tags as a child snippet. Takes precedence
+     * over `renderers.lineBreak`.
+     */
+    lineBreak?: Snippet<[]>
+    /**
+     * Custom Svelte snippets for rendering diff segments.
+     *
+     * Override the default rendering for `remove`, `insert`, `equal`, `expected`,
+     * and `lineBreak` segments.
+     *
+     * Resolution order per segment type: a child snippet declared inside the
+     * component tags wins, then the matching `renderers` entry, then the
+     * component's built-in rendering.
+     *
+     * ## Example
+     * ```svelte
+     * <SvelteDiffMatchPatch ... renderers={{ remove: myRemove, insert: myInsert }} />
      * ```
      *
      * @see rendererClasses for simple CSS class-based styling

@@ -51,8 +51,13 @@ certain dynamic regions (dates, names, versions) are expected to differ.
 @property {boolean} [cleanupSemantic=false] - If true, applies semantic cleanup for human readability
 @property {number} [cleanupEfficiency=4] - Edit cost for efficiency cleanup; higher values are more aggressive
 @property {function} [onProcessing] - Callback invoked after diff computation, receiving `(timing, diffs, captures?)`. The `captures` argument is a `Record<string, string>` when expected patterns match.
-@property {Partial<Renderers>} [renderers] - Custom Svelte snippets for rendering diff segments: `remove`, `insert`, `equal`, `expected`, and `lineBreak`
-@property {RendererClasses} [rendererClasses] - Custom CSS classes for each diff type: `remove`, `insert`, `equal`, `expected`. Only effective when `renderers` is not set.
+@property {Snippet} [remove] - Child snippet rendering a removed segment. Takes precedence over `renderers.remove`.
+@property {Snippet} [insert] - Child snippet rendering an inserted segment. Takes precedence over `renderers.insert`.
+@property {Snippet} [equal] - Child snippet rendering an unchanged segment. Takes precedence over `renderers.equal`.
+@property {Snippet} [expected] - Child snippet rendering an expected segment, receiving `(text, groupName)`. Takes precedence over `renderers.expected`.
+@property {Snippet} [lineBreak] - Child snippet rendering a line break between diff lines. Takes precedence over `renderers.lineBreak`.
+@property {Partial<Renderers>} [renderers] - Custom Svelte snippets for rendering diff segments: `remove`, `insert`, `equal`, `expected`, and `lineBreak`. Per segment type, a child snippet wins over the `renderers` entry, which wins over the built-in rendering.
+@property {RendererClasses} [rendererClasses] - Custom CSS classes for each diff type: `remove`, `insert`, `equal`, `expected`. Only effective for segment types with no custom snippet.
 -->
 
 <script lang="ts">
@@ -73,6 +78,11 @@ certain dynamic regions (dates, names, versions) are expected to differ.
         cleanupSemantic = false,
         cleanupEfficiency = 4,
         onProcessing,
+        remove,
+        insert,
+        equal,
+        expected: expectedSnippet,
+        lineBreak,
         renderers = {},
         rendererClasses = {}
     }: SvelteDiffMatchPatchProps = $props()
@@ -133,15 +143,13 @@ certain dynamic regions (dates, names, versions) are expected to differ.
         computeDiff(originalText, modifiedText)
     })
 
+    // Per segment type: child snippet > renderers entry > built-in fallback
     const displayRenderers = $derived({
-        ...{
-            remove: removeFallback,
-            insert: insertFallback,
-            equal: equalFallback,
-            expected: expectedFallback,
-            lineBreak: lineBreakFallback
-        },
-        ...renderers
+        remove: remove ?? renderers.remove ?? removeFallback,
+        insert: insert ?? renderers.insert ?? insertFallback,
+        equal: equal ?? renderers.equal ?? equalFallback,
+        expected: expectedSnippet ?? renderers.expected ?? expectedFallback,
+        lineBreak: lineBreak ?? renderers.lineBreak ?? lineBreakFallback
     })
 </script>
 
