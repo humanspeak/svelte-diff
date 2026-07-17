@@ -16,9 +16,17 @@
         failureReasons: string[]
     }
 
+    interface CurrentRunDetails {
+        context: string
+        change: string
+        boundaryCaptures: string
+        boundaryRendered: string
+    }
+
     const LINE_COUNT = 750
     const SAMPLE_COUNT = 5
     const CEILING_MS = 250
+    const RUNNING_STATE_HOLD_MS = 250
     const originalText = Array.from(
         { length: LINE_COUNT },
         (_, line) => `Line ${line}: (?<value_${line}>\\d+)`
@@ -40,6 +48,12 @@
         samples: [],
         maximum: 0,
         failureReasons: []
+    })
+    let currentRun = $state<CurrentRunDetails>({
+        context: 'Waiting for the automatic run',
+        change: 'Not started',
+        boundaryCaptures: 'Not measured',
+        boundaryRendered: 'Not measured'
     })
 
     const diagnosticText = $derived(
@@ -65,7 +79,27 @@
         }
     }
 
-    const runChange = async (change: number) => {
+    const waitForPaint = async () => {
+        await tick()
+        await new Promise<void>((resolve) => {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => resolve())
+            })
+        })
+        await new Promise<void>((resolve) => {
+            setTimeout(resolve, RUNNING_STATE_HOLD_MS)
+        })
+    }
+
+    const runChange = async (change: number, context: string) => {
+        currentRun = {
+            context,
+            change: `Applying modified-text change ${change}`,
+            boundaryCaptures: 'Waiting for onProcessing captures',
+            boundaryRendered: 'Waiting for the component render'
+        }
+        await tick()
+
         const processing = new Promise<Record<string, string> | undefined>((resolve) => {
             pendingProcessing = resolve
             processingTimeout = setTimeout(() => {
@@ -107,6 +141,14 @@
         const lastOutput = diagnosticOutput.querySelector(
             `[title="value_${LINE_COUNT - 1}"]`
         )?.textContent
+        const firstCapture = captures?.value_0
+        const lastCapture = captures?.[`value_${LINE_COUNT - 1}`]
+        currentRun = {
+            context: `${context} complete`,
+            change: `Modified-text change ${change}`,
+            boundaryCaptures: `value_0=${firstCapture ?? 'missing'}, value_${LINE_COUNT - 1}=${lastCapture ?? 'missing'}`,
+            boundaryRendered: `value_0=${firstOutput ?? 'missing'}, value_${LINE_COUNT - 1}=${lastOutput ?? 'missing'}`
+        }
         if (
             firstOutput !== String(change * 1000) ||
             lastOutput !== String(change * 1000 + LINE_COUNT - 1)
@@ -127,14 +169,25 @@
             maximum: 0,
             failureReasons: []
         }
+        currentRun = {
+            context: 'Painting the RUNNING state before measurements',
+            change: 'Warmup is next',
+            boundaryCaptures: 'Waiting for this run',
+            boundaryRendered: 'Waiting for this run'
+        }
 
         try {
-            const warmup = await runChange(100)
+            await waitForPaint()
+
+            const warmup = await runChange(100, 'Warmup')
             const failureReasons = warmup.failureReasons.map((reason) => `Warmup: ${reason}`)
             const samples: TimingSample[] = []
 
             for (let change = 1; change <= SAMPLE_COUNT; change++) {
-                const sample = await runChange(100 + change)
+                const sample = await runChange(
+                    100 + change,
+                    `Measured sample ${change} of ${SAMPLE_COUNT}`
+                )
                 samples.push({ change, elapsed: sample.elapsed })
                 failureReasons.push(...sample.failureReasons)
             }
@@ -229,6 +282,48 @@
         <pre>{diagnosticText}</pre>
     </section>
 
+    <section class="capability-preview" data-testid="live-capability-preview">
+        <header>
+            <div>
+                <p class="diagnostic-number">LIVE</p>
+                <h2>Live capability preview</h2>
+            </div>
+            <strong class="status">ACTUAL COMPONENT</strong>
+        </header>
+        <p>
+            This is the full mounted <code>SvelteDiff</code> workload used by diagnostic 001. Its original
+            template stays fixed at 750 named groups while modified text changes for the warmup and five
+            samples. Blue highlights are the expected captures produced by the live component.
+        </p>
+        <dl class="current-run-details">
+            <div>
+                <dt>Current change / sample</dt>
+                <dd data-testid="current-run-context">{currentRun.context}</dd>
+            </div>
+            <div>
+                <dt>Change</dt>
+                <dd>{currentRun.change}</dd>
+            </div>
+            <div>
+                <dt>Boundary captures</dt>
+                <dd data-testid="boundary-captures">{currentRun.boundaryCaptures}</dd>
+            </div>
+            <div>
+                <dt>Boundary rendered values</dt>
+                <dd data-testid="boundary-rendered">{currentRun.boundaryRendered}</dd>
+            </div>
+        </dl>
+        <div class="preview-scroll" data-testid="live-preview-scroll">
+            <div
+                class="live-component-output"
+                data-testid="live-component-output"
+                bind:this={diagnosticOutput}
+            >
+                <SvelteDiff {originalText} {modifiedText} onProcessing={handleProcessing} />
+            </div>
+        </div>
+    </section>
+
     {#each ['002', '003', '004', '005'] as number (number)}
         <section class="diagnostic-card" data-testid={`diagnostic-${number}`} data-status="pending">
             <header>
@@ -241,10 +336,6 @@
             <p>This diagnostic will be activated by component performance Plan {number}.</p>
         </section>
     {/each}
-
-    <div class="workload-output" bind:this={diagnosticOutput} aria-hidden="true">
-        <SvelteDiff {originalText} {modifiedText} onProcessing={handleProcessing} />
-    </div>
 </main>
 
 <style>
@@ -286,7 +377,8 @@
     }
 
     .overall-banner,
-    .diagnostic-card {
+    .diagnostic-card,
+    .capability-preview {
         border: 0.25rem solid;
         border-radius: 0.75rem;
         box-shadow: 0.35rem 0.35rem 0 #0f172a;
@@ -328,6 +420,14 @@
     .diagnostic-card {
         margin-bottom: 1.5rem;
         padding: 1.25rem;
+    }
+
+    .capability-preview {
+        margin-bottom: 1.5rem;
+        border-color: #0369a1;
+        padding: 1.25rem;
+        background: #e0f2fe;
+        color: #0c4a6e;
     }
 
     header {
@@ -381,12 +481,31 @@
         white-space: pre-wrap;
     }
 
-    .workload-output {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        overflow: hidden;
-        clip-path: inset(50%);
-        white-space: nowrap;
+    .current-run-details {
+        grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    }
+
+    .preview-scroll {
+        box-sizing: border-box;
+        width: 100%;
+        height: 28rem;
+        overflow: auto;
+        border: 3px solid #0369a1;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        background: white;
+        color: #0f172a;
+    }
+
+    .live-component-output {
+        min-width: 36rem;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 0.875rem;
+        line-height: 1.7;
+    }
+
+    .live-component-output :global(span[title^='value_']) {
+        border-radius: 0.2rem;
+        padding: 0 0.1rem;
     }
 </style>
