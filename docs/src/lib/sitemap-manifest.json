@@ -1,0 +1,22 @@
+{
+  "/": "2026-07-17",
+  "/compare": "2026-07-17",
+  "/docs/api/svelte-diff": "2026-07-17",
+  "/docs/api/types": "2026-07-17",
+  "/docs/getting-started": "2026-07-17",
+  "/docs/guides/cleanup": "2026-07-17",
+  "/docs/guides/custom-rendering": "2026-07-17",
+  "/docs/guides/expected-patterns": "2026-07-17",
+  "/docs/guides/performance": "2026-07-17",
+  "/docs/migration": "2026-07-17",
+  "/examples": "2026-07-17",
+  "/examples/basic-diff": "2026-07-17",
+  "/examples/cleanup-modes": "2026-07-17",
+  "/examples/custom-snippets": "2026-07-17",
+  "/examples/expected-patterns": "2026-07-17",
+  "/examples/live-editor": "2026-07-17",
+  "/examples/timing": "2026-07-17",
+  "/compare/vs-jsdiff": "2026-07-17",
+  "/compare/vs-diff-match-patch": "2026-07-17",
+  "/compare/vs-diff2html": "2026-07-17"
+}

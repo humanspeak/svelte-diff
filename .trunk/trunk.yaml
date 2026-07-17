@@ -33,6 +33,12 @@ lint:
         - linters: [markdownlint]
           paths:
               - .changeset/**
+              # Generated docs-kit mirrors preserve source headings and tables.
+              - docs/static/docs/**
+              - docs/static/examples/**
+              # These are intentionally partial fragments composed into llms.txt.
+              - docs/static/llms-append.md
+              - docs/static/llms-prepend.md
     definitions:
         - name: prettier
           files:

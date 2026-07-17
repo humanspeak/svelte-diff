@@ -1,0 +1,98 @@
+<!-- Source: https://diff.svelte.page/docs/getting-started -->
+
+# Getting Started
+
+> Install @humanspeak/svelte-diff and render a readable, reactive text diff in Svelte 5.
+
+**Source:** [https://diff.svelte.page/docs/getting-started](https://diff.svelte.page/docs/getting-started)
+
+---
+
+`@humanspeak/svelte-diff` is a focused Svelte 5 component for comparing two strings. It runs the diff-match-patch algorithm, optionally cleans the result for readability, and renders each change as real Svelte markup.
+
+## Installation
+
+```bash
+npm install @humanspeak/svelte-diff
+```
+
+```bash
+pnpm add @humanspeak/svelte-diff
+```
+
+## Your first diff
+
+```svelte
+<script lang="ts">
+    import SvelteDiff from '@humanspeak/svelte-diff'
+
+    const before = 'Ship the small release on Tuesday.'
+    const after = 'Ship the polished release on Thursday.'
+</script>
+
+<p class="diff-output">
+    <SvelteDiff originalText={before} modifiedText={after} cleanupSemantic />
+</p>
+```
+
+By default, removed text is red with a strike-through, inserted text is green, and unchanged text is unstyled. Text is escaped by Svelte; the component does not inject an HTML string.
+
+## Reactive inputs
+
+Both required props are reactive. If either string changes, the component recomputes the diff.
+
+```svelte
+<script lang="ts">
+    import SvelteDiff from '@humanspeak/svelte-diff'
+
+    let originalText = $state('Hello from Svelte.')
+    let modifiedText = $state('Hello from Svelte 5.')
+</script>
+
+<textarea bind:value={originalText}></textarea>
+<textarea bind:value={modifiedText}></textarea>
+
+<SvelteDiff {originalText} {modifiedText} />
+```
+
+## Recommended readable defaults
+
+For prose and user-facing copy, semantic cleanup is usually the best starting point:
+
+```svelte
+<SvelteDiff
+    {originalText}
+    {modifiedText}
+    cleanupSemantic={true}
+    timeout={1}
+/>
+```
+
+For machine-like strings where every small edit matters, keep semantic cleanup off and use the default efficiency cleanup.
+
+## Styling with classes
+
+Use `rendererClasses` when you want to keep the default `<span>` markup:
+
+```svelte
+<SvelteDiff
+    {originalText}
+    {modifiedText}
+    rendererClasses={{
+        remove: 'diff-remove',
+        insert: 'diff-insert',
+        equal: 'diff-equal',
+        expected: 'diff-expected'
+    }}
+/>
+```
+
+Use child snippets when you need different elements, attributes, icons, or animation. See [Custom Rendering](/docs/guides/custom-rendering).
+
+## Next steps
+
+- [SvelteDiff API](/docs/api/svelte-diff) — every prop and precedence rule
+- [Expected Patterns](/docs/guides/expected-patterns) — separate intentional variation from real changes
+- [Cleanup Modes](/docs/guides/cleanup) — choose semantic, efficiency, or raw output
+- [Interactive Examples](/examples) — edit values and inspect real output
+- [Comparisons](/compare) — decide between this component and lower-level diff tools

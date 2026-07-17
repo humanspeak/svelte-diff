@@ -1,0 +1,32 @@
+{
+  "basic-diff/demos/BasicDiff.svelte": {
+    "importPath": "virtual:docs-kit/demo/basic-diff/demos/BasicDiff.svelte",
+    "codeBytes": 1629,
+    "htmlBytes": 23535
+  },
+  "cleanup-modes/demos/CleanupModes.svelte": {
+    "importPath": "virtual:docs-kit/demo/cleanup-modes/demos/CleanupModes.svelte",
+    "codeBytes": 2259,
+    "htmlBytes": 29429
+  },
+  "custom-snippets/demos/CustomSnippets.svelte": {
+    "importPath": "virtual:docs-kit/demo/custom-snippets/demos/CustomSnippets.svelte",
+    "codeBytes": 1409,
+    "htmlBytes": 22266
+  },
+  "expected-patterns/demos/ExpectedPatterns.svelte": {
+    "importPath": "virtual:docs-kit/demo/expected-patterns/demos/ExpectedPatterns.svelte",
+    "codeBytes": 2569,
+    "htmlBytes": 38916
+  },
+  "live-editor/demos/LiveEditor.svelte": {
+    "importPath": "virtual:docs-kit/demo/live-editor/demos/LiveEditor.svelte",
+    "codeBytes": 2632,
+    "htmlBytes": 37957
+  },
+  "timing/demos/Timing.svelte": {
+    "importPath": "virtual:docs-kit/demo/timing/demos/Timing.svelte",
+    "codeBytes": 2608,
+    "htmlBytes": 44021
+  }
+}
