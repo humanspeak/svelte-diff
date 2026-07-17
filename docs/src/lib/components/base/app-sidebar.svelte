@@ -11,16 +11,16 @@
             <Sidebar.MenuItem>
                 <Sidebar.MenuButton size="lg">
                     {#snippet child({ props }: { props: Record<string, unknown> })}
-                        <a href="##" {...props}>
+                        <a href="/" {...props}>
                             <div class="flex w-full gap-2">
                                 {#if mode.current === 'dark'}
                                     <img
-                                        src="./humanspeak-dark.svg"
+                                        src="/humanspeak-dark.svg"
                                         alt="humanspeak logo"
                                         class="h-5"
                                     />
                                 {:else}
-                                    <img src="./humanspeak.svg" alt="humanspeak logo" class="h-5" />
+                                    <img src="/humanspeak.svg" alt="humanspeak logo" class="h-5" />
                                 {/if}
                                 <span>/diff</span>
                             </div>

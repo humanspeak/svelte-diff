@@ -13,14 +13,15 @@
     <h1 class="text-center text-4xl font-extrabold">
         <div class="flex w-full items-center justify-center gap-2">
             {#if mode.current === 'dark'}
-                <img src="./humanspeak-dark.svg" alt="humanspeak logo" class="h-10" />
+                <img src="/humanspeak-dark.svg" alt="humanspeak logo" class="h-10" />
             {:else}
-                <img src="./humanspeak.svg" alt="humanspeak logo" class="h-10" />
+                <img src="/humanspeak.svg" alt="humanspeak logo" class="h-10" />
             {/if}
             <span>/diff</span>
         </div>
     </h1>
-    <div class="flex justify-end">
+    <div class="flex items-center justify-end">
+        <Button variant="ghost" href="/compare" class="font-mono text-sm">compare</Button>
         <ModeChanger />
         <Button
             variant="ghost"
