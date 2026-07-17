@@ -189,7 +189,6 @@ describe('SvelteDiffMatchPatch expected patterns', () => {
             originalText: 'hello world',
             modifiedText: 'hello brave world'
         })
-        const expectedSpan = container.querySelector('span[title]')
         // No title attributes should be present (no expected regions)
         const titledSpans = container.querySelectorAll('span[title]')
         expect(titledSpans.length).toBe(0)

@@ -24,8 +24,7 @@ export default [
             '**/pnpm-lock.yaml',
             '**/package-lock.json',
             '**/yarn.lock',
-            '**/dist',
-            '**/*.test.ts'
+            '**/dist'
         ]
     },
     js.configs.recommended,
@@ -89,6 +88,21 @@ export default [
                     ignoreRestSiblings: true
                 }
             ]
+        }
+    },
+    {
+        files: ['src/**/*.{ts,svelte}'],
+        ignores: ['src/lib/shadcn/**'],
+        languageOptions: {
+            parserOptions: {
+                projectService: true,
+                tsconfigRootDir: import.meta.dirname,
+                extraFileExtensions: ['.svelte']
+            }
+        },
+        rules: {
+            '@typescript-eslint/no-floating-promises': 'error',
+            '@typescript-eslint/no-misused-promises': 'error'
         }
     },
     {
