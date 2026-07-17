@@ -119,6 +119,40 @@ describe('SvelteDiff snippet precedence', () => {
 })
 
 describe('SvelteDiff expected patterns', () => {
+    it('reuses expected-pattern metadata when only modifiedText changes', async () => {
+        const onProcessing = vi.fn()
+        const originalText = 'Copyright (?<year>\\d{4}) MIT'
+        const { container, rerender } = render(SvelteDiff, {
+            originalText,
+            modifiedText: 'Copyright 2024 MIT',
+            onProcessing
+        })
+
+        await waitFor(() => {
+            expect(container.querySelector('span[title="year"]')?.textContent).toBe('2024')
+            expect(onProcessing).toHaveBeenCalledWith(
+                expect.any(Object),
+                expect.any(Array),
+                expect.objectContaining({ year: '2024' })
+            )
+        })
+
+        await rerender({
+            originalText,
+            modifiedText: 'Copyright 2025 MIT',
+            onProcessing
+        })
+
+        await waitFor(() => {
+            expect(container.querySelector('span[title="year"]')?.textContent).toBe('2025')
+            expect(onProcessing).toHaveBeenCalledWith(
+                expect.any(Object),
+                expect.any(Array),
+                expect.objectContaining({ year: '2025' })
+            )
+        })
+    })
+
     it('renders expected regions with default styling and title attribute', () => {
         const { container } = render(SvelteDiff, {
             originalText: 'Copyright (?<year>\\d{4}) MIT',

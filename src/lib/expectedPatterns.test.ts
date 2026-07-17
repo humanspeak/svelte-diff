@@ -45,6 +45,57 @@ describe('parseExpectedPatterns', () => {
     })
 })
 
+describe('compiled expected-pattern metadata', () => {
+    it('reuses compiled expected-pattern metadata for multiple extractions', () => {
+        const original = 'Year: (?<year>\\d{4})\nHolder: (?<holder>[A-Za-z]+)'
+        const parsed = parseExpectedPatterns(original)!
+
+        expect(parsed.matches).toEqual([
+            {
+                fullMatch: '(?<year>\\d{4})',
+                name: 'year',
+                pattern: '\\d{4}',
+                index: 6
+            },
+            {
+                fullMatch: '(?<holder>[A-Za-z]+)',
+                name: 'holder',
+                pattern: '[A-Za-z]+',
+                index: 29
+            }
+        ])
+        expect(parsed.cleanedText).toBe('Year: <year>\nHolder: <holder>')
+        expect(parsed.linePatterns).toHaveLength(2)
+        expect(parsed.linePatterns.map(({ lineText, groups }) => ({ lineText, groups }))).toEqual([
+            {
+                lineText: 'Year: (?<year>\\d{4})',
+                groups: [{ name: 'year', pattern: '\\d{4}', indexInLine: 6 }]
+            },
+            {
+                lineText: 'Holder: (?<holder>[A-Za-z]+)',
+                groups: [{ name: 'holder', pattern: '[A-Za-z]+', indexInLine: 8 }]
+            }
+        ])
+
+        const regexes = parsed.linePatterns.map(({ regex }) => regex)
+        const first = extractCaptures(original, 'Year: 2024\nHolder: Alice', parsed)
+        const second = extractCaptures(original, 'Year: 2025\nHolder: Bob', parsed)
+
+        expect(first).toMatchObject({
+            captures: { year: '2024', holder: 'Alice' },
+            resolvedText: 'Year: 2024\nHolder: Alice'
+        })
+        expect(second).toMatchObject({
+            captures: { year: '2025', holder: 'Bob' },
+            resolvedText: 'Year: 2025\nHolder: Bob'
+        })
+        expect(parsed.linePatterns.map(({ regex }) => regex)).toEqual(regexes)
+        parsed.linePatterns.forEach(({ regex }, index) => {
+            expect(regex).toBe(regexes[index])
+        })
+    })
+})
+
 describe('extractCaptures', () => {
     it('returns null when capture patterns are genuinely absent', () => {
         const text = 'Copyright (?<year>\\d{4}) MIT'
