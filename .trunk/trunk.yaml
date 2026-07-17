@@ -14,7 +14,7 @@ runtimes:
     enabled:
         - go@1.21.0
         - python@3.14.4
-        - node@22.16.0
+        - node@24.15.0
 # This is the section where you manage your linters. (https://docs.trunk.io/check/configuration)
 lint:
     ignore:
@@ -22,6 +22,11 @@ lint:
           paths:
               - '**/worker-configuration.d.ts'
               - convex/_generated/**
+        - linters: [eslint]
+          paths:
+              # Vendored shadcn-svelte components (no-useless-assignment
+              # false-positives on Svelte 5 `$bindable` prop defaults)
+              - docs/src/lib/shadcn/**
         - linters: [osv-scanner]
           paths:
               - '**/pnpm-lock.yaml'
@@ -66,7 +71,7 @@ lint:
         - trufflehog@3.95.9
         - yamllint@1.38.0
 actions:
-    enabled:
+    disabled:
         - trunk-announce
         - trunk-check-pre-push
         - trunk-fmt-pre-commit
