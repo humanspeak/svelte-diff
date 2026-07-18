@@ -8,10 +8,14 @@
 > told you they maintain the index.
 >
 > **Drift check (run first)**:
-> `git diff --stat 8e3082c..HEAD -- src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/routes/tests/component-performance/+page.svelte tests/component-performance.test.ts`
+> `git diff --stat 8e3082c..HEAD -- src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/routes/tests/component-performance/005/+page.svelte tests/component-performance.test.ts`
 > Confirm Plans 001–004 are marked DONE and satisfy the expected predecessor
 > state below. Changes from those plans are expected; unrelated computation or
 > SSR changes are a STOP condition.
+>
+> **Diagnostic route convention (2026-07-18)**: 005 owns
+> `/tests/component-performance/005`. The unnumbered route is a navigation-only
+> index. Do not run 005 on the index or mount diagnostics 001–004 here.
 
 ## Status
 
@@ -64,26 +68,26 @@ Before this plan starts, predecessors must have produced this conceptual shape:
 - Plan 004: markup supports opt-in compact equal rendering without changing the
   default DOM.
 
-Plan 001 created `src/routes/tests/component-performance/+page.svelte` and
-`tests/component-performance.test.ts`; Plans 002–004 activated the first four
-loud cards. This plan activates the final SSR card. The root route remains an
-existing regression fixture but must not be edited.
+Plans 001–004 created isolated numbered diagnostics and shared Playwright
+coverage. This plan creates the final `/tests/component-performance/005` SSR
+page. The unnumbered performance route and application root remain index and
+regression fixtures respectively; neither may contain the SSR workload.
 
 Repository conventions: arrow functions, public JSDoc, Trunk format/lint, and
 conventional commits. Preserve all public props and callback arguments.
 
 ## Commands you will need
 
-| Purpose                     | Command                                                                                                                                                    | Expected on success                        |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| SSR red/green test          | `pnpm playwright test tests/component-performance.test.ts --project=chromium -g "005"`                                                                     | loud no-JS SSR card passes within 3,000 ms |
-| Targeted browser regression | `pnpm playwright test tests/component-performance.test.ts tests/default.test.ts tests/expected-patterns.test.ts --project=chromium`                        | all targeted Chromium tests pass           |
-| Unit suite                  | `pnpm vitest run src/lib --coverage.enabled=false --reporter=default`                                                                                      | all library tests pass                     |
-| Type/Svelte check           | `pnpm check`                                                                                                                                               | exit 0                                     |
-| Package verification        | `pnpm build`                                                                                                                                               | exit 0, including publint                  |
-| Full E2E                    | `pnpm playwright test`                                                                                                                                     | all configured browser projects pass       |
-| Format                      | `trunk fmt src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/routes/tests/component-performance/+page.svelte tests/component-performance.test.ts`   | exit 0                                     |
-| Lint                        | `trunk check src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/routes/tests/component-performance/+page.svelte tests/component-performance.test.ts` | exit 0                                     |
+| Purpose                     | Command                                                                                                                                                        | Expected on success                        |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| SSR red/green test          | `pnpm playwright test tests/component-performance.test.ts --project=chromium -g "005"`                                                                         | loud no-JS SSR card passes within 3,000 ms |
+| Targeted browser regression | `pnpm playwright test tests/component-performance.test.ts tests/default.test.ts tests/expected-patterns.test.ts --project=chromium`                            | all targeted Chromium tests pass           |
+| Unit suite                  | `pnpm vitest run src/lib --coverage.enabled=false --reporter=default`                                                                                          | all library tests pass                     |
+| Type/Svelte check           | `pnpm check`                                                                                                                                                   | exit 0                                     |
+| Package verification        | `pnpm build`                                                                                                                                                   | exit 0, including publint                  |
+| Full E2E                    | `pnpm playwright test`                                                                                                                                         | all configured browser projects pass       |
+| Format                      | `trunk fmt src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/routes/tests/component-performance/005/+page.svelte tests/component-performance.test.ts`   | exit 0                                     |
+| Lint                        | `trunk check src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/routes/tests/component-performance/005/+page.svelte tests/component-performance.test.ts` | exit 0                                     |
 
 ## Scope
 
@@ -91,13 +95,13 @@ conventional commits. Preserve all public props and callback arguments.
 
 - `src/lib/SvelteDiff.svelte`
 - `src/lib/SvelteDiff.test.ts` only for hydration/callback regressions if needed
-- `src/routes/tests/component-performance/+page.svelte`
+- `src/routes/tests/component-performance/005/+page.svelte`
 - `tests/component-performance.test.ts`
 - `.agents/.plans/component-performance/README.md` (status only)
 
 **Out of scope**:
 
-- Every route and E2E file outside the shared component-performance diagnostics.
+- Every route outside the dedicated 005 component-performance diagnostic.
 - Public prop/type changes, new SSR flags, or a client-only opt-out API.
 - Worker offloading, async diffing, streaming, or server-side caching across users.
 - Changing diff, cleanup, expected-pattern, compact-rendering, or callback semantics.
@@ -113,35 +117,35 @@ conventional commits. Preserve all public props and callback arguments.
 
 ## Steps
 
-### Step 1: Turn the pending 005 card into a loud no-JavaScript red test
+### Step 1: Create a loud no-JavaScript 005 red-test page
 
-In `src/routes/tests/component-performance/+page.svelte`, replace the 005
-PENDING content with an SSR probe that compares two fixed, distinctive strings
+In `src/routes/tests/component-performance/005/+page.svelte`, create an SSR
+probe that compares two fixed, distinctive strings
 and supplies unique classes `ssr-diagnostic-equal`, `ssr-diagnostic-remove`,
-and `ssr-diagnostic-insert`. Keep the probe inside the visible 005 card.
+and `ssr-diagnostic-insert`. Keep the probe inside the visible 005 diagnostic.
 
 Make PASS/FAIL work without page JavaScript by rendering both messages and
 using CSS `:has(...)` selectors:
 
 - default state: a large red `FAIL — diff missing from server HTML` is visible
   and the green PASS message is hidden;
-- when the card contains all three unique diff classes: hide FAIL and show a
+- when the diagnostic contains all three unique diff classes: hide FAIL and show a
   large green `PASS — diff present in server HTML`;
 - display static diagnostics for workload, required classes, and the committed
   **3,000 ms local preview navigation ceiling**.
 
 The no-JavaScript state must not depend on `onMount`, attribute mutation, or a
-console log. With JavaScript enabled, integrate the probe into the existing
-overall banner and machine-readable diagnostic state after mount. After the
+console log. With JavaScript enabled, integrate the probe into an 005-only
+banner and machine-readable diagnostic state after mount. After the
 window `load` event, read the current `PerformanceNavigationTiming.duration`,
 show the actual duration beside the 3,000 ms ceiling, and populate
-`data-ceiling-ms`/`data-elapsed-ms`. The JavaScript-enabled card passes only when
+`data-ceiling-ms`/`data-elapsed-ms`. The JavaScript-enabled diagnostic passes only when
 the SSR classes are present and navigation duration is `<= 3,000`; do not use
 an average or hide a failed value.
 
 In `tests/component-performance.test.ts`, add a separate describe block with
 `test.use({ javaScriptEnabled: false })` and a test whose title contains `005`.
-Measure `page.goto('/tests/component-performance')` with Node's
+Measure `page.goto('/tests/component-performance/005')` with Node's
 `performance.now()`, then assert inside `diagnostic-005`:
 
 - the green PASS text is visible and red FAIL text is hidden;
@@ -149,7 +153,7 @@ Measure `page.goto('/tests/component-performance')` with Node's
 - distinctive diff text is inside the probe, not merely elsewhere on the page;
 - navigation completes in `<= 3,000 ms`.
 
-Include actual elapsed time and the entire card text in assertion messages.
+Include actual elapsed time and the entire diagnostic text in assertion messages.
 Against the effect-only current architecture, the test must fail on the visible
 red message/missing classes even if navigation is fast.
 
@@ -205,15 +209,15 @@ timing numbers or make server callback behavior observable through a new API.
 → all component tests pass, including cached diff identity and existing capture
 callback assertions.
 
-### Step 4: Turn the loud SSR card green and verify hydration parity
+### Step 4: Turn the loud SSR diagnostic green and verify hydration parity
 
 Run the no-JavaScript test; it must now show the green PASS message, hide the
 red FAIL message, see all three diff classes, and navigate within 3,000 ms.
 Then run the performance page, root tests, and expected-pattern tests with
 normal JavaScript. Normal hydration must produce no console errors, duplicate
-text, missing classes, or failed existing assertions. The page's overall banner
-must now include 005 and show all five cards PASS, and the 005 card must visibly
-show the browser navigation duration and 3,000 ms ceiling.
+text, missing classes, or failed existing assertions. The 005-only banner must
+show PASS, and the page must visibly show the browser navigation duration,
+3,000 ms ceiling, and rendered SSR diff capability. Do not run 001–004 here.
 
 If Playwright does not already fail on console errors, add a local listener in
 the SSR/hydration test for `pageerror` and hydration-related console errors; do
@@ -238,8 +242,8 @@ the configured build/preview server; do not launch a separate server manually.
 **Verify**:
 
 ```bash
-trunk fmt src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/routes/tests/component-performance/+page.svelte tests/component-performance.test.ts
-trunk check src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/routes/tests/component-performance/+page.svelte tests/component-performance.test.ts
+trunk fmt src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/routes/tests/component-performance/005/+page.svelte tests/component-performance.test.ts
+trunk check src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/routes/tests/component-performance/005/+page.svelte tests/component-performance.test.ts
 pnpm vitest run src/lib --coverage.enabled=false --reporter=default
 pnpm check
 pnpm build
@@ -269,13 +273,13 @@ generated build output must not be committed.
 - [ ] Initial server HTML contains meaningful diff markup.
 - [ ] Diagnostic 005 visibly flips from red FAIL to green PASS without
       JavaScript and local preview navigation completes in `<= 3,000 ms`.
-- [ ] With JavaScript, the overall page banner shows all five diagnostics PASS.
+- [ ] With JavaScript, the 005 page banner shows diagnostic 005 PASS.
 - [ ] Pure computation is `$derived`; no calculation `$effect` remains.
 - [ ] `onProcessing` remains client-only and receives unchanged arguments.
 - [ ] Callback-only changes reuse the same raw diff array.
 - [ ] Default and compact DOM behavior both hydrate without duplication/errors.
 - [ ] Trunk, all library tests, `pnpm check`, `pnpm build`, and full Playwright exit 0.
-- [ ] No route except the shared diagnostic page, public API, docs app, or other
+- [ ] No route except the dedicated 005 diagnostic page, public API, docs app, or other
       out-of-scope file is modified.
 - [ ] The 005 row in the batch README is updated to DONE.
 
@@ -289,7 +293,7 @@ Stop and report if:
 - SSR and client produce different diff segmentation or hydration errors.
 - Making SSR work requires invoking `onProcessing` on the server or adding a
   public opt-in/opt-out prop.
-- The no-JavaScript test can pass only by weakening the loud card or using
+- The no-JavaScript test can pass only by weakening the loud diagnostic or using
   client JavaScript; the probe must reflect actual server HTML.
 - Optimized local preview navigation exceeds 3,000 ms in any of three
   consecutive verification runs; report elapsed times before changing it.

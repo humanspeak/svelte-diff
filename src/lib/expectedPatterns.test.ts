@@ -251,6 +251,30 @@ describe('extractCaptures', () => {
 })
 
 describe('tagExpectedRegions', () => {
+    it('reads sorted capture ranges approximately linearly', () => {
+        const diffs: [number, string][] = Array.from({ length: 400 }, () => [0, 'x'])
+        const ranges = Array.from({ length: 200 }, (_, index) => ({
+            name: `range_${index}`,
+            start: index * 2,
+            end: index * 2 + 1
+        }))
+        let numericRangeReads = 0
+        const observedRanges = new Proxy(ranges, {
+            get(target, property, receiver) {
+                if (typeof property === 'string' && /^\d+$/.test(property)) {
+                    numericRangeReads++
+                }
+                return Reflect.get(target, property, receiver)
+            }
+        })
+
+        const result = tagExpectedRegions(diffs, observedRanges)
+
+        expect(result.map(({ text }) => text).join('')).toBe('x'.repeat(400))
+        expect(result.filter(({ expected }) => expected !== undefined)).toHaveLength(200)
+        expect(numericRangeReads).toBeLessThan(5000)
+    })
+
     it('passes through when no capture ranges', () => {
         const diffs: [number, string][] = [
             [0, 'hello '],
@@ -342,6 +366,88 @@ describe('tagExpectedRegions', () => {
             { operation: 0, text: 'hello' },
             { operation: 0, text: '2024', expected: 'year' },
             { operation: 0, text: 'world' }
+        ])
+    })
+
+    it('tags one expected range spanning two consecutive equal diff segments', () => {
+        const diffs: [number, string][] = [
+            [0, 'ab'],
+            [0, 'cd']
+        ]
+        const ranges = [{ name: 'middle', start: 1, end: 3 }]
+
+        expect(tagExpectedRegions(diffs, ranges)).toEqual([
+            { operation: 0, text: 'a' },
+            { operation: 0, text: 'b', expected: 'middle' },
+            { operation: 0, text: 'c', expected: 'middle' },
+            { operation: 0, text: 'd' }
+        ])
+    })
+
+    it('tags a multiline Unicode range across diff-segment boundaries', () => {
+        const diffs: [number, string][] = [
+            [0, 'A\n😀'],
+            [0, 'BC']
+        ]
+        const ranges = [{ name: 'multiline', start: 1, end: 5 }]
+
+        expect(tagExpectedRegions(diffs, ranges)).toEqual([
+            { operation: 0, text: 'A' },
+            { operation: 0, text: '\n😀', expected: 'multiline' },
+            { operation: 0, text: 'B', expected: 'multiline' },
+            { operation: 0, text: 'C' }
+        ])
+    })
+
+    it('tags one expected range spanning an insert followed by an equal segment', () => {
+        const diffs: [number, string][] = [
+            [1, 'ab'],
+            [0, 'cd']
+        ]
+        const ranges = [{ name: 'middle', start: 1, end: 3 }]
+
+        expect(tagExpectedRegions(diffs, ranges)).toEqual([
+            { operation: 1, text: 'a' },
+            { operation: 0, text: 'b', expected: 'middle' },
+            { operation: 0, text: 'c', expected: 'middle' },
+            { operation: 0, text: 'd' }
+        ])
+    })
+
+    it('handles ranges ending at a segment start and starting at a segment end', () => {
+        const diffs: [number, string][] = [
+            [0, 'ab'],
+            [0, 'cd']
+        ]
+        const ranges = [
+            { name: 'first', start: 0, end: 2 },
+            { name: 'second', start: 2, end: 4 }
+        ]
+
+        expect(tagExpectedRegions(diffs, ranges)).toEqual([
+            { operation: 0, text: 'ab', expected: 'first' },
+            { operation: 0, text: 'cd', expected: 'second' }
+        ])
+    })
+
+    it('preserves several remove segments between text2-advancing segments', () => {
+        const diffs: [number, string][] = [
+            [0, 'a'],
+            [-1, 'x'],
+            [-1, 'y'],
+            [1, 'b'],
+            [-1, 'z'],
+            [0, 'c']
+        ]
+        const ranges = [{ name: 'tail', start: 1, end: 3 }]
+
+        expect(tagExpectedRegions(diffs, ranges)).toEqual([
+            { operation: 0, text: 'a' },
+            { operation: -1, text: 'x' },
+            { operation: -1, text: 'y' },
+            { operation: 0, text: 'b', expected: 'tail' },
+            { operation: -1, text: 'z' },
+            { operation: 0, text: 'c', expected: 'tail' }
         ])
     })
 })

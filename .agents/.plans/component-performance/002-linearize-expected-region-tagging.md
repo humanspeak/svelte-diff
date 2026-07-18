@@ -7,11 +7,17 @@
 > told you they maintain the index.
 >
 > **Drift check (run first)**:
-> `git diff --stat 8e3082c..HEAD -- src/lib/expectedPatterns.ts src/lib/expectedPatterns.test.ts src/routes/tests/component-performance/+page.svelte tests/component-performance.test.ts`
+> `git diff --stat 8e3082c..HEAD -- src/lib/expectedPatterns.ts src/lib/expectedPatterns.test.ts src/routes/tests/component-performance/002/+page.svelte tests/component-performance.test.ts`
 > Plan 001 intentionally changes both files. If its README row is DONE, compare
 > its postconditions rather than expecting a clean diff. STOP if capture ranges
 > are no longer sorted or `tagExpectedRegions` semantics differ from the current
 > excerpts below.
+>
+> **Diagnostic route revision (2026-07-18)**: 002 owns
+> `/tests/component-performance/002`. The unnumbered route is a navigation-only
+> index. Do not run 002 on the index or combine it with another plan's workload.
+> The completed forward-sweep implementation measured about 1 ms locally, so the
+> committed ceiling is tightened from the original 100 ms proposal to 10 ms.
 
 ## Status
 
@@ -75,15 +81,15 @@ Trunk formatting/linting.
 
 ## Commands you will need
 
-| Purpose              | Command                                                                                                                                                            | Expected on success                   |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------- |
-| Targeted test        | `pnpm vitest run src/lib/expectedPatterns.test.ts --coverage.enabled=false --reporter=default`                                                                     | all expected-pattern tests pass       |
-| Diagnostic E2E       | `pnpm playwright test tests/component-performance.test.ts --project=chromium -g "002"`                                                                             | 002 card visibly passes within 100 ms |
-| Unit suite           | `pnpm vitest run src/lib --coverage.enabled=false --reporter=default`                                                                                              | all library tests pass                |
-| Type/Svelte check    | `pnpm check`                                                                                                                                                       | exit 0                                |
-| Package verification | `pnpm build`                                                                                                                                                       | exit 0, including publint             |
-| Format               | `trunk fmt src/lib/expectedPatterns.ts src/lib/expectedPatterns.test.ts src/routes/tests/component-performance/+page.svelte tests/component-performance.test.ts`   | exit 0                                |
-| Lint                 | `trunk check src/lib/expectedPatterns.ts src/lib/expectedPatterns.test.ts src/routes/tests/component-performance/+page.svelte tests/component-performance.test.ts` | exit 0                                |
+| Purpose              | Command                                                                                                                                                                | Expected on success                  |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| Targeted test        | `pnpm vitest run src/lib/expectedPatterns.test.ts --coverage.enabled=false --reporter=default`                                                                         | all expected-pattern tests pass      |
+| Diagnostic E2E       | `pnpm playwright test tests/component-performance.test.ts --project=chromium -g "002"`                                                                                 | 002 page visibly passes within 10 ms |
+| Unit suite           | `pnpm vitest run src/lib --coverage.enabled=false --reporter=default`                                                                                                  | all library tests pass               |
+| Type/Svelte check    | `pnpm check`                                                                                                                                                           | exit 0                               |
+| Package verification | `pnpm build`                                                                                                                                                           | exit 0, including publint            |
+| Format               | `trunk fmt src/lib/expectedPatterns.ts src/lib/expectedPatterns.test.ts src/routes/tests/component-performance/002/+page.svelte tests/component-performance.test.ts`   | exit 0                               |
+| Lint                 | `trunk check src/lib/expectedPatterns.ts src/lib/expectedPatterns.test.ts src/routes/tests/component-performance/002/+page.svelte tests/component-performance.test.ts` | exit 0                               |
 
 ## Scope
 
@@ -91,7 +97,7 @@ Trunk formatting/linting.
 
 - `src/lib/expectedPatterns.ts`
 - `src/lib/expectedPatterns.test.ts`
-- `src/routes/tests/component-performance/+page.svelte`
+- `src/routes/tests/component-performance/002/+page.svelte`
 - `tests/component-performance.test.ts`
 - `.agents/.plans/component-performance/README.md` (status only)
 
@@ -100,8 +106,8 @@ Trunk formatting/linting.
 - `src/lib/SvelteDiff.svelte`, renderers, public props, and DOM behavior.
 - Expected-pattern parsing, regex compilation, and template caching from Plan 001.
 - Changing the returned `DisplayDiff` shape or operation values.
-- Adding benchmark dependencies or a second diagnostic page; extend Plan 001's
-  shared page and Playwright suite.
+- Adding benchmark dependencies or workloads outside the dedicated 002 page;
+  extend the existing Playwright suite but navigate directly to 002.
 - Supporting overlapping capture groups not produced by the current extractor.
 
 ## Git workflow
@@ -185,10 +191,10 @@ Assert complete `DisplayDiff[]` arrays, not only text content.
 `pnpm vitest run src/lib/expectedPatterns.test.ts --coverage.enabled=false --reporter=default`
 → all existing and new tests pass.
 
-### Step 4: Activate the loud 002 diagnostic with a 100 ms ceiling
+### Step 4: Activate the loud 002 diagnostic with a 10 ms ceiling
 
-In `src/routes/tests/component-performance/+page.svelte`, replace the 002
-PENDING card created by Plan 001 with a live diagnostic. Import
+In `src/routes/tests/component-performance/002/+page.svelte`, create the live
+002 diagnostic. Import
 `tagExpectedRegions` directly from the internal `$lib/expectedPatterns.js`
 module; this test route is inside the repository and must not cause a new
 package-root export.
@@ -196,26 +202,31 @@ package-root export.
 Use exactly 10,000 one-character equal diff segments and 5,000 sorted,
 non-overlapping one-character ranges—the same scale that took roughly 617 ms in
 the read-only audit. Run one unmeasured warmup, then three measured sequential
-samples. The card passes only when:
+samples. The diagnostic passes only when:
 
 - every output reconstructs the input text;
 - every expected range is represented correctly;
-- every measured call is `<= 100 ms` (committed ceiling);
+- every measured call is `<= 10 ms` (committed ceiling);
 - the maximum, all samples, segment/range counts, output count, and any failure
   reason are visible and mirrored in `data-*` attributes.
 
-Update the overall banner so 001 and 002 both participate while later cards
-remain PENDING. A failed 002 sample must paint a red card; do not throw or log
-only to the console.
+Provide an 002-only overall banner, rerun control, and a recognizable document
+example with plain-text input, highlighted tagged output, visible capture names,
+matched values, and exact start/end boundaries. Keep the 10,000 repeated-token
+workload in the measurement card only; it is not an acceptable human capability
+preview. A failed sample must paint the page red; do not throw or log only to the
+console. Do not mount or run diagnostic 001 on this page.
 
 Extend `tests/component-performance.test.ts` with a test whose title contains
-`002`. Reuse Plan 001's diagnostic-card helper to require visible PASS and
-elapsed `<=` the card's 100 ms ceiling. Include the card text in assertion
-messages.
+`002`. Navigate directly to `/tests/component-performance/002`. Reuse Plan 001's
+diagnostic helper to require visible PASS and elapsed `<=` the diagnostic's
+10 ms ceiling, and assert the visible output preview contains tagged and
+untagged segments. Include the diagnostic text in assertion messages.
 
 **Verify**:
 `pnpm playwright test tests/component-performance.test.ts --project=chromium -g "002"`
-→ the 002 card is green, shows three samples, and reports max `<= 100 ms`. Run
+→ the 002 page is green, shows three samples and a visible tagged-output preview,
+and reports max `<= 10 ms`. Run
 the command three times. If any optimized run exceeds the ceiling, STOP and
 report all samples instead of changing the ceiling or workload.
 
@@ -228,8 +239,8 @@ remains inside `tagExpectedRegions`.
 **Verify**:
 
 ```bash
-trunk fmt src/lib/expectedPatterns.ts src/lib/expectedPatterns.test.ts src/routes/tests/component-performance/+page.svelte tests/component-performance.test.ts
-trunk check src/lib/expectedPatterns.ts src/lib/expectedPatterns.test.ts src/routes/tests/component-performance/+page.svelte tests/component-performance.test.ts
+trunk fmt src/lib/expectedPatterns.ts src/lib/expectedPatterns.test.ts src/routes/tests/component-performance/002/+page.svelte tests/component-performance.test.ts
+trunk check src/lib/expectedPatterns.ts src/lib/expectedPatterns.test.ts src/routes/tests/component-performance/002/+page.svelte tests/component-performance.test.ts
 pnpm vitest run src/lib --coverage.enabled=false --reporter=default
 pnpm check
 pnpm build
@@ -246,8 +257,8 @@ and no `captureRanges.filter` call.
 - Preserve exact output arrays for inserts, equals, removes, capture boundaries,
   and captures spanning more than one diff.
 - Use deterministic access counts for the complexity proof and the browser's
-  100 ms maximum as a separate end-to-end regression ceiling.
-- Keep the 002 PASS/FAIL card, samples, workload, result counts, and reasons
+  10 ms maximum as a separate end-to-end regression ceiling.
+- Keep the 002 PASS/FAIL page, samples, workload, result counts, and reasons
   visible to humans and machine-readable to Playwright.
 - Keep all existing expected-pattern tests green.
 
@@ -257,7 +268,7 @@ and no `captureRanges.filter` call.
 - [ ] `tagExpectedRegions` performs no full range `.filter` per diff segment.
 - [ ] Complexity is O(D + R + actual overlaps) for sorted, non-overlapping ranges.
 - [ ] Diagnostic 002 visibly passes three 10,000-segment/5,000-range samples,
-      each in `<= 100 ms`, and its Chromium E2E test passes.
+      each in `<= 10 ms`, and its Chromium E2E test passes.
 - [ ] All old/new expected-region output assertions pass exactly.
 - [ ] Trunk, library tests, `pnpm check`, and `pnpm build` exit 0.
 - [ ] Only in-scope files and the README status row are modified.
@@ -272,7 +283,7 @@ Stop and report if:
   group wins; resolving overlap semantics needs a separate decision.
 - The optimized function changes any existing `DisplayDiff[]` assertion.
 - A correct fix appears to require component or public API changes.
-- The optimized fixed workload exceeds 100 ms in any of three consecutive
+- The optimized fixed workload exceeds 10 ms in any of three consecutive
   verification runs; report raw samples instead of loosening the guard.
 - A verification fails twice after a reasonable fix attempt.
 
