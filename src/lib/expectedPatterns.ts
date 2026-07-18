@@ -480,6 +480,8 @@ export const tagExpectedRegions = (
 
     const result: DisplayDiff[] = []
     let text2Pos = 0
+    // Capture ranges must remain sorted by start so this cursor only moves forward.
+    let captureCursor = 0
 
     for (const [operation, text] of diffs) {
         if (operation === -1) {
@@ -487,84 +489,50 @@ export const tagExpectedRegions = (
             continue
         }
 
-        if (operation === 1) {
-            const segStart = text2Pos
-            const segEnd = text2Pos + text.length
-
-            const overlapping = captureRanges.filter((cr) => cr.start < segEnd && cr.end > segStart)
-
-            if (overlapping.length === 0) {
-                result.push({ operation, text })
-            } else {
-                let cursor = segStart
-                for (const cr of overlapping) {
-                    if (cursor < cr.start) {
-                        const beforeLen = cr.start - cursor
-                        result.push({
-                            operation: 1,
-                            text: text.slice(cursor - segStart, cursor - segStart + beforeLen)
-                        })
-                        cursor = cr.start
-                    }
-                    const overlapStart = Math.max(cursor, cr.start)
-                    const overlapEnd = Math.min(segEnd, cr.end)
-                    if (overlapStart < overlapEnd) {
-                        result.push({
-                            operation: 0,
-                            text: text.slice(overlapStart - segStart, overlapEnd - segStart),
-                            expected: cr.name
-                        })
-                        cursor = overlapEnd
-                    }
-                }
-                if (cursor < segEnd) {
-                    result.push({
-                        operation: 1,
-                        text: text.slice(cursor - segStart)
-                    })
-                }
-            }
-
-            text2Pos = segEnd
-            continue
-        }
-
-        // Equal (0): advance both positions, check text2 overlap
         const segStart = text2Pos
         const segEnd = text2Pos + text.length
 
-        const overlapping = captureRanges.filter((cr) => cr.start < segEnd && cr.end > segStart)
+        while (
+            captureCursor < captureRanges.length &&
+            captureRanges[captureCursor].end <= segStart
+        ) {
+            captureCursor++
+        }
 
-        if (overlapping.length === 0) {
-            result.push({ operation: 0, text })
-        } else {
-            let cursor = segStart
-            for (const cr of overlapping) {
-                if (cursor < cr.start) {
-                    const beforeLen = cr.start - cursor
-                    result.push({
-                        operation: 0,
-                        text: text.slice(cursor - segStart, cursor - segStart + beforeLen)
-                    })
-                    cursor = cr.start
-                }
-                const overlapStart = Math.max(cursor, cr.start)
-                const overlapEnd = Math.min(segEnd, cr.end)
-                if (overlapStart < overlapEnd) {
-                    result.push({
-                        operation: 0,
-                        text: text.slice(overlapStart - segStart, overlapEnd - segStart),
-                        expected: cr.name
-                    })
-                    cursor = overlapEnd
-                }
+        let rangeIndex = captureCursor
+        let sliceCursor = segStart
+
+        while (rangeIndex < captureRanges.length && captureRanges[rangeIndex].start < segEnd) {
+            const range = captureRanges[rangeIndex]
+
+            if (sliceCursor < range.start) {
+                const beforeEnd = Math.min(range.start, segEnd)
+                result.push({
+                    operation,
+                    text: text.slice(sliceCursor - segStart, beforeEnd - segStart)
+                })
+                sliceCursor = beforeEnd
             }
-            if (cursor < segEnd) {
+
+            const overlapStart = Math.max(sliceCursor, range.start)
+            const overlapEnd = Math.min(segEnd, range.end)
+            if (overlapStart < overlapEnd) {
                 result.push({
                     operation: 0,
-                    text: text.slice(cursor - segStart)
+                    text: text.slice(overlapStart - segStart, overlapEnd - segStart),
+                    expected: range.name
                 })
+                sliceCursor = overlapEnd
             }
+
+            rangeIndex++
+        }
+
+        if (sliceCursor < segEnd) {
+            result.push({
+                operation,
+                text: text.slice(sliceCursor - segStart)
+            })
         }
 
         text2Pos = segEnd

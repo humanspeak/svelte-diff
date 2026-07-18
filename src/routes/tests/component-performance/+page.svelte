@@ -1,5 +1,6 @@
 <script lang="ts">
     import SvelteDiff, { type SvelteDiffProps } from '$lib/index.js'
+    import { tagExpectedRegions } from '$lib/expectedPatterns.js'
     import { onMount, tick } from 'svelte'
 
     type DiagnosticStatus = 'running' | 'pass' | 'fail'
@@ -36,9 +37,17 @@
         failureReasons: string[]
     }
 
+    interface TaggingSampleResult extends ChangeResult {
+        outputCount: number
+    }
+
     const LINE_COUNT = 750
     const SAMPLE_COUNT = 5
     const CEILING_MS = 250
+    const TAG_SEGMENT_COUNT = 10000
+    const TAG_RANGE_COUNT = 5000
+    const TAG_SAMPLE_COUNT = 3
+    const TAG_CEILING_MS = 100
     const RUNNING_STATE_HOLD_MS = 250
     const originalText = Array.from(
         { length: LINE_COUNT },
@@ -50,6 +59,17 @@
             { length: LINE_COUNT },
             (_, line) => `Line ${line}: ${change * 1000 + line}`
         ).join('\n')
+
+    const taggingDiffs: [number, string][] = Array.from({ length: TAG_SEGMENT_COUNT }, () => [
+        0,
+        'x'
+    ])
+    const taggingRanges = Array.from({ length: TAG_RANGE_COUNT }, (_, index) => ({
+        name: `range_${index}`,
+        start: index * 2,
+        end: index * 2 + 1
+    }))
+    const taggingInput = 'x'.repeat(TAG_SEGMENT_COUNT)
 
     let modifiedText = $state(createModifiedText(0))
     let diagnosticOutput: HTMLDivElement
@@ -63,6 +83,13 @@
         maximum: 0,
         failureReasons: []
     })
+    let diagnostic002 = $state<DiagnosticResult & { outputCount: number }>({
+        status: 'running',
+        samples: [],
+        maximum: 0,
+        failureReasons: [],
+        outputCount: 0
+    })
     let currentRun = $state<CurrentRunDetails>({
         context: 'Waiting for the automatic run',
         change: 'Not started',
@@ -70,13 +97,23 @@
         boundaryRendered: 'Not measured'
     })
 
-    const diagnosticText = $derived(
+    const diagnostic001Text = $derived(
         [
             `Workload: ${LINE_COUNT} template lines, one named group per line`,
             `Samples: ${diagnostic001.samples.map((sample) => `${sample.elapsed.toFixed(2)} ms`).join(', ') || 'Not measured'}`,
             `Ceiling: ${CEILING_MS.toFixed(2)} ms per change`,
             `Observed maximum: ${diagnostic001.maximum.toFixed(2)} ms`,
             `Failure reasons: ${diagnostic001.failureReasons.join('; ') || 'None'}`
+        ].join('\n')
+    )
+    const diagnostic002Text = $derived(
+        [
+            `Workload: ${TAG_SEGMENT_COUNT} one-character equal segments / ${TAG_RANGE_COUNT} sorted one-character ranges`,
+            `Samples: ${diagnostic002.samples.map((sample) => `${sample.elapsed.toFixed(2)} ms`).join(', ') || 'Not measured'}`,
+            `Ceiling: ${TAG_CEILING_MS.toFixed(2)} ms per tagging call`,
+            `Observed maximum: ${diagnostic002.maximum.toFixed(2)} ms`,
+            `Output segments: ${diagnostic002.outputCount}`,
+            `Failure reasons: ${diagnostic002.failureReasons.join('; ') || 'None'}`
         ].join('\n')
     )
 
@@ -231,7 +268,45 @@
     }
 
     /**
-     * Runs the warmup and all measured samples for diagnostic 001.
+     * Measures one expected-region tagging call and validates the complete synthetic output.
+     *
+     * @param sample - Numeric sample identifier used in visible failure diagnostics.
+     * @returns The elapsed time, output count, and any correctness failures.
+     */
+    const runTaggingSample = (sample: number): TaggingSampleResult => {
+        const start = performance.now()
+        const output = tagExpectedRegions(taggingDiffs, taggingRanges)
+        const elapsed = performance.now() - start
+        const failureReasons: string[] = []
+
+        if (output.map(({ text }) => text).join('') !== taggingInput) {
+            failureReasons.push(`Sample ${sample}: output did not reconstruct the input text`)
+        }
+        if (output.length !== TAG_SEGMENT_COUNT) {
+            failureReasons.push(
+                `Sample ${sample}: expected ${TAG_SEGMENT_COUNT} output segments, received ${output.length}`
+            )
+        } else {
+            for (let index = 0; index < output.length; index++) {
+                const expected = index % 2 === 0 ? `range_${index / 2}` : undefined
+                if (
+                    output[index].operation !== 0 ||
+                    output[index].text !== 'x' ||
+                    output[index].expected !== expected
+                ) {
+                    failureReasons.push(
+                        `Sample ${sample}: output ${index} did not represent its expected range correctly`
+                    )
+                    break
+                }
+            }
+        }
+
+        return { elapsed, failureReasons, outputCount: output.length }
+    }
+
+    /**
+     * Runs the warmups and all measured samples for diagnostics 001 and 002.
      *
      * Expected failures are rendered in the diagnostic card; unexpected errors are caught and
      * converted to a visible failure instead of escaping the event handler.
@@ -247,6 +322,13 @@
             samples: [],
             maximum: 0,
             failureReasons: []
+        }
+        diagnostic002 = {
+            status: 'running',
+            samples: [],
+            maximum: 0,
+            failureReasons: [],
+            outputCount: 0
         }
         currentRun = {
             context: 'Painting the RUNNING state before measurements',
@@ -282,13 +364,50 @@
                 )
             }
 
-            const status = failureReasons.length === 0 ? 'pass' : 'fail'
-            diagnostic001 = { status, samples, maximum, failureReasons }
-            overallStatus = status
+            const status001 = failureReasons.length === 0 ? 'pass' : 'fail'
+            diagnostic001 = { status: status001, samples, maximum, failureReasons }
+
+            const taggingWarmup = runTaggingSample(0)
+            const taggingFailureReasons = taggingWarmup.failureReasons.map(
+                (reason) => `Warmup: ${reason}`
+            )
+            const taggingSamples: TimingSample[] = []
+            let outputCount = taggingWarmup.outputCount
+
+            for (let sample = 1; sample <= TAG_SAMPLE_COUNT; sample++) {
+                const result = runTaggingSample(sample)
+                taggingSamples.push({ change: sample, elapsed: result.elapsed })
+                taggingFailureReasons.push(...result.failureReasons)
+                outputCount = result.outputCount
+            }
+
+            const taggingMaximum = Math.max(...taggingSamples.map(({ elapsed }) => elapsed))
+            for (const sample of taggingSamples) {
+                if (sample.elapsed > TAG_CEILING_MS) {
+                    taggingFailureReasons.push(
+                        `Sample ${sample.change}: ${sample.elapsed.toFixed(2)} ms exceeded the ${TAG_CEILING_MS.toFixed(2)} ms ceiling`
+                    )
+                }
+            }
+
+            const status002 = taggingFailureReasons.length === 0 ? 'pass' : 'fail'
+            diagnostic002 = {
+                status: status002,
+                samples: taggingSamples,
+                maximum: taggingMaximum,
+                failureReasons: taggingFailureReasons,
+                outputCount
+            }
+            overallStatus = status001 === 'pass' && status002 === 'pass' ? 'pass' : 'fail'
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error)
             diagnostic001 = {
                 ...diagnostic001,
+                status: 'fail',
+                failureReasons: [`Unexpected diagnostic error: ${message}`]
+            }
+            diagnostic002 = {
+                ...diagnostic002,
                 status: 'fail',
                 failureReasons: [`Unexpected diagnostic error: ${message}`]
             }
@@ -374,7 +493,65 @@
             </div>
         </dl>
 
-        <pre>{diagnosticText}</pre>
+        <pre>{diagnostic001Text}</pre>
+    </section>
+
+    <section
+        class="diagnostic-card"
+        data-testid="diagnostic-002"
+        data-status={diagnostic002.status}
+        data-ceiling-ms={TAG_CEILING_MS}
+        data-elapsed-ms={diagnostic002.maximum}
+        data-samples-ms={diagnostic002.samples.map(({ elapsed }) => elapsed).join(',')}
+        data-segment-count={TAG_SEGMENT_COUNT}
+        data-range-count={TAG_RANGE_COUNT}
+        data-output-count={diagnostic002.outputCount}
+        data-failure-reasons={diagnostic002.failureReasons.join('; ')}
+    >
+        <header>
+            <div>
+                <p class="diagnostic-number">002</p>
+                <h2>Tag expected regions in one forward sweep</h2>
+            </div>
+            <strong class="status">{diagnostic002.status.toUpperCase()}</strong>
+        </header>
+
+        <dl>
+            <div>
+                <dt>Workload</dt>
+                <dd>{TAG_SEGMENT_COUNT} equal segments / {TAG_RANGE_COUNT} sorted ranges</dd>
+            </div>
+            <div>
+                <dt>Sample values</dt>
+                <dd>
+                    <ol data-testid="diagnostic-002-samples">
+                        {#each diagnostic002.samples as sample (sample.change)}
+                            <li>Sample {sample.change}: {sample.elapsed.toFixed(2)} ms</li>
+                        {:else}
+                            <li>Measurements are running…</li>
+                        {/each}
+                    </ol>
+                </dd>
+            </div>
+            <div>
+                <dt>Ceiling</dt>
+                <dd>{TAG_CEILING_MS.toFixed(2)} ms per tagging call</dd>
+            </div>
+            <div>
+                <dt>Observed maximum</dt>
+                <dd>{diagnostic002.maximum.toFixed(2)} ms</dd>
+            </div>
+            <div>
+                <dt>Output segments</dt>
+                <dd>{diagnostic002.outputCount}</dd>
+            </div>
+            <div>
+                <dt>Failure reasons</dt>
+                <dd>{diagnostic002.failureReasons.join('; ') || 'None'}</dd>
+            </div>
+        </dl>
+
+        <pre>{diagnostic002Text}</pre>
     </section>
 
     <section class="capability-preview" data-testid="live-capability-preview">
@@ -419,7 +596,7 @@
         </div>
     </section>
 
-    {#each ['002', '003', '004', '005'] as number (number)}
+    {#each ['003', '004', '005'] as number (number)}
         <section class="diagnostic-card" data-testid={`diagnostic-${number}`} data-status="pending">
             <header>
                 <div>

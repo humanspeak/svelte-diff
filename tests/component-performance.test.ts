@@ -196,7 +196,28 @@ test('001 compiles expected-pattern metadata within the change ceiling', async (
         'rgba(0, 0, 0, 0)'
     )
 
-    for (const number of ['002', '003', '004', '005']) {
+    for (const number of ['003', '004', '005']) {
+        await expectPending(page.getByTestId(`diagnostic-${number}`))
+    }
+})
+
+test('002 tags expected regions within the forward-sweep ceiling', async ({ page }) => {
+    await page.goto('/tests/component-performance')
+
+    const card = await assertDiagnosticPass(page, '002')
+    await expect(card).toContainText('10000 equal segments / 5000 sorted ranges')
+    await expect(card.getByTestId('diagnostic-002-samples').getByRole('listitem')).toHaveCount(3)
+    await expect(card).toHaveAttribute(
+        'data-samples-ms',
+        /^\d+(?:\.\d+)?,\d+(?:\.\d+)?,\d+(?:\.\d+)?$/
+    )
+    await expect(card).toHaveAttribute('data-segment-count', '10000')
+    await expect(card).toHaveAttribute('data-range-count', '5000')
+    await expect(card).toHaveAttribute('data-output-count', '10000')
+    await expect(card).toHaveAttribute('data-failure-reasons', '')
+    await expect(page.getByTestId('diagnostic-overall')).toHaveAttribute('data-status', 'pass')
+
+    for (const number of ['003', '004', '005']) {
         await expectPending(page.getByTestId(`diagnostic-${number}`))
     }
 })
