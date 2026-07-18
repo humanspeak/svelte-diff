@@ -62,7 +62,7 @@ certain dynamic regions (dates, names, versions) are expected to differ.
 
 <script lang="ts">
     import { DiffMatchPatch } from 'diff-match-patch-ts'
-    import type { SvelteDiffProps } from './index.js'
+    import type { SvelteDiffProps, SvelteDiffTiming, SvelteDiffTuple } from './index.js'
     import {
         type DisplayDiff,
         parseExpectedPatterns,
@@ -86,29 +86,53 @@ certain dynamic regions (dates, names, versions) are expected to differ.
         rendererClasses = {}
     }: SvelteDiffProps = $props()
 
-    let displayDiffs = $state<DisplayDiff[]>([])
+    interface DiffResult {
+        timing: SvelteDiffTiming
+        diffs: SvelteDiffTuple[]
+        captures?: Record<string, string>
+        displayDiffs: DisplayDiff[]
+    }
+
+    interface ComputationInput {
+        originalText: string
+        modifiedText: string
+        timeout: number
+        cleanupSemantic: boolean
+        cleanupEfficiency: number
+        compiledPattern: ReturnType<typeof parseExpectedPatterns>
+    }
+
+    let latestResult = $state.raw<DiffResult | null>(null)
+    let previousInput: ComputationInput | null = null
     const dmp = $state<DiffMatchPatch>(new DiffMatchPatch())
     const parseResult = $derived(parseExpectedPatterns(originalText))
 
-    const computeDiff = (text1: string, text2: string) => {
+    const computeDiff = (
+        text1: string,
+        text2: string,
+        diffTimeout: number,
+        semanticCleanup: boolean,
+        efficiencyCleanup: number,
+        compiledPattern: ReturnType<typeof parseExpectedPatterns>
+    ): DiffResult => {
         // trunk-ignore(eslint/camelcase)
-        dmp.Diff_Timeout = timeout
+        dmp.Diff_Timeout = diffTimeout
         // trunk-ignore(eslint/camelcase)
-        dmp.Diff_EditCost = cleanupEfficiency
+        dmp.Diff_EditCost = efficiencyCleanup
 
         let diffText1 = text1
         let captures: Record<string, string> | undefined
         let captureRanges: import('./expectedPatterns.js').CaptureRange[] = []
 
-        if (parseResult) {
-            const extractResult = extractCaptures(text1, text2, parseResult)
+        if (compiledPattern) {
+            const extractResult = extractCaptures(text1, text2, compiledPattern)
             if (extractResult) {
                 diffText1 = extractResult.resolvedText
                 captures = extractResult.captures
                 captureRanges = extractResult.captureRangesInText2
             } else {
                 // Regex didn't match — clean template so users see <name> not (?<name>...)
-                diffText1 = parseResult.cleanedText
+                diffText1 = compiledPattern.cleanedText
             }
         }
 
@@ -117,9 +141,9 @@ certain dynamic regions (dates, names, versions) are expected to differ.
         const endMain = performance.now()
 
         const startCleanup = performance.now()
-        if (cleanupSemantic) {
+        if (semanticCleanup) {
             dmp.diff_cleanupSemantic(diffs)
-        } else if (cleanupEfficiency > 0) {
+        } else if (efficiencyCleanup > 0) {
             dmp.diff_cleanupEfficiency(diffs)
         }
         const endTotal = performance.now()
@@ -129,17 +153,53 @@ certain dynamic regions (dates, names, versions) are expected to differ.
             cleanup: endTotal - startCleanup,
             total: endTotal - startTotal
         }
-        onProcessing?.(timing, diffs, captures)
+        const displayDiffs =
+            captureRanges.length > 0
+                ? tagExpectedRegions(diffs as [number, string][], captureRanges)
+                : diffs.map(([operation, text]) => ({ operation, text }))
 
-        if (captureRanges.length > 0) {
-            displayDiffs = tagExpectedRegions(diffs as [number, string][], captureRanges)
-        } else {
-            displayDiffs = diffs.map(([operation, text]) => ({ operation, text }))
+        return {
+            timing,
+            diffs,
+            captures,
+            displayDiffs
         }
     }
 
     $effect(() => {
-        computeDiff(originalText, modifiedText)
+        const input: ComputationInput = {
+            originalText,
+            modifiedText,
+            timeout,
+            cleanupSemantic,
+            cleanupEfficiency,
+            compiledPattern: parseResult
+        }
+        if (
+            previousInput?.originalText === input.originalText &&
+            previousInput.modifiedText === input.modifiedText &&
+            previousInput.timeout === input.timeout &&
+            previousInput.cleanupSemantic === input.cleanupSemantic &&
+            previousInput.cleanupEfficiency === input.cleanupEfficiency &&
+            previousInput.compiledPattern === input.compiledPattern
+        )
+            return
+
+        previousInput = input
+        latestResult = computeDiff(
+            input.originalText,
+            input.modifiedText,
+            input.timeout,
+            input.cleanupSemantic,
+            input.cleanupEfficiency,
+            input.compiledPattern
+        )
+    })
+
+    $effect(() => {
+        const result = latestResult
+        if (!result) return
+        onProcessing?.(result.timing, result.diffs, result.captures)
     })
 
     // Per segment type: child snippet > renderers entry > built-in fallback
@@ -152,7 +212,7 @@ certain dynamic regions (dates, names, versions) are expected to differ.
     })
 </script>
 
-{#each displayDiffs as diff, index (index)}
+{#each latestResult?.displayDiffs ?? [] as diff, index (index)}
     {@const { operation, text, expected } = diff}
     {#if expected}
         {#if text.includes('\n')}

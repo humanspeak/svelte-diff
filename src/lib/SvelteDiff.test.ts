@@ -52,6 +52,88 @@ describe('SvelteDiff component', () => {
         expect(typeof timing.total).toBe('number')
     })
 
+    it('reuses the computed diff when only onProcessing changes', async () => {
+        const firstCallback = vi.fn()
+        const secondCallback = vi.fn()
+        const props = {
+            originalText: 'The quick brown fox jumps over the lazy dog.',
+            modifiedText: 'The quick red fox leaped over the very lazy dog.',
+            timeout: 1,
+            cleanupSemantic: true,
+            cleanupEfficiency: 4
+        }
+        const { rerender } = render(SvelteDiff, {
+            ...props,
+            onProcessing: firstCallback
+        })
+
+        await waitFor(() => {
+            expect(firstCallback).toHaveBeenCalled()
+        })
+        const firstDiffs = firstCallback.mock.calls[0][1]
+
+        await rerender({
+            ...props,
+            onProcessing: secondCallback
+        })
+
+        await waitFor(() => {
+            expect(secondCallback).toHaveBeenCalled()
+        })
+        expect(secondCallback.mock.calls[0][1]).toBe(firstDiffs)
+    })
+
+    it.each([
+        {
+            dependency: 'originalText',
+            value: 'alpha source charlie delta',
+            expectedText: 'source'
+        },
+        {
+            dependency: 'modifiedText',
+            value: 'alpha beta charlie target',
+            expectedText: 'target'
+        },
+        { dependency: 'cleanupSemantic', value: true },
+        { dependency: 'cleanupEfficiency', value: 8 }
+    ] as const)(
+        'recomputes when $dependency changes',
+        async ({ dependency, value, ...testCase }) => {
+            const firstCallback = vi.fn()
+            const secondCallback = vi.fn()
+            const props = {
+                originalText: 'alpha bravo charlie delta',
+                modifiedText: 'alpha beta charlie echo',
+                timeout: 1,
+                cleanupSemantic: false,
+                cleanupEfficiency: 4
+            }
+            const { container, rerender } = render(SvelteDiff, {
+                ...props,
+                onProcessing: firstCallback
+            })
+
+            await waitFor(() => {
+                expect(firstCallback).toHaveBeenCalled()
+            })
+            const firstDiffs = firstCallback.mock.calls[0][1]
+            Object.assign(props, { [dependency]: value })
+
+            await rerender({
+                ...props,
+                onProcessing: secondCallback
+            })
+
+            await waitFor(() => {
+                expect(secondCallback).toHaveBeenCalled()
+            })
+            expect(secondCallback.mock.calls[0][1]).not.toBe(firstDiffs)
+            if ('expectedText' in testCase) {
+                expect(container.textContent).toContain(testCase.expectedText)
+            }
+        }
+    )
+
     it('uses default values for optional props', () => {
         const { component } = render(SvelteDiff, {
             originalText: 'foo',
