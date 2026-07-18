@@ -7,10 +7,14 @@
 > reviewer told you they maintain the index.
 >
 > **Drift check (run first)**:
-> `git diff --stat 8e3082c..HEAD -- src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/lib/index.ts src/lib/index.test.ts README.md src/routes/tests/component-performance/+page.svelte tests/component-performance.test.ts`
+> `git diff --stat 8e3082c..HEAD -- src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/lib/index.ts src/lib/index.test.ts README.md src/routes/tests/component-performance/004/+page.svelte tests/component-performance.test.ts`
 > Plans 001–003 intentionally change the component, tests, and diagnostics. Confirm
 > their README rows are DONE and their postconditions remain. STOP on any other
 > mismatch with the rendering excerpts below.
+>
+> **Diagnostic route convention (2026-07-18)**: 004 owns
+> `/tests/component-performance/004`. The unnumbered route is a navigation-only
+> index. Do not run 004 on the index or mount another plan's workload here.
 
 ## Status
 
@@ -79,15 +83,15 @@ Constraints:
 
 ## Commands you will need
 
-| Purpose              | Command                                                                                                                                                                                                     | Expected on success               |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
-| Targeted tests       | `pnpm vitest run src/lib/SvelteDiff.test.ts src/lib/index.test.ts --coverage.enabled=false --reporter=default`                                                                                              | all component/type tests pass     |
-| Diagnostic E2E       | `pnpm playwright test tests/component-performance.test.ts --project=chromium -g "004"`                                                                                                                      | compact card passes within 300 ms |
-| Unit suite           | `pnpm vitest run src/lib --coverage.enabled=false --reporter=default`                                                                                                                                       | all library tests pass            |
-| Type/Svelte check    | `pnpm check`                                                                                                                                                                                                | exit 0                            |
-| Package verification | `pnpm build`                                                                                                                                                                                                | exit 0, including publint         |
-| Format               | `trunk fmt src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/lib/index.ts src/lib/index.test.ts README.md src/routes/tests/component-performance/+page.svelte tests/component-performance.test.ts`   | exit 0                            |
-| Lint                 | `trunk check src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/lib/index.ts src/lib/index.test.ts README.md src/routes/tests/component-performance/+page.svelte tests/component-performance.test.ts` | exit 0                            |
+| Purpose              | Command                                                                                                                                                                                                         | Expected on success               |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| Targeted tests       | `pnpm vitest run src/lib/SvelteDiff.test.ts src/lib/index.test.ts --coverage.enabled=false --reporter=default`                                                                                                  | all component/type tests pass     |
+| Diagnostic E2E       | `pnpm playwright test tests/component-performance.test.ts --project=chromium -g "004"`                                                                                                                          | compact card passes within 300 ms |
+| Unit suite           | `pnpm vitest run src/lib --coverage.enabled=false --reporter=default`                                                                                                                                           | all library tests pass            |
+| Type/Svelte check    | `pnpm check`                                                                                                                                                                                                    | exit 0                            |
+| Package verification | `pnpm build`                                                                                                                                                                                                    | exit 0, including publint         |
+| Format               | `trunk fmt src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/lib/index.ts src/lib/index.test.ts README.md src/routes/tests/component-performance/004/+page.svelte tests/component-performance.test.ts`   | exit 0                            |
+| Lint                 | `trunk check src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/lib/index.ts src/lib/index.test.ts README.md src/routes/tests/component-performance/004/+page.svelte tests/component-performance.test.ts` | exit 0                            |
 
 ## Scope
 
@@ -98,7 +102,7 @@ Constraints:
 - `src/lib/index.ts`
 - `src/lib/index.test.ts` only if a compile-time prop assertion is needed
 - `README.md`
-- `src/routes/tests/component-performance/+page.svelte`
+- `src/routes/tests/component-performance/004/+page.svelte`
 - `tests/component-performance.test.ts`
 - `.agents/.plans/component-performance/README.md` (status only)
 
@@ -107,7 +111,7 @@ Constraints:
 - Making compact rendering the default.
 - Changing insert/remove/expected elements or inline styles.
 - Changing snippet signatures, precedence, or `lineBreak` semantics.
-- `docs/**`, routes/E2E outside the shared performance diagnostics, or
+- `docs/**`, routes outside the dedicated 004 performance diagnostic, or
   generated package output.
 - Coalescing diff segments or changing `diff-match-patch-ts` output.
 
@@ -206,8 +210,8 @@ element counts, classes, and `textContent` directly.
 
 ### Step 5: Activate the 004 DOM-weight diagnostic and 300 ms ceiling
 
-Replace the 004 PENDING card in the shared component-performance page with a
-dedicated compact-mode probe. Render 2,000 identical newline-separated lines
+Create `src/routes/tests/component-performance/004/+page.svelte` as a dedicated
+compact-mode probe. Render 2,000 identical newline-separated lines
 with `compact={true}`, no equal snippet/renderer, and no equal class. Place the
 probe in a collapsed `<details>` element, not `display:none`, and retain a
 `bind:this` wrapper so the diagnostic can count DOM elements.
@@ -215,7 +219,7 @@ probe in a collapsed `<details>` element, not `display:none`, and retain a
 After one warmup, perform five sequential updates where both original and
 modified text change to a new but still-identical 2,000-line value. Measure from
 the state change through the matching processing result and following `tick()`.
-Set the committed ceiling to **300 ms per settled render**. The card passes only
+Set the committed ceiling to **300 ms per settled render**. The diagnostic passes only
 when every sample is `<= 300 ms` and every settled probe has:
 
 - zero `<span>` elements for equal text;
@@ -225,15 +229,19 @@ when every sample is `<= 300 ms` and every settled probe has:
 
 Display sample values, ceiling, maximum, line count, current span/break counts,
 text length, and all failure reasons. Populate the standard `data-status`,
-`data-ceiling-ms`, and `data-elapsed-ms` attributes. Update the overall banner
-without disturbing 001–003.
+`data-ceiling-ms`, and `data-elapsed-ms` attributes. Add a visible side-by-side
+or otherwise obvious DOM capability preview that shows compact output and makes
+the missing equal-text spans observable. Do not mount diagnostics 001–003.
 
-Add a `004` Playwright test using the shared helper, then explicitly assert the
-visible metrics say `spans: 0` and `breaks: 1999`. Include card text in failures.
+Add a `004` Playwright test that navigates directly to
+`/tests/component-performance/004` and uses the shared helper, then explicitly
+assert the visible metrics say `spans: 0` and `breaks: 1999` and the capability
+preview is visible. Include diagnostic text in failures.
 
 **Verify**:
 `pnpm playwright test tests/component-performance.test.ts --project=chromium -g "004"`
-→ green 004 card, five samples all `<= 300 ms`, zero spans, and 1,999 breaks.
+→ green 004 page, five samples all `<= 300 ms`, zero spans, 1,999 breaks, and a
+visible compact-output preview.
 Run three times; STOP and report samples if the fixed workload misses the
 ceiling rather than weakening the threshold.
 
@@ -245,8 +253,8 @@ and packaging.
 **Verify**:
 
 ```bash
-trunk fmt src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/lib/index.ts src/lib/index.test.ts README.md src/routes/tests/component-performance/+page.svelte tests/component-performance.test.ts
-trunk check src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/lib/index.ts src/lib/index.test.ts README.md src/routes/tests/component-performance/+page.svelte tests/component-performance.test.ts
+trunk fmt src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/lib/index.ts src/lib/index.test.ts README.md src/routes/tests/component-performance/004/+page.svelte tests/component-performance.test.ts
+trunk check src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/lib/index.ts src/lib/index.test.ts README.md src/routes/tests/component-performance/004/+page.svelte tests/component-performance.test.ts
 pnpm vitest run src/lib --coverage.enabled=false --reporter=default
 pnpm check
 pnpm build
@@ -264,7 +272,7 @@ actually needed plus the batch README status update.
 - Cover newline edge cases and unchanged insert/remove/expected markup.
 - Prefer exact DOM counts over snapshots; retain the separate 300 ms browser
   ceiling as a user-perceived regression guard.
-- Show PASS/FAIL and complete workload/timing/DOM diagnostics on the shared page.
+- Show PASS/FAIL and complete workload/timing/DOM diagnostics on the dedicated 004 page.
 
 ## Done criteria
 

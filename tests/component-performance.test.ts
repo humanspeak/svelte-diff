@@ -122,10 +122,10 @@ const observeRunningState = async (button: Locator, number: string): Promise<voi
 }
 
 test('001 compiles expected-pattern metadata within the change ceiling', async ({ page }) => {
-    await page.goto('/tests/component-performance')
+    await page.goto('/tests/component-performance/001')
 
     await expect(
-        page.getByRole('heading', { name: 'Component performance diagnostics' })
+        page.getByRole('heading', { name: 'Compile expected-pattern metadata once' })
     ).toBeVisible()
     let card = await assertDiagnosticPass(page, '001')
     await expect(card.getByTestId('diagnostic-001-samples').getByRole('listitem')).toHaveCount(5)
@@ -136,7 +136,7 @@ test('001 compiles expected-pattern metadata within the change ceiling', async (
     const previewScroll = page.getByTestId('live-preview-scroll')
     const componentOutput = page.getByTestId('live-component-output')
     await expect(preview).toBeVisible()
-    await expect(preview).toContainText('fixed at 750 named groups')
+    await expect(preview).toContainText('750 GROUPS')
     await expect(preview).toContainText('Blue highlights')
     await expect(componentOutput).toBeVisible()
 
@@ -166,7 +166,7 @@ test('001 compiles expected-pattern metadata within the change ceiling', async (
         'The actual SvelteDiff output must not be clipped'
     ).toBeGreaterThan(200)
 
-    const runButton = page.getByRole('button', { name: 'Run all diagnostics' })
+    const runButton = page.getByRole('button', { name: 'Run diagnostic 001' })
     await observeRunningState(runButton, '001')
     await runButton.click()
     const documentElement = page.locator('html')
@@ -195,14 +195,10 @@ test('001 compiles expected-pattern metadata within the change ceiling', async (
     expect(firstCaptureBackground, 'Expected captures must remain visibly highlighted').not.toBe(
         'rgba(0, 0, 0, 0)'
     )
-
-    for (const number of ['003', '004', '005']) {
-        await expectPending(page.getByTestId(`diagnostic-${number}`))
-    }
 })
 
 test('002 tags expected regions within the forward-sweep ceiling', async ({ page }) => {
-    await page.goto('/tests/component-performance')
+    await page.goto('/tests/component-performance/002')
 
     const card = await assertDiagnosticPass(page, '002')
     await expect(card).toContainText('10000 equal segments / 5000 sorted ranges')
@@ -217,6 +213,34 @@ test('002 tags expected regions within the forward-sweep ceiling', async ({ page
     await expect(card).toHaveAttribute('data-failure-reasons', '')
     await expect(page.getByTestId('diagnostic-overall')).toHaveAttribute('data-status', 'pass')
 
+    const preview = page.getByTestId('tagging-capability-preview')
+    const previewSegments = page.getByTestId('tagging-preview-segments')
+    await expect(preview).toBeVisible()
+    await expect(preview).toContainText('Blue tiles are named expected captures')
+    await expect(preview).toContainText('Showing the first 120 of 10000')
+    await expect(previewSegments.locator(':scope > span')).toHaveCount(120)
+    await expect(previewSegments.locator('[data-expected^="range_"]')).toHaveCount(60)
+    await expect(previewSegments.locator('[data-expected=""]')).toHaveCount(60)
+    await expect(previewSegments.locator(':scope > span').first()).toHaveAttribute(
+        'data-expected',
+        'range_0'
+    )
+})
+
+test('component performance diagnostics are split into focused pages', async ({ page }) => {
+    await page.goto('/tests/component-performance')
+
+    await expect(
+        page.getByRole('heading', { name: 'Component performance diagnostics' })
+    ).toBeVisible()
+    await expect(page.getByTestId('diagnostic-link-001')).toHaveAttribute(
+        'href',
+        '/tests/component-performance/001'
+    )
+    await expect(page.getByTestId('diagnostic-link-002')).toHaveAttribute(
+        'href',
+        '/tests/component-performance/002'
+    )
     for (const number of ['003', '004', '005']) {
         await expectPending(page.getByTestId(`diagnostic-${number}`))
     }

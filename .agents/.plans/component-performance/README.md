@@ -24,8 +24,9 @@ REJECTED (with one-line rationale)
 - 001 establishes an immutable compiled expected-pattern representation. 002
   must preserve its sorted capture ranges, and 003 must reuse its component
   derived cache.
-- 003 depends on 002 operationally because all plans extend one shared visible
-  diagnostic route and Playwright suite in execution order.
+- 003 depends on 002 operationally because its implementation assumes the
+  forward-sweep tagging work is already complete. Diagnostic pages are isolated
+  and must never depend on mounting an earlier plan's workload.
 - 004 depends on 003's separated processing-result state so its DOM changes do
   not accidentally re-entangle rendering, computation, and callbacks.
 - 005 is deliberately last. SSR makes calculation run in server and client
@@ -37,21 +38,25 @@ REJECTED (with one-line rationale)
   owns an explicit browser ceiling and loud PASS/FAIL diagnostics; both layers
   are required.
 
-## Shared visible diagnostics
+## Isolated visible diagnostics
 
-Plan 001 creates `/tests/component-performance` and
-`tests/component-performance.test.ts`. The page is a first-class human
-diagnostic surface for this batch:
+`/tests/component-performance` is a navigation/status index only. It must not
+mount components, run benchmark workloads, aggregate statuses, or own a rerun
+button. Every plan owns exactly one first-class human diagnostic page at
+`/tests/component-performance/NNN`:
 
-- a prominent overall RUNNING/PASS/FAIL banner and manual rerun button;
-- five numbered cards with strong visible status colors;
+- its own prominent RUNNING/PASS/FAIL banner and manual rerun button;
+- only that plan's workload—never an earlier or later diagnostic workload;
+- an obvious visible capability preview that lets a person understand what the
+  feature does, not only timing text or console output;
 - workload, samples, ceiling, maximum, counts/identity, and failure reasons in
   visible `<dl>`/`<pre>` output;
 - machine-readable `data-status`, `data-ceiling-ms`, and `data-elapsed-ms`;
-- failures remain painted instead of disappearing into console output.
+- failures that remain painted and include actionable diagnostics.
 
-Each later plan activates its existing numbered card and extends the same E2E
-file. Committed ceilings are:
+The Playwright coverage may remain in `tests/component-performance.test.ts`, but
+each numbered test must navigate directly to its matching numbered route. Never
+add diagnostic cards or workloads back to the index page. Committed ceilings are:
 
 | Plan | Workload                                                    | Ceiling           |
 | ---- | ----------------------------------------------------------- | ----------------- |
@@ -106,6 +111,7 @@ regression proof.
 Not audited in this batch: the docs application, route-level performance,
 general correctness/security, dependency replacement, bundle-size alternatives,
 CI speed, or unrelated repository architecture. Root routes are used only as
-black-box test fixtures and must not be modified by these plans; the dedicated
-`src/routes/tests/component-performance/+page.svelte` route is the explicit
-diagnostic-only exception.
+black-box test fixtures and must not be modified by these plans. The performance
+root is an index, and the numbered
+`src/routes/tests/component-performance/NNN/+page.svelte` routes are the actual
+diagnostic surfaces.

@@ -8,9 +8,14 @@
 > they maintain the index.
 >
 > **Drift check (run first)**:
-> `git diff --stat 8e3082c..HEAD -- src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/lib/expectedPatterns.ts src/lib/expectedPatterns.test.ts src/routes/tests/component-performance/+page.svelte tests/component-performance.test.ts`
+> `git diff --stat 8e3082c..HEAD -- src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/lib/expectedPatterns.ts src/lib/expectedPatterns.test.ts src/routes/tests/component-performance/001/+page.svelte tests/component-performance.test.ts`
 > If an in-scope file changed, compare the excerpts below with the live code.
 > STOP if the parsing and extraction flow no longer matches this plan.
+>
+> **Diagnostic route revision (2026-07-18)**: 001 owns
+> `/tests/component-performance/001`. The unnumbered route is a navigation-only
+> index. Do not run 001 on the index or add cards/workloads for other plans to
+> the 001 page.
 
 ## Status
 
@@ -42,9 +47,9 @@ but it exposes the avoidable scaling and repeated setup work this plan removes.
 - `src/lib/expectedPatterns.test.ts` is the unit-test exemplar for all expected
   pattern helpers.
 - `src/lib/SvelteDiff.test.ts` is the component rerender/DOM test location.
-- `src/routes/tests/component-performance/+page.svelte` does not exist yet.
-  This plan creates it as a browser-visible diagnostic surface for the whole
-  batch; Plans 002–005 add their own numbered cards.
+- `src/routes/tests/component-performance/001/+page.svelte` is the dedicated
+  browser-visible diagnostic surface for this plan. The unnumbered route is an
+  index only; Plans 002–005 each own a separate numbered route.
 - `tests/component-performance.test.ts` does not exist yet. This plan creates
   the Playwright suite and a reusable assertion helper for diagnostic cards.
 
@@ -97,15 +102,15 @@ Repository conventions:
 
 ## Commands you will need
 
-| Purpose              | Command                                                                                                                                                                                                                 | Expected on success                                |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
-| Targeted tests       | `pnpm vitest run src/lib/expectedPatterns.test.ts src/lib/SvelteDiff.test.ts --coverage.enabled=false --reporter=default`                                                                                               | all targeted tests pass                            |
-| Diagnostic E2E       | `pnpm playwright test tests/component-performance.test.ts --project=chromium -g "001"`                                                                                                                                  | 001 card visibly passes within its ceiling         |
-| Unit suite           | `pnpm vitest run src/lib --coverage.enabled=false --reporter=default`                                                                                                                                                   | all library tests pass                             |
-| Type/Svelte check    | `pnpm check`                                                                                                                                                                                                            | exit 0, no errors                                  |
-| Package verification | `pnpm build`                                                                                                                                                                                                            | Vite build, `svelte-package`, and `publint` exit 0 |
-| Format               | `trunk fmt src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/lib/expectedPatterns.ts src/lib/expectedPatterns.test.ts src/routes/tests/component-performance/+page.svelte tests/component-performance.test.ts`   | exit 0                                             |
-| Lint                 | `trunk check src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/lib/expectedPatterns.ts src/lib/expectedPatterns.test.ts src/routes/tests/component-performance/+page.svelte tests/component-performance.test.ts` | exit 0                                             |
+| Purpose              | Command                                                                                                                                                                                                                     | Expected on success                                |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| Targeted tests       | `pnpm vitest run src/lib/expectedPatterns.test.ts src/lib/SvelteDiff.test.ts --coverage.enabled=false --reporter=default`                                                                                                   | all targeted tests pass                            |
+| Diagnostic E2E       | `pnpm playwright test tests/component-performance.test.ts --project=chromium -g "001"`                                                                                                                                      | 001 card visibly passes within its ceiling         |
+| Unit suite           | `pnpm vitest run src/lib --coverage.enabled=false --reporter=default`                                                                                                                                                       | all library tests pass                             |
+| Type/Svelte check    | `pnpm check`                                                                                                                                                                                                                | exit 0, no errors                                  |
+| Package verification | `pnpm build`                                                                                                                                                                                                                | Vite build, `svelte-package`, and `publint` exit 0 |
+| Format               | `trunk fmt src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/lib/expectedPatterns.ts src/lib/expectedPatterns.test.ts src/routes/tests/component-performance/001/+page.svelte tests/component-performance.test.ts`   | exit 0                                             |
+| Lint                 | `trunk check src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/lib/expectedPatterns.ts src/lib/expectedPatterns.test.ts src/routes/tests/component-performance/001/+page.svelte tests/component-performance.test.ts` | exit 0                                             |
 
 ## Scope
 
@@ -115,7 +120,7 @@ Repository conventions:
 - `src/lib/SvelteDiff.test.ts`
 - `src/lib/expectedPatterns.ts`
 - `src/lib/expectedPatterns.test.ts`
-- `src/routes/tests/component-performance/+page.svelte` (create)
+- `src/routes/tests/component-performance/001/+page.svelte` (create)
 - `tests/component-performance.test.ts` (create)
 - `.agents/.plans/component-performance/README.md` (status only)
 
@@ -244,16 +249,15 @@ one compilation; do not add production instrumentation solely for the test.
 
 ### Step 5: Create the loud browser diagnostic harness and 001 ceiling
 
-Create `src/routes/tests/component-performance/+page.svelte`. This is a test
+Create `src/routes/tests/component-performance/001/+page.svelte`. This is a test
 and human-diagnostic route, not product documentation. It must be useful when a
 developer opens it manually:
 
-- a large `Component performance diagnostics` heading;
-- an overall banner with highly visible `RUNNING`, `PASS`, or `FAIL` state;
-- a `Run all diagnostics` button and automatic execution after mount;
-- five numbered cards (`data-testid="diagnostic-001"` through
-  `diagnostic-005`); 001 is live in this plan and 002–005 visibly say `PENDING`;
-- strong green/red/amber/blue styling for pass/fail/pending/running—failure
+- a large heading that names the 001 capability;
+- an 001 banner with highly visible `RUNNING`, `PASS`, or `FAIL` state;
+- a `Run diagnostic 001` button and automatic execution after mount;
+- one `data-testid="diagnostic-001"` result surface and no other plan workloads;
+- strong green/red/blue styling for pass/fail/running—failure
   must not be hidden in the console;
 - each live card exposes `data-status`, `data-ceiling-ms`, and
   `data-elapsed-ms`, and displays a `<dl>` plus `<pre>` containing workload,
@@ -266,7 +270,7 @@ Implement diagnostic 001 against a mounted `SvelteDiff` instance. Use a stable
 five changes to only `modifiedText`, and time each change from state assignment
 until the matching `onProcessing` callback and following `tick()` complete.
 Display every sample. Set the committed ceiling to **250 ms per change** and
-mark the card PASS only when all five changes produce correct captures/output
+mark the diagnostic PASS only when all five changes produce correct captures/output
 and the maximum sample is `<= 250`.
 
 The ceiling is intentionally a browser wall-clock guard, while Step 1's object
@@ -275,16 +279,17 @@ the other. Use `performance.now()` and run samples sequentially. Do not average
 away a slow sample.
 
 Create `tests/component-performance.test.ts`. Add a small helper that locates a
-numbered card, waits until it leaves `running`, reads its visible text for the
+numbered diagnostic, waits until it leaves `running`, reads its visible text for the
 assertion message, requires `data-status="pass"`, parses the elapsed/ceiling
 attributes, and asserts elapsed `<=` ceiling. Add the first test with `001` in
-its title. On failure, the assertion message must include the card's displayed
+its title. The test must navigate directly to `/tests/component-performance/001`.
+On failure, the assertion message must include the diagnostic's displayed
 diagnostics so CI output is actionable.
 
 **Verify**:
 `pnpm playwright test tests/component-performance.test.ts --project=chromium -g "001"`
-→ the page shows a green 001 PASS card, five sample values, max `<= 250 ms`,
-and four visible PENDING cards. If the optimized implementation cannot meet the
+→ the page shows a green 001 PASS diagnostic, five sample values, max `<= 250 ms`,
+and a visible mounted-component capability preview. If the optimized implementation cannot meet the
 ceiling in three consecutive local runs, STOP and report the samples rather
 than silently loosening it.
 
@@ -298,8 +303,8 @@ unexpectedly creates them; never discard pre-existing user changes.
 **Verify**:
 
 ```bash
-trunk fmt src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/lib/expectedPatterns.ts src/lib/expectedPatterns.test.ts src/routes/tests/component-performance/+page.svelte tests/component-performance.test.ts
-trunk check src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/lib/expectedPatterns.ts src/lib/expectedPatterns.test.ts src/routes/tests/component-performance/+page.svelte tests/component-performance.test.ts
+trunk fmt src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/lib/expectedPatterns.ts src/lib/expectedPatterns.test.ts src/routes/tests/component-performance/001/+page.svelte tests/component-performance.test.ts
+trunk check src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/lib/expectedPatterns.ts src/lib/expectedPatterns.test.ts src/routes/tests/component-performance/001/+page.svelte tests/component-performance.test.ts
 pnpm vitest run src/lib --coverage.enabled=false --reporter=default
 pnpm check
 pnpm build
@@ -328,7 +333,7 @@ source/test changes and the plan index status update.
 - [ ] One `findNamedGroups` scan creates all immutable metadata used by extraction.
 - [ ] `extractCaptures` does not split/rescan the original template or compile regexes.
 - [ ] Component updates to only `modifiedText` reuse the compiled parse result.
-- [ ] `/tests/component-performance` visibly reports 001 PASS/FAIL, samples,
+- [ ] `/tests/component-performance/001` visibly reports 001 PASS/FAIL, samples,
       workload, ceiling, maximum, and failure reasons.
 - [ ] Diagnostic 001 completes every measured change in `<= 250 ms` and its
       Chromium E2E test passes.
@@ -361,5 +366,5 @@ Stop and report if:
 - Plan 002 assumes capture ranges stay sorted and will optimize range tagging;
   preserve `captureRangesInText2.sort(...)`.
 - Keep the diagnostic page intentionally loud and machine-readable. Later plans
-  must extend its existing cards and E2E helper instead of creating quiet,
-  disconnected benchmark scripts.
+  must create their own numbered pages and may reuse the E2E helper; they must
+  not mount their workloads on 001 or the unnumbered index.

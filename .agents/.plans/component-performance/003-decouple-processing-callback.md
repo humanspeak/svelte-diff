@@ -6,9 +6,13 @@
 > reviewer told you they own the index.
 >
 > **Drift check (run first)**:
-> `git diff --stat 8e3082c..HEAD -- src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/routes/tests/component-performance/+page.svelte tests/component-performance.test.ts`
+> `git diff --stat 8e3082c..HEAD -- src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/routes/tests/component-performance/003/+page.svelte tests/component-performance.test.ts`
 > Plans 001 and 002 intentionally change these files. Confirm their compiled
 > template, linear tagging, and diagnostic-page postconditions remain present.
+>
+> **Diagnostic route convention (2026-07-18)**: 003 owns
+> `/tests/component-performance/003`. The unnumbered route is a navigation-only
+> index. Do not run 003 on the index or mount 001/002 workloads on the 003 page.
 > STOP if the computation/callback flow has
 > otherwise been restructured already.
 
@@ -67,15 +71,15 @@ Trunk formatting, and no public API changes in this plan.
 
 ## Commands you will need
 
-| Purpose              | Command                                                                                                                                                    | Expected on success                           |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
-| Targeted tests       | `pnpm vitest run src/lib/SvelteDiff.test.ts --coverage.enabled=false --reporter=default`                                                                   | all component tests pass                      |
-| Diagnostic E2E       | `pnpm playwright test tests/component-performance.test.ts --project=chromium -g "003"`                                                                     | 003 callback swap visibly passes within 75 ms |
-| Unit suite           | `pnpm vitest run src/lib --coverage.enabled=false --reporter=default`                                                                                      | all library tests pass                        |
-| Type/Svelte check    | `pnpm check`                                                                                                                                               | exit 0                                        |
-| Package verification | `pnpm build`                                                                                                                                               | exit 0                                        |
-| Format               | `trunk fmt src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/routes/tests/component-performance/+page.svelte tests/component-performance.test.ts`   | exit 0                                        |
-| Lint                 | `trunk check src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/routes/tests/component-performance/+page.svelte tests/component-performance.test.ts` | exit 0                                        |
+| Purpose              | Command                                                                                                                                                        | Expected on success                           |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| Targeted tests       | `pnpm vitest run src/lib/SvelteDiff.test.ts --coverage.enabled=false --reporter=default`                                                                       | all component tests pass                      |
+| Diagnostic E2E       | `pnpm playwright test tests/component-performance.test.ts --project=chromium -g "003"`                                                                         | 003 callback swap visibly passes within 75 ms |
+| Unit suite           | `pnpm vitest run src/lib --coverage.enabled=false --reporter=default`                                                                                          | all library tests pass                        |
+| Type/Svelte check    | `pnpm check`                                                                                                                                                   | exit 0                                        |
+| Package verification | `pnpm build`                                                                                                                                                   | exit 0                                        |
+| Format               | `trunk fmt src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/routes/tests/component-performance/003/+page.svelte tests/component-performance.test.ts`   | exit 0                                        |
+| Lint                 | `trunk check src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/routes/tests/component-performance/003/+page.svelte tests/component-performance.test.ts` | exit 0                                        |
 
 ## Scope
 
@@ -83,19 +87,19 @@ Trunk formatting, and no public API changes in this plan.
 
 - `src/lib/SvelteDiff.svelte`
 - `src/lib/SvelteDiff.test.ts`
-- `src/routes/tests/component-performance/+page.svelte`
+- `src/routes/tests/component-performance/003/+page.svelte`
 - `tests/component-performance.test.ts`
 - `.agents/.plans/component-performance/README.md` (status only)
 
 **Out of scope**:
 
 - Public props/types, renderer precedence, published component markup, and
-  compact rendering. The shared diagnostic page is explicitly in scope.
+  compact rendering. Only the dedicated 003 diagnostic page is in scope.
 - Server rendering; keep computation in a client effect until Plan 005.
 - Changing timing field names or what `onProcessing` receives.
 - Debouncing, throttling, asynchronous computation, or Web Workers.
 - Expected-pattern helper internals except consuming Plan 001's compiled result.
-- A second benchmark route or test suite; extend the shared loud diagnostics.
+- Workloads outside the dedicated 003 route or a second E2E file.
 
 ## Git workflow
 
@@ -187,15 +191,14 @@ Preserve the existing callback timing and capture tests.
 
 ### Step 5: Activate the 003 callback diagnostic and 75 ms ceiling
 
-Replace the 003 PENDING card in
-`src/routes/tests/component-performance/+page.svelte` with a live harness around
+Create `src/routes/tests/component-performance/003/+page.svelte` as a live harness around
 a dedicated `SvelteDiff` instance. Use two 3,000-line texts with changes on
 every tenth line so an accidental recomputation is material. After the initial
 `onProcessing` call, retain the exact raw diff array object.
 
 Perform five sequential callback-only prop swaps. For each swap, start a timer,
 replace the callback state without changing any algorithm prop, wait for the new
-callback, and record elapsed time. The card passes only if:
+callback, and record elapsed time. The diagnostic passes only if:
 
 - every callback receives the exact retained raw diff object (`===`);
 - all five callbacks arrive;
@@ -208,13 +211,16 @@ in the 75 ms callback-swap ceiling. Do not hide the component with `display:
 none`; place the rendered probe in a collapsed `<details>` element so a human
 can inspect it without losing component lifecycle behavior.
 
-Extend `tests/component-performance.test.ts` with a `003` test using the shared
-card helper. It must assert visible PASS, max `<= 75`, and displayed
-`identity matches: 5/5`. Assertion output must contain the diagnostic card text.
+Extend `tests/component-performance.test.ts` with a `003` test that navigates
+directly to `/tests/component-performance/003` and uses the shared diagnostic
+helper. It must assert visible PASS, max `<= 75`, displayed `identity matches:
+5/5`, and a visible callback/identity capability preview. Assertion output must
+contain the diagnostic text.
 
 **Verify**:
 `pnpm playwright test tests/component-performance.test.ts --project=chromium -g "003"`
-→ the 003 card is green, shows five identity matches and max `<= 75 ms`. Run
+→ the 003 page is green, shows five identity matches, visible capability evidence,
+and max `<= 75 ms`. Run
 three times. If the optimized callback-only path misses the ceiling, STOP and
 report all samples rather than changing the workload or ceiling.
 
@@ -225,8 +231,8 @@ Run formatting, targeted lint, all library tests, type checking, and packaging.
 **Verify**:
 
 ```bash
-trunk fmt src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/routes/tests/component-performance/+page.svelte tests/component-performance.test.ts
-trunk check src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/routes/tests/component-performance/+page.svelte tests/component-performance.test.ts
+trunk fmt src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/routes/tests/component-performance/003/+page.svelte tests/component-performance.test.ts
+trunk check src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/routes/tests/component-performance/003/+page.svelte tests/component-performance.test.ts
 pnpm vitest run src/lib --coverage.enabled=false --reporter=default
 pnpm check
 pnpm build
