@@ -19,7 +19,6 @@
     const SEGMENT_COUNT = 10000
     const RANGE_COUNT = 5000
     const SAMPLE_COUNT = 3
-    const PREVIEW_COUNT = 120
     const CEILING_MS = 100
     const RUNNING_STATE_HOLD_MS = 250
     const diffs: [number, string][] = Array.from({ length: SEGMENT_COUNT }, () => [0, 'x'])
@@ -28,6 +27,21 @@
         start: index * 2,
         end: index * 2 + 1
     }))
+    const demoText =
+        'Invoice ACME-1042 is due July 31, 2026 for $12,450.00. Contact billing@northstar.example.'
+    const demoCaptures = [
+        { name: 'invoice_id', value: 'ACME-1042' },
+        { name: 'due_date', value: 'July 31, 2026' },
+        { name: 'amount', value: '$12,450.00' },
+        { name: 'contact_email', value: 'billing@northstar.example' }
+    ].map(({ name, value }) => {
+        const start = demoText.indexOf(value)
+        return { name, value, start, end: start + value.length }
+    })
+    const demoOutput = tagExpectedRegions(
+        [[0, demoText]],
+        demoCaptures.map(({ name, start, end }) => ({ name, start, end }))
+    )
 
     let activeRunId = 0
     let diagnostic = $state<DiagnosticResult>({
@@ -37,7 +51,6 @@
         output: [],
         failureReasons: []
     })
-    const preview = $derived(diagnostic.output.slice(0, PREVIEW_COUNT))
     const diagnosticText = $derived(
         [
             `Workload: ${SEGMENT_COUNT} equal segments / ${RANGE_COUNT} sorted ranges`,
@@ -151,7 +164,7 @@
     <h1>Tag expected regions in one forward sweep</h1>
     <p class="intro">
         This page times and validates 10,000 real diff segments against 5,000 sorted capture ranges,
-        then paints the tagged result so the capability is visible to a human.
+        while the example below shows what expected-region tagging means in a real document.
     </p>
 
     <div
@@ -227,38 +240,64 @@
     <section class="capability-preview" data-testid="tagging-capability-preview">
         <header>
             <div>
-                <p class="number">VISIBLE OUTPUT</p>
-                <h2>Expected-region tagging checkerboard</h2>
+                <p class="number">EYEBALL TEST</p>
+                <h2>What the tagging actually does</h2>
             </div>
-            <strong>{preview.length} / {SEGMENT_COUNT}</strong>
+            <strong>4 NAMED CAPTURES</strong>
         </header>
         <p>
-            Every tile is one actual output segment. Blue tiles are named expected captures; white
-            tiles are unchanged, untagged text. Hover a blue tile to see its capture name.
+            The algorithm receives ordinary diff text plus sorted character ranges. It splits the
+            text at each boundary and labels the matching values without changing the document.
         </p>
-        <div class="legend" aria-label="Preview legend">
-            <span class="legend-swatch expected"></span> Expected capture
-            <span class="legend-swatch unchanged"></span> Unchanged text
+        <div class="comparison">
+            <section class="document-panel" aria-labelledby="input-heading">
+                <p class="panel-label" id="input-heading">BEFORE — PLAIN DIFF TEXT</p>
+                <div class="document" data-testid="tagging-demo-input">{demoText}</div>
+            </section>
+
+            <div class="direction" aria-hidden="true">↓</div>
+
+            <section class="document-panel output-panel" aria-labelledby="output-heading">
+                <p class="panel-label" id="output-heading">AFTER — TAGGED DISPLAY SEGMENTS</p>
+                <div class="document tagged-document" data-testid="tagging-demo-output">
+                    {#each demoOutput as segment, index (index)}
+                        {#if segment.expected}
+                            <span
+                                class="tagged-segment"
+                                data-expected={segment.expected}
+                                title={`${segment.expected}: ${segment.text}`}
+                            >
+                                <span>{segment.text}</span>
+                            </span>
+                        {:else}
+                            <span>{segment.text}</span>
+                        {/if}
+                    {/each}
+                </div>
+            </section>
         </div>
-        <div
-            class="preview-grid"
-            data-testid="tagging-preview-segments"
-            aria-label="First 120 tagged output segments"
-        >
-            {#each preview as segment, index (index)}
-                <span
-                    class:expected={Boolean(segment.expected)}
-                    class:unchanged={!segment.expected}
-                    data-index={index}
-                    data-expected={segment.expected ?? ''}
-                    title={segment.expected ?? `unchanged_${index}`}>{segment.text}</span
-                >
-            {:else}
-                <p>The tagged output will appear here when the run completes.</p>
-            {/each}
+
+        <h3>Exact capture boundaries</h3>
+        <div class="capture-table-wrapper">
+            <table data-testid="tagging-demo-captures">
+                <thead>
+                    <tr><th>Capture name</th><th>Matched value</th><th>Start</th><th>End</th></tr>
+                </thead>
+                <tbody>
+                    {#each demoCaptures as capture (capture.name)}
+                        <tr data-capture={capture.name}>
+                            <th>{capture.name}</th>
+                            <td>{capture.value}</td>
+                            <td>{capture.start}</td>
+                            <td>{capture.end}</td>
+                        </tr>
+                    {/each}
+                </tbody>
+            </table>
         </div>
         <p class="preview-note">
-            Showing the first {PREVIEW_COUNT} of {SEGMENT_COUNT} validated output segments.
+            The benchmark above runs the same tagging function at 10,000 segments and 5,000 ranges;
+            this smaller document exists so a human can verify the behavior at a glance.
         </p>
     </section>
 </main>
@@ -395,56 +434,99 @@
         overflow-x: auto;
         white-space: pre-wrap;
     }
-    .legend {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 0.5rem;
-        margin: 1rem 0;
-        font-weight: 800;
+    .comparison {
+        margin: 1.25rem 0;
     }
-    .legend-swatch {
-        width: 1.5rem;
-        height: 1.5rem;
-        border: 2px solid #0f172a;
-        margin-left: 0.75rem;
-    }
-    .legend-swatch:first-child {
-        margin-left: 0;
-    }
-    .preview-grid {
-        display: grid;
-        grid-template-columns: repeat(20, minmax(1.5rem, 1fr));
-        gap: 0.25rem;
+    .document-panel {
         border: 3px solid #0369a1;
         border-radius: 0.5rem;
-        padding: 1rem;
         background: white;
+        overflow: hidden;
     }
-    .preview-grid > span {
-        display: grid;
-        min-height: 2.25rem;
-        place-items: center;
-        border: 2px solid #0f172a;
-        border-radius: 0.25rem;
+    .panel-label {
+        margin: 0;
+        border-bottom: 3px solid #0369a1;
+        padding: 0.65rem 1rem;
+        background: #0c4a6e;
+        color: white;
+        font-size: 0.8rem;
+        font-weight: 950;
+        letter-spacing: 0.08em;
+    }
+    .document {
+        padding: 1.5rem;
         color: #0f172a;
         font:
-            900 1rem ui-monospace,
+            700 clamp(1.05rem, 2.5vw, 1.45rem) / 2.7 ui-monospace,
             monospace;
     }
-    .expected {
-        background: #38bdf8;
+    .direction {
+        color: #0369a1;
+        font-size: 2.5rem;
+        font-weight: 950;
+        line-height: 1;
+        text-align: center;
     }
-    .unchanged {
-        background: #f8fafc;
+    .output-panel {
+        border-color: #15803d;
+    }
+    .output-panel .panel-label {
+        border-color: #15803d;
+        background: #14532d;
+    }
+    .tagged-segment {
+        position: relative;
+        display: inline-block;
+        margin: 0.7rem 0.18rem 0;
+        border: 2px solid #075985;
+        border-radius: 0.35rem;
+        padding: 0 0.25rem;
+        background: #7dd3fc;
+        box-shadow: 0.15rem 0.15rem 0 #075985;
+    }
+    .tagged-segment::before {
+        content: attr(data-expected);
+        position: absolute;
+        bottom: calc(100% - 0.15rem);
+        left: -2px;
+        border-radius: 0.25rem 0.25rem 0 0;
+        padding: 0.05rem 0.3rem;
+        background: #075985;
+        color: white;
+        font:
+            800 0.62rem/1.3 ui-sans-serif,
+            system-ui,
+            sans-serif;
+        letter-spacing: 0.04em;
+    }
+    h3 {
+        margin: 1.75rem 0 0.75rem;
+    }
+    .capture-table-wrapper {
+        overflow-x: auto;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+        color: #0f172a;
+    }
+    th,
+    td {
+        border: 2px solid #0369a1;
+        padding: 0.65rem;
+        text-align: left;
+    }
+    thead th {
+        background: #0c4a6e;
+        color: white;
+    }
+    tbody th {
+        color: #075985;
+        font-family: ui-monospace, monospace;
     }
     .preview-note {
         margin-bottom: 0;
         font-weight: 800;
-    }
-    @media (max-width: 42rem) {
-        .preview-grid {
-            grid-template-columns: repeat(10, minmax(1.5rem, 1fr));
-        }
     }
 </style>

@@ -214,17 +214,22 @@ test('002 tags expected regions within the forward-sweep ceiling', async ({ page
     await expect(page.getByTestId('diagnostic-overall')).toHaveAttribute('data-status', 'pass')
 
     const preview = page.getByTestId('tagging-capability-preview')
-    const previewSegments = page.getByTestId('tagging-preview-segments')
+    const input = page.getByTestId('tagging-demo-input')
+    const output = page.getByTestId('tagging-demo-output')
+    const captures = page.getByTestId('tagging-demo-captures')
     await expect(preview).toBeVisible()
-    await expect(preview).toContainText('Blue tiles are named expected captures')
-    await expect(preview).toContainText('Showing the first 120 of 10000')
-    await expect(previewSegments.locator(':scope > span')).toHaveCount(120)
-    await expect(previewSegments.locator('[data-expected^="range_"]')).toHaveCount(60)
-    await expect(previewSegments.locator('[data-expected=""]')).toHaveCount(60)
-    await expect(previewSegments.locator(':scope > span').first()).toHaveAttribute(
-        'data-expected',
-        'range_0'
+    await expect(preview).toContainText('What the tagging actually does')
+    await expect(input).toHaveText(
+        'Invoice ACME-1042 is due July 31, 2026 for $12,450.00. Contact billing@northstar.example.'
     )
+    await expect(output).toHaveText(await input.innerText())
+    await expect(output.locator('[data-expected]')).toHaveCount(4)
+    for (const name of ['invoice_id', 'due_date', 'amount', 'contact_email']) {
+        await expect(output.locator(`[data-expected="${name}"]`)).toBeVisible()
+        await expect(captures.locator(`[data-capture="${name}"]`)).toBeVisible()
+    }
+    await expect(output.locator('[data-expected="invoice_id"]')).toContainText('ACME-1042')
+    await expect(output.locator('[data-expected="amount"]')).toContainText('$12,450.00')
 })
 
 test('component performance diagnostics are split into focused pages', async ({ page }) => {

@@ -208,10 +208,12 @@ samples. The diagnostic passes only when:
 - the maximum, all samples, segment/range counts, output count, and any failure
   reason are visible and mirrored in `data-*` attributes.
 
-Provide an 002-only overall banner, rerun control, and a visible checkerboard (or
-equally obvious preview) of actual tagged versus untagged output. A failed sample
-must paint the page red; do not throw or log only to the console. Do not mount or
-run diagnostic 001 on this page.
+Provide an 002-only overall banner, rerun control, and a recognizable document
+example with plain-text input, highlighted tagged output, visible capture names,
+matched values, and exact start/end boundaries. Keep the 10,000 repeated-token
+workload in the measurement card only; it is not an acceptable human capability
+preview. A failed sample must paint the page red; do not throw or log only to the
+console. Do not mount or run diagnostic 001 on this page.
 
 Extend `tests/component-performance.test.ts` with a test whose title contains
 `002`. Navigate directly to `/tests/component-performance/002`. Reuse Plan 001's

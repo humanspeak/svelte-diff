@@ -47,8 +47,9 @@ button. Every plan owns exactly one first-class human diagnostic page at
 
 - its own prominent RUNNING/PASS/FAIL banner and manual rerun button;
 - only that plan's workload—never an earlier or later diagnostic workload;
-- an obvious visible capability preview that lets a person understand what the
-  feature does, not only timing text or console output;
+- an obvious visible capability preview using recognizable content, labels, and
+  before/after state so a person can understand what the feature does; repeated
+  synthetic tokens, timing text, and console output do not satisfy this;
 - workload, samples, ceiling, maximum, counts/identity, and failure reasons in
   visible `<dl>`/`<pre>` output;
 - machine-readable `data-status`, `data-ceiling-ms`, and `data-elapsed-ms`;
