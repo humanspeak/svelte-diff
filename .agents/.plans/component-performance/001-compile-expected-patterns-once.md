@@ -16,6 +16,8 @@
 > `/tests/component-performance/001`. The unnumbered route is a navigation-only
 > index. Do not run 001 on the index or add cards/workloads for other plans to
 > the 001 page.
+> The completed implementation measured about 43 ms locally, so the committed
+> ceiling is tightened from the original 250 ms proposal to 100 ms.
 
 ## Status
 
@@ -269,9 +271,9 @@ Implement diagnostic 001 against a mounted `SvelteDiff` instance. Use a stable
 750-line template with one named group per line, perform one warmup followed by
 five changes to only `modifiedText`, and time each change from state assignment
 until the matching `onProcessing` callback and following `tick()` complete.
-Display every sample. Set the committed ceiling to **250 ms per change** and
+Display every sample. Set the committed ceiling to **100 ms per change** and
 mark the diagnostic PASS only when all five changes produce correct captures/output
-and the maximum sample is `<= 250`.
+and the maximum sample is `<= 100`.
 
 The ceiling is intentionally a browser wall-clock guard, while Step 1's object
 identity test proves the specific optimization. Do not replace either one with
@@ -288,7 +290,7 @@ diagnostics so CI output is actionable.
 
 **Verify**:
 `pnpm playwright test tests/component-performance.test.ts --project=chromium -g "001"`
-→ the page shows a green 001 PASS diagnostic, five sample values, max `<= 250 ms`,
+→ the page shows a green 001 PASS diagnostic, five sample values, max `<= 100 ms`,
 and a visible mounted-component capability preview. If the optimized implementation cannot meet the
 ceiling in three consecutive local runs, STOP and report the samples rather
 than silently loosening it.
@@ -323,7 +325,7 @@ source/test changes and the plan index status update.
 - Cover exact capture values, capture ranges, resolved text, and cleaned fallback.
 - Rerender the component with stable `originalText` and changing `modifiedText`.
 - Exercise the same behavior in a visible browser page with five sequential
-  750-group updates and a hard 250 ms maximum per change.
+  750-group updates and a hard 100 ms maximum per change.
 - Model assertions and fixtures after the existing parse/extract blocks in
   `src/lib/expectedPatterns.test.ts`.
 
@@ -335,7 +337,7 @@ source/test changes and the plan index status update.
 - [ ] Component updates to only `modifiedText` reuse the compiled parse result.
 - [ ] `/tests/component-performance/001` visibly reports 001 PASS/FAIL, samples,
       workload, ceiling, maximum, and failure reasons.
-- [ ] Diagnostic 001 completes every measured change in `<= 250 ms` and its
+- [ ] Diagnostic 001 completes every measured change in `<= 100 ms` and its
       Chromium E2E test passes.
 - [ ] Existing capture, fallback, and renderer behavior remains green.
 - [ ] Targeted Trunk check, all library tests, `pnpm check`, and `pnpm build` exit 0.
@@ -352,7 +354,7 @@ Stop and report if:
 - A correct implementation requires changing a package-root export or public prop.
 - Svelte `$derived` cannot cache parsing without also changing SSR behavior; SSR
   belongs to Plan 005.
-- The fixed 750-line browser workload cannot pass the 250 ms ceiling in three
+- The fixed 750-line browser workload cannot pass the 100 ms ceiling in three
   consecutive runs after the optimization; report raw samples before changing
   workload or ceiling.
 - Any verification command fails twice after a reasonable fix attempt.

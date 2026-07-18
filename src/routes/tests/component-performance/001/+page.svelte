@@ -38,7 +38,7 @@
 
     const LINE_COUNT = 750
     const SAMPLE_COUNT = 5
-    const CEILING_MS = 250
+    const CEILING_MS = 100
     const RUNNING_STATE_HOLD_MS = 250
     const originalText = Array.from(
         { length: LINE_COUNT },
