@@ -384,6 +384,21 @@ describe('tagExpectedRegions', () => {
         ])
     })
 
+    it('tags a multiline Unicode range across diff-segment boundaries', () => {
+        const diffs: [number, string][] = [
+            [0, 'A\n😀'],
+            [0, 'BC']
+        ]
+        const ranges = [{ name: 'multiline', start: 1, end: 5 }]
+
+        expect(tagExpectedRegions(diffs, ranges)).toEqual([
+            { operation: 0, text: 'A' },
+            { operation: 0, text: '\n😀', expected: 'multiline' },
+            { operation: 0, text: 'B', expected: 'multiline' },
+            { operation: 0, text: 'C' }
+        ])
+    })
+
     it('tags one expected range spanning an insert followed by an equal segment', () => {
         const diffs: [number, string][] = [
             [1, 'ab'],

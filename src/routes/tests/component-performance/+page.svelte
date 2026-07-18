@@ -4,7 +4,7 @@
             number: '001',
             title: 'Compile expected-pattern metadata once',
             summary:
-                'Mounted component changes, capture correctness, rendering, and a 250 ms ceiling.',
+                'Mounted component changes, capture correctness, rendering, and a 100 ms ceiling.',
             href: '/tests/component-performance/001',
             status: 'ACTIVE'
         },
@@ -12,7 +12,7 @@
             number: '002',
             title: 'Tag expected regions in one forward sweep',
             summary:
-                '10,000 diff segments, 5,000 ranges, visible tagged output, and a 100 ms ceiling.',
+                '10,000 diff segments, 5,000 ranges, visible tagged output, and a 10 ms ceiling.',
             href: '/tests/component-performance/002',
             status: 'ACTIVE'
         }
