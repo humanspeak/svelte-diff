@@ -23,6 +23,19 @@
         boundaryRendered: string
     }
 
+    interface PendingProcessingRequest {
+        id: number
+        expectedFirst: string
+        expectedLast: string
+        resolve: (_captures: Record<string, string> | undefined) => void
+        timeout?: ReturnType<typeof setTimeout>
+    }
+
+    interface ChangeResult {
+        elapsed: number
+        failureReasons: string[]
+    }
+
     const LINE_COUNT = 750
     const SAMPLE_COUNT = 5
     const CEILING_MS = 250
@@ -40,8 +53,9 @@
 
     let modifiedText = $state(createModifiedText(0))
     let diagnosticOutput: HTMLDivElement
-    let pendingProcessing: ((_captures: Record<string, string> | undefined) => void) | undefined
-    let processingTimeout: ReturnType<typeof setTimeout> | undefined
+    let pendingProcessing: PendingProcessingRequest | undefined
+    let nextProcessingRequestId = 0
+    let activeRunId = 0
     let overallStatus = $state<DiagnosticStatus>('running')
     let diagnostic001 = $state<DiagnosticResult>({
         status: 'running',
@@ -66,19 +80,51 @@
         ].join('\n')
     )
 
+    /**
+     * Resolves the pending request only when the emitted boundary captures identify it.
+     *
+     * @param _timing - Timing information emitted by the mounted SvelteDiff component.
+     * @param _diffs - Diff tuples emitted by the mounted SvelteDiff component.
+     * @param captures - Named captures used to correlate this callback with its request.
+     * @returns Nothing; matching captures settle the pending processing promise.
+     */
     const handleProcessing: NonNullable<SvelteDiffProps['onProcessing']> = (
         _timing,
         _diffs,
         captures
     ) => {
-        if (pendingProcessing) {
-            clearTimeout(processingTimeout)
-            const resolve = pendingProcessing
-            pendingProcessing = undefined
-            resolve(captures)
-        }
+        const request = pendingProcessing
+        if (
+            !request ||
+            captures?.value_0 !== request.expectedFirst ||
+            captures[`value_${LINE_COUNT - 1}`] !== request.expectedLast
+        )
+            return
+
+        clearTimeout(request.timeout)
+        pendingProcessing = undefined
+        request.resolve(captures)
     }
 
+    /**
+     * Clears and settles the currently pending component callback request, if any.
+     *
+     * @returns Nothing; a pending promise is resolved with `undefined` to signal cancellation.
+     */
+    const cancelPendingProcessing = () => {
+        const request = pendingProcessing
+        if (!request) return
+
+        clearTimeout(request.timeout)
+        pendingProcessing = undefined
+        request.resolve(undefined)
+    }
+
+    /**
+     * Paints the diagnostic's running state and holds it long enough to remain visible.
+     *
+     * @returns A promise that resolves after two animation frames and the visible-state hold.
+     */
     const waitForPaint = async () => {
         await tick()
         await new Promise<void>((resolve) => {
@@ -91,7 +137,19 @@
         })
     }
 
-    const runChange = async (change: number, context: string) => {
+    /**
+     * Applies one modified-text sample and validates its callback and rendered boundaries.
+     *
+     * @param change - Unique numeric input used to generate this sample's expected captures.
+     * @param context - Human-readable label displayed while the sample is running.
+     * @param runId - Identity of the diagnostic run that owns this sample.
+     * @returns Timing and failures, or `null` when navigation or a newer run cancels the sample.
+     */
+    const runChange = async (
+        change: number,
+        context: string,
+        runId: number
+    ): Promise<ChangeResult | null> => {
         currentRun = {
             context,
             change: `Applying modified-text change ${change}`,
@@ -99,20 +157,34 @@
             boundaryRendered: 'Waiting for the component render'
         }
         await tick()
+        if (runId !== activeRunId) return null
+
+        const requestId = ++nextProcessingRequestId
+        const expectedText = createModifiedText(requestId)
+        const expectedFirst = String(requestId * 1000)
+        const expectedLast = String(requestId * 1000 + LINE_COUNT - 1)
 
         const processing = new Promise<Record<string, string> | undefined>((resolve) => {
-            pendingProcessing = resolve
-            processingTimeout = setTimeout(() => {
+            const request: PendingProcessingRequest = {
+                id: requestId,
+                expectedFirst,
+                expectedLast,
+                resolve
+            }
+            request.timeout = setTimeout(() => {
+                if (pendingProcessing?.id !== request.id) return
                 pendingProcessing = undefined
                 resolve(undefined)
             }, 1000)
+            pendingProcessing = request
         })
 
-        const expectedText = createModifiedText(change)
         const start = performance.now()
         modifiedText = expectedText
         const captures = await processing
+        if (runId !== activeRunId) return null
         await tick()
+        if (runId !== activeRunId) return null
         const elapsed = performance.now() - start
         const failureReasons: string[] = []
 
@@ -127,7 +199,7 @@
             }
 
             for (let line = 0; line < LINE_COUNT; line++) {
-                const expectedValue = String(change * 1000 + line)
+                const expectedValue = String(requestId * 1000 + line)
                 if (captures[`value_${line}`] !== expectedValue) {
                     failureReasons.push(
                         `Change ${change}: value_${line} was ${captures[`value_${line}`] ?? 'missing'}, expected ${expectedValue}`
@@ -145,14 +217,11 @@
         const lastCapture = captures?.[`value_${LINE_COUNT - 1}`]
         currentRun = {
             context: `${context} complete`,
-            change: `Modified-text change ${change}`,
+            change: `Modified-text change ${change} / request ${requestId}`,
             boundaryCaptures: `value_0=${firstCapture ?? 'missing'}, value_${LINE_COUNT - 1}=${lastCapture ?? 'missing'}`,
             boundaryRendered: `value_0=${firstOutput ?? 'missing'}, value_${LINE_COUNT - 1}=${lastOutput ?? 'missing'}`
         }
-        if (
-            firstOutput !== String(change * 1000) ||
-            lastOutput !== String(change * 1000 + LINE_COUNT - 1)
-        ) {
+        if (firstOutput !== expectedFirst || lastOutput !== expectedLast) {
             failureReasons.push(
                 `Change ${change}: rendered boundary outputs were ${firstOutput ?? 'missing'} and ${lastOutput ?? 'missing'}`
             )
@@ -161,7 +230,17 @@
         return { elapsed, failureReasons }
     }
 
+    /**
+     * Runs the warmup and all measured samples for diagnostic 001.
+     *
+     * Expected failures are rendered in the diagnostic card; unexpected errors are caught and
+     * converted to a visible failure instead of escaping the event handler.
+     *
+     * @returns A promise that resolves after the active run completes or is cancelled.
+     */
     const runAllDiagnostics = async () => {
+        cancelPendingProcessing()
+        const runId = ++activeRunId
         overallStatus = 'running'
         diagnostic001 = {
             status: 'running',
@@ -178,16 +257,20 @@
 
         try {
             await waitForPaint()
+            if (runId !== activeRunId) return
 
-            const warmup = await runChange(100, 'Warmup')
+            const warmup = await runChange(100, 'Warmup', runId)
+            if (!warmup) return
             const failureReasons = warmup.failureReasons.map((reason) => `Warmup: ${reason}`)
             const samples: TimingSample[] = []
 
             for (let change = 1; change <= SAMPLE_COUNT; change++) {
                 const sample = await runChange(
                     100 + change,
-                    `Measured sample ${change} of ${SAMPLE_COUNT}`
+                    `Measured sample ${change} of ${SAMPLE_COUNT}`,
+                    runId
                 )
+                if (!sample) return
                 samples.push({ change, elapsed: sample.elapsed })
                 failureReasons.push(...sample.failureReasons)
             }
@@ -215,6 +298,11 @@
 
     onMount(() => {
         void runAllDiagnostics()
+
+        return () => {
+            cancelPendingProcessing()
+            activeRunId++
+        }
     })
 </script>
 
@@ -225,7 +313,14 @@
 <main>
     <h1>Component performance diagnostics</h1>
 
-    <div class="overall-banner" data-status={overallStatus} data-testid="diagnostic-overall">
+    <div
+        class="overall-banner"
+        data-status={overallStatus}
+        data-testid="diagnostic-overall"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+    >
         Overall: {overallStatus.toUpperCase()}
     </div>
 

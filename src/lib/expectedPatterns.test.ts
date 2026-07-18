@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { extractCaptures, parseExpectedPatterns, tagExpectedRegions } from './expectedPatterns.js'
+import {
+    cleanTemplate,
+    extractCaptures,
+    parseExpectedPatterns,
+    tagExpectedRegions
+} from './expectedPatterns.js'
 
 describe('parseExpectedPatterns', () => {
     it('returns null when no groups are present', () => {
@@ -13,8 +18,10 @@ describe('parseExpectedPatterns', () => {
     it('parses a single named group', () => {
         const result = parseExpectedPatterns('Copyright (?<year>\\d{4}) MIT')
         expect(result).not.toBeNull()
-        expect(result!.groups).toHaveLength(1)
-        expect(result!.groups[0]).toEqual({ name: 'year', pattern: '\\d{4}' })
+        if (result === null) throw new Error('Expected named group to parse')
+        expect(result.groups).toHaveLength(1)
+        expect(result.groups[0]).toEqual({ name: 'year', pattern: '\\d{4}' })
+        expect(result.parts).toEqual(['Copyright ', '(?<year>\\d{4})', ' MIT'])
     })
 
     it('parses multiple named groups', () => {
@@ -37,6 +44,45 @@ describe('parseExpectedPatterns', () => {
         const result = parseExpectedPatterns('(?<content>.*)')
         expect(result).not.toBeNull()
         expect(result!.groups[0].pattern).toBe('.*')
+    })
+
+    it('preserves empty parts around adjacent groups at both boundaries', () => {
+        const result = parseExpectedPatterns('(?<first>\\w+)(?<second>\\d+)')
+        if (result === null) throw new Error('Expected adjacent named groups to parse')
+
+        expect(result.parts).toEqual(['', '(?<first>\\w+)', '', '(?<second>\\d+)', ''])
+    })
+
+    it('preserves multiline Unicode literals around group parts', () => {
+        const text = 'α\n(?<word>\\w+)\n終'
+        const result = parseExpectedPatterns(text)
+        if (result === null) throw new Error('Expected multiline named group to parse')
+
+        expect(result.parts).toEqual(['α\n', '(?<word>\\w+)', '\n終'])
+        expect(cleanTemplate(text)).toBe('α\n<word>\n終')
+    })
+
+    it('leaves malformed group syntax unchanged', () => {
+        const malformed = 'before (?<broken>abc after 🌍'
+
+        expect(parseExpectedPatterns(malformed)).toBeNull()
+        expect(cleanTemplate(malformed)).toBe(malformed)
+    })
+})
+
+describe('cleanTemplate', () => {
+    it('replaces named groups with readable placeholders', () => {
+        expect(cleanTemplate('Copyright (?<year>\\d{4}) (?<holder>.+)')).toBe(
+            'Copyright <year> <holder>'
+        )
+    })
+
+    it('returns text unchanged when no groups are present', () => {
+        expect(cleanTemplate('hello world')).toBe('hello world')
+    })
+
+    it('handles groups with complex patterns', () => {
+        expect(cleanTemplate('(?<name>.*?) end')).toBe('<name> end')
     })
 })
 
@@ -340,6 +386,17 @@ describe('findNamedGroups (via parseExpectedPatterns)', () => {
         expect(result).not.toBeNull()
         expect(result!.groups[0].name).toBe('name')
         expect(result!.groups[0].pattern).toBe('\\(escaped\\)')
+    })
+
+    it('ignores parentheses inside character classes while finding the group boundary', () => {
+        const text = 'Symbol: (?<symbol>[)])'
+        const result = parseExpectedPatterns(text)
+        if (result === null) throw new Error('Expected character-class group to parse')
+
+        expect(result.groups[0].pattern).toBe('[)]')
+        expect(result.parts).toEqual(['Symbol: ', '(?<symbol>[)])', ''])
+        expect(result.cleanedText).toBe('Symbol: <symbol>')
+        expect(cleanTemplate(text)).toBe('Symbol: <symbol>')
     })
 
     it('handles empty pattern in group', () => {

@@ -69,6 +69,8 @@ interface CompiledLinePattern {
 
 interface ParseResult {
     groups: ParsedGroup[]
+    /** Literal text and full group syntax interleaved in source order. */
+    parts: string[]
     /** Ordered source matches retained from the single template scan. */
     matches: GroupMatch[]
     /** Template text with named groups replaced by readable placeholders. */
@@ -137,13 +139,18 @@ const findNamedGroups = (text: string): GroupMatch[] => {
             let depth = 1
             let j = patternStart
             let hasNestedNamedGroup = false
+            let inCharacterClass = false
 
             while (j < text.length && depth > 0) {
                 if (text[j] === '\\') {
                     j += 2 // skip escaped character
                     continue
                 }
-                if (text[j] === '(') {
+                if (text[j] === '[' && !inCharacterClass) {
+                    inCharacterClass = true
+                } else if (text[j] === ']' && inCharacterClass) {
+                    inCharacterClass = false
+                } else if (text[j] === '(' && !inCharacterClass) {
                     // Check for nested named group
                     if (
                         text[j + 1] === '?' &&
@@ -154,7 +161,7 @@ const findNamedGroups = (text: string): GroupMatch[] => {
                         hasNestedNamedGroup = true
                     }
                     depth++
-                } else if (text[j] === ')') {
+                } else if (text[j] === ')' && !inCharacterClass) {
                     depth--
                     if (depth === 0) break
                 }
@@ -312,24 +319,57 @@ export const parseExpectedPatterns = (text: string): ParseResult | null => {
     if (matches.length === 0) return null
 
     const groups: ParsedGroup[] = []
+    const parts: string[] = []
     let cleanedText = ''
     let lastIndex = 0
 
     for (const match of matches) {
         const literal = text.slice(lastIndex, match.index)
         groups.push({ name: match.name, pattern: match.pattern })
+        parts.push(literal, match.fullMatch)
         cleanedText += `${literal}<${match.name}>`
         lastIndex = match.index + match.fullMatch.length
     }
 
-    cleanedText += text.slice(lastIndex)
+    const trailingLiteral = text.slice(lastIndex)
+    parts.push(trailingLiteral)
+    cleanedText += trailingLiteral
 
     return {
         groups,
+        parts,
         matches,
         cleanedText,
         linePatterns: compileLinePatterns(text, matches)
     }
+}
+
+/**
+ * Replaces named capture groups with readable placeholders.
+ *
+ * This standalone compatibility helper scans its input once. Component updates
+ * use the precomputed `cleanedText` on {@link parseExpectedPatterns} instead.
+ *
+ * @param text - Template text that may contain named capture group syntax.
+ * @returns The template with each valid group replaced by `<name>`.
+ * @example
+ * ```ts
+ * cleanTemplate('Copyright (?<year>\\d{4})') // 'Copyright <year>'
+ * ```
+ */
+export const cleanTemplate = (text: string): string => {
+    const matches = findNamedGroups(text)
+    if (matches.length === 0) return text
+
+    let cleanedText = ''
+    let lastIndex = 0
+
+    for (const match of matches) {
+        cleanedText += `${text.slice(lastIndex, match.index)}<${match.name}>`
+        lastIndex = match.index + match.fullMatch.length
+    }
+
+    return cleanedText + text.slice(lastIndex)
 }
 
 interface ExtractResult {
