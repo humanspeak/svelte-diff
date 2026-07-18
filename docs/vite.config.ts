@@ -82,7 +82,7 @@ export default defineConfig({
         sveltekit()
     ],
     server: {
-        port: 8235,
+        port: 8523,
         fs: { allow: ['..'] }
     },
     optimizeDeps: {

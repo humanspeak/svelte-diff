@@ -4,6 +4,9 @@ import { configDefaults, defineConfig } from 'vitest/config'
 
 export default defineConfig({
     plugins: [sveltekit(), svelteTesting()],
+    server: {
+        port: 8517
+    },
     resolve: process.env.VITEST
         ? {
               conditions: ['browser']
