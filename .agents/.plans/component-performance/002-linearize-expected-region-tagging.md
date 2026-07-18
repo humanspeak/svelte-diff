@@ -16,6 +16,8 @@
 > **Diagnostic route revision (2026-07-18)**: 002 owns
 > `/tests/component-performance/002`. The unnumbered route is a navigation-only
 > index. Do not run 002 on the index or combine it with another plan's workload.
+> The completed forward-sweep implementation measured about 1 ms locally, so the
+> committed ceiling is tightened from the original 100 ms proposal to 10 ms.
 
 ## Status
 
@@ -79,15 +81,15 @@ Trunk formatting/linting.
 
 ## Commands you will need
 
-| Purpose              | Command                                                                                                                                                                | Expected on success                   |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| Targeted test        | `pnpm vitest run src/lib/expectedPatterns.test.ts --coverage.enabled=false --reporter=default`                                                                         | all expected-pattern tests pass       |
-| Diagnostic E2E       | `pnpm playwright test tests/component-performance.test.ts --project=chromium -g "002"`                                                                                 | 002 card visibly passes within 100 ms |
-| Unit suite           | `pnpm vitest run src/lib --coverage.enabled=false --reporter=default`                                                                                                  | all library tests pass                |
-| Type/Svelte check    | `pnpm check`                                                                                                                                                           | exit 0                                |
-| Package verification | `pnpm build`                                                                                                                                                           | exit 0, including publint             |
-| Format               | `trunk fmt src/lib/expectedPatterns.ts src/lib/expectedPatterns.test.ts src/routes/tests/component-performance/002/+page.svelte tests/component-performance.test.ts`   | exit 0                                |
-| Lint                 | `trunk check src/lib/expectedPatterns.ts src/lib/expectedPatterns.test.ts src/routes/tests/component-performance/002/+page.svelte tests/component-performance.test.ts` | exit 0                                |
+| Purpose              | Command                                                                                                                                                                | Expected on success                  |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| Targeted test        | `pnpm vitest run src/lib/expectedPatterns.test.ts --coverage.enabled=false --reporter=default`                                                                         | all expected-pattern tests pass      |
+| Diagnostic E2E       | `pnpm playwright test tests/component-performance.test.ts --project=chromium -g "002"`                                                                                 | 002 page visibly passes within 10 ms |
+| Unit suite           | `pnpm vitest run src/lib --coverage.enabled=false --reporter=default`                                                                                                  | all library tests pass               |
+| Type/Svelte check    | `pnpm check`                                                                                                                                                           | exit 0                               |
+| Package verification | `pnpm build`                                                                                                                                                           | exit 0, including publint            |
+| Format               | `trunk fmt src/lib/expectedPatterns.ts src/lib/expectedPatterns.test.ts src/routes/tests/component-performance/002/+page.svelte tests/component-performance.test.ts`   | exit 0                               |
+| Lint                 | `trunk check src/lib/expectedPatterns.ts src/lib/expectedPatterns.test.ts src/routes/tests/component-performance/002/+page.svelte tests/component-performance.test.ts` | exit 0                               |
 
 ## Scope
 
@@ -189,7 +191,7 @@ Assert complete `DisplayDiff[]` arrays, not only text content.
 `pnpm vitest run src/lib/expectedPatterns.test.ts --coverage.enabled=false --reporter=default`
 → all existing and new tests pass.
 
-### Step 4: Activate the loud 002 diagnostic with a 100 ms ceiling
+### Step 4: Activate the loud 002 diagnostic with a 10 ms ceiling
 
 In `src/routes/tests/component-performance/002/+page.svelte`, create the live
 002 diagnostic. Import
@@ -204,7 +206,7 @@ samples. The diagnostic passes only when:
 
 - every output reconstructs the input text;
 - every expected range is represented correctly;
-- every measured call is `<= 100 ms` (committed ceiling);
+- every measured call is `<= 10 ms` (committed ceiling);
 - the maximum, all samples, segment/range counts, output count, and any failure
   reason are visible and mirrored in `data-*` attributes.
 
@@ -218,13 +220,13 @@ console. Do not mount or run diagnostic 001 on this page.
 Extend `tests/component-performance.test.ts` with a test whose title contains
 `002`. Navigate directly to `/tests/component-performance/002`. Reuse Plan 001's
 diagnostic helper to require visible PASS and elapsed `<=` the diagnostic's
-100 ms ceiling, and assert the visible output preview contains tagged and
+10 ms ceiling, and assert the visible output preview contains tagged and
 untagged segments. Include the diagnostic text in assertion messages.
 
 **Verify**:
 `pnpm playwright test tests/component-performance.test.ts --project=chromium -g "002"`
 → the 002 page is green, shows three samples and a visible tagged-output preview,
-and reports max `<= 100 ms`. Run
+and reports max `<= 10 ms`. Run
 the command three times. If any optimized run exceeds the ceiling, STOP and
 report all samples instead of changing the ceiling or workload.
 
@@ -255,7 +257,7 @@ and no `captureRanges.filter` call.
 - Preserve exact output arrays for inserts, equals, removes, capture boundaries,
   and captures spanning more than one diff.
 - Use deterministic access counts for the complexity proof and the browser's
-  100 ms maximum as a separate end-to-end regression ceiling.
+  10 ms maximum as a separate end-to-end regression ceiling.
 - Keep the 002 PASS/FAIL page, samples, workload, result counts, and reasons
   visible to humans and machine-readable to Playwright.
 - Keep all existing expected-pattern tests green.
@@ -266,7 +268,7 @@ and no `captureRanges.filter` call.
 - [ ] `tagExpectedRegions` performs no full range `.filter` per diff segment.
 - [ ] Complexity is O(D + R + actual overlaps) for sorted, non-overlapping ranges.
 - [ ] Diagnostic 002 visibly passes three 10,000-segment/5,000-range samples,
-      each in `<= 100 ms`, and its Chromium E2E test passes.
+      each in `<= 10 ms`, and its Chromium E2E test passes.
 - [ ] All old/new expected-region output assertions pass exactly.
 - [ ] Trunk, library tests, `pnpm check`, and `pnpm build` exit 0.
 - [ ] Only in-scope files and the README status row are modified.
@@ -281,7 +283,7 @@ Stop and report if:
   group wins; resolving overlap semantics needs a separate decision.
 - The optimized function changes any existing `DisplayDiff[]` assertion.
 - A correct fix appears to require component or public API changes.
-- The optimized fixed workload exceeds 100 ms in any of three consecutive
+- The optimized fixed workload exceeds 10 ms in any of three consecutive
   verification runs; report raw samples instead of loosening the guard.
 - A verification fails twice after a reasonable fix attempt.
 

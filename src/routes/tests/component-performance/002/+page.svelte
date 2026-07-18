@@ -19,7 +19,7 @@
     const SEGMENT_COUNT = 10000
     const RANGE_COUNT = 5000
     const SAMPLE_COUNT = 3
-    const CEILING_MS = 100
+    const CEILING_MS = 10
     const RUNNING_STATE_HOLD_MS = 250
     const diffs: [number, string][] = Array.from({ length: SEGMENT_COUNT }, () => [0, 'x'])
     const captureRanges: CaptureRange[] = Array.from({ length: RANGE_COUNT }, (_, index) => ({

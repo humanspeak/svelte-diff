@@ -62,7 +62,7 @@ add diagnostic cards or workloads back to the index page. Committed ceilings are
 | Plan | Workload                                                    | Ceiling           |
 | ---- | ----------------------------------------------------------- | ----------------- |
 | 001  | Five modified-text changes on a 750-group mounted component | 250 ms per change |
-| 002  | Three 10,000-diff/5,000-range tagging runs                  | 100 ms per run    |
+| 002  | Three 10,000-diff/5,000-range tagging runs                  | 10 ms per run     |
 | 003  | Five callback-only swaps on a 3,000-line diff               | 75 ms per swap    |
 | 004  | Five settled compact renders of 2,000 lines                 | 300 ms per render |
 | 005  | No-JavaScript local-preview navigation with SSR diff markup | 3,000 ms          |
