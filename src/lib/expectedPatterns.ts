@@ -69,8 +69,6 @@ interface CompiledLinePattern {
 
 interface ParseResult {
     groups: ParsedGroup[]
-    /** Literal parts interleaved with groups: [literal0, group0, literal1, group1, ..., literalN] */
-    parts: string[]
     /** Ordered source matches retained from the single template scan. */
     matches: GroupMatch[]
     /** Template text with named groups replaced by readable placeholders. */
@@ -177,30 +175,6 @@ const findNamedGroups = (text: string): GroupMatch[] => {
     }
 
     return results
-}
-
-/**
- * Replaces `(?<name>pattern)` groups with readable `<name>` placeholders.
- *
- * Used as a fallback when the regex doesn't match modifiedText, so users
- * see clean placeholder names instead of raw regex syntax.
- *
- * @param text - The template text containing named capture group syntax.
- * @returns The text with capture groups replaced by `<name>` placeholders.
- */
-export const cleanTemplate = (text: string): string => {
-    const matches = findNamedGroups(text)
-    if (matches.length === 0) return text
-
-    let result = ''
-    let lastIndex = 0
-    for (const match of matches) {
-        result += text.slice(lastIndex, match.index)
-        result += `<${match.name}>`
-        lastIndex = match.index + match.fullMatch.length
-    }
-    result += text.slice(lastIndex)
-    return result
 }
 
 /**
@@ -338,26 +312,20 @@ export const parseExpectedPatterns = (text: string): ParseResult | null => {
     if (matches.length === 0) return null
 
     const groups: ParsedGroup[] = []
-    const parts: string[] = []
     let cleanedText = ''
     let lastIndex = 0
 
     for (const match of matches) {
         const literal = text.slice(lastIndex, match.index)
-        parts.push(literal)
         groups.push({ name: match.name, pattern: match.pattern })
-        parts.push(match.fullMatch)
         cleanedText += `${literal}<${match.name}>`
         lastIndex = match.index + match.fullMatch.length
     }
 
-    const trailingLiteral = text.slice(lastIndex)
-    parts.push(trailingLiteral)
-    cleanedText += trailingLiteral
+    cleanedText += text.slice(lastIndex)
 
     return {
         groups,
-        parts,
         matches,
         cleanedText,
         linePatterns: compileLinePatterns(text, matches)
@@ -391,7 +359,6 @@ export const extractCaptures = (
     const captureRangesInText2: CaptureRange[] = []
 
     for (const { groups, regex } of parseResult.linePatterns) {
-        regex.lastIndex = 0
         const match = regex.exec(modifiedText)
 
         if (!match || !match.groups || !match.indices?.groups) {

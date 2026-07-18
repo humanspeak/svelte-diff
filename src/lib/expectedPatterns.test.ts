@@ -1,10 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-    cleanTemplate,
-    extractCaptures,
-    parseExpectedPatterns,
-    tagExpectedRegions
-} from './expectedPatterns.js'
+import { extractCaptures, parseExpectedPatterns, tagExpectedRegions } from './expectedPatterns.js'
 
 describe('parseExpectedPatterns', () => {
     it('returns null when no groups are present', () => {
@@ -354,21 +349,5 @@ describe('findNamedGroups (via parseExpectedPatterns)', () => {
         expect(result).not.toBeNull()
         expect(result!.groups[0].name).toBe('empty')
         expect(result!.groups[0].pattern).toBe('')
-    })
-})
-
-describe('cleanTemplate', () => {
-    it('replaces named groups with readable placeholders', () => {
-        expect(cleanTemplate('Copyright (?<year>\\d{4}) (?<holder>.+)')).toBe(
-            'Copyright <year> <holder>'
-        )
-    })
-
-    it('returns text unchanged when no groups present', () => {
-        expect(cleanTemplate('hello world')).toBe('hello world')
-    })
-
-    it('handles groups with complex patterns', () => {
-        expect(cleanTemplate('(?<name>.*?) end')).toBe('<name> end')
     })
 })
