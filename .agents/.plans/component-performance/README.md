@@ -11,7 +11,7 @@ its plan fully, honor STOP conditions, and update its status row when done.
 | Plan | Title                                         | Priority | Effort | Depends on         | Status |
 | ---- | --------------------------------------------- | -------- | ------ | ------------------ | ------ |
 | 001  | Compile expected-pattern metadata once        | P1       | L      | —                  | DONE   |
-| 002  | Tag expected regions in one forward sweep     | P1       | M      | 001                | TODO   |
+| 002  | Tag expected regions in one forward sweep     | P1       | M      | 001                | DONE   |
 | 003  | Decouple diff computation from callbacks      | P1       | M      | 001, 002           | TODO   |
 | 004  | Add compact rendering for unstyled equal text | P1       | M      | 003                | TODO   |
 | 005  | Render the initial diff during SSR            | P1       | M      | 001, 002, 003, 004 | TODO   |
