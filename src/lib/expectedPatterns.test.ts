@@ -18,8 +18,10 @@ describe('parseExpectedPatterns', () => {
     it('parses a single named group', () => {
         const result = parseExpectedPatterns('Copyright (?<year>\\d{4}) MIT')
         expect(result).not.toBeNull()
-        expect(result!.groups).toHaveLength(1)
-        expect(result!.groups[0]).toEqual({ name: 'year', pattern: '\\d{4}' })
+        if (result === null) throw new Error('Expected named group to parse')
+        expect(result.groups).toHaveLength(1)
+        expect(result.groups[0]).toEqual({ name: 'year', pattern: '\\d{4}' })
+        expect(result.parts).toEqual(['Copyright ', '(?<year>\\d{4})', ' MIT'])
     })
 
     it('parses multiple named groups', () => {
@@ -42,6 +44,96 @@ describe('parseExpectedPatterns', () => {
         const result = parseExpectedPatterns('(?<content>.*)')
         expect(result).not.toBeNull()
         expect(result!.groups[0].pattern).toBe('.*')
+    })
+
+    it('preserves empty parts around adjacent groups at both boundaries', () => {
+        const result = parseExpectedPatterns('(?<first>\\w+)(?<second>\\d+)')
+        if (result === null) throw new Error('Expected adjacent named groups to parse')
+
+        expect(result.parts).toEqual(['', '(?<first>\\w+)', '', '(?<second>\\d+)', ''])
+    })
+
+    it('preserves multiline Unicode literals around group parts', () => {
+        const text = 'α\n(?<word>\\w+)\n終'
+        const result = parseExpectedPatterns(text)
+        if (result === null) throw new Error('Expected multiline named group to parse')
+
+        expect(result.parts).toEqual(['α\n', '(?<word>\\w+)', '\n終'])
+        expect(cleanTemplate(text)).toBe('α\n<word>\n終')
+    })
+
+    it('leaves malformed group syntax unchanged', () => {
+        const malformed = 'before (?<broken>abc after 🌍'
+
+        expect(parseExpectedPatterns(malformed)).toBeNull()
+        expect(cleanTemplate(malformed)).toBe(malformed)
+    })
+})
+
+describe('cleanTemplate', () => {
+    it('replaces named groups with readable placeholders', () => {
+        expect(cleanTemplate('Copyright (?<year>\\d{4}) (?<holder>.+)')).toBe(
+            'Copyright <year> <holder>'
+        )
+    })
+
+    it('returns text unchanged when no groups are present', () => {
+        expect(cleanTemplate('hello world')).toBe('hello world')
+    })
+
+    it('handles groups with complex patterns', () => {
+        expect(cleanTemplate('(?<name>.*?) end')).toBe('<name> end')
+    })
+})
+
+describe('compiled expected-pattern metadata', () => {
+    it('reuses compiled expected-pattern metadata for multiple extractions', () => {
+        const original = 'Year: (?<year>\\d{4})\nHolder: (?<holder>[A-Za-z]+)'
+        const parsed = parseExpectedPatterns(original)!
+
+        expect(parsed.matches).toEqual([
+            {
+                fullMatch: '(?<year>\\d{4})',
+                name: 'year',
+                pattern: '\\d{4}',
+                index: 6
+            },
+            {
+                fullMatch: '(?<holder>[A-Za-z]+)',
+                name: 'holder',
+                pattern: '[A-Za-z]+',
+                index: 29
+            }
+        ])
+        expect(parsed.cleanedText).toBe('Year: <year>\nHolder: <holder>')
+        expect(parsed.linePatterns).toHaveLength(2)
+        expect(parsed.linePatterns.map(({ lineText, groups }) => ({ lineText, groups }))).toEqual([
+            {
+                lineText: 'Year: (?<year>\\d{4})',
+                groups: [{ name: 'year', pattern: '\\d{4}', indexInLine: 6 }]
+            },
+            {
+                lineText: 'Holder: (?<holder>[A-Za-z]+)',
+                groups: [{ name: 'holder', pattern: '[A-Za-z]+', indexInLine: 8 }]
+            }
+        ])
+
+        const regexes = parsed.linePatterns.map(({ regex }) => regex)
+        const first = extractCaptures(original, 'Year: 2024\nHolder: Alice', parsed)
+        const second = extractCaptures(original, 'Year: 2025\nHolder: Bob', parsed)
+
+        expect(first).toMatchObject({
+            captures: { year: '2024', holder: 'Alice' },
+            resolvedText: 'Year: 2024\nHolder: Alice'
+        })
+        expect(second).toMatchObject({
+            captures: { year: '2025', holder: 'Bob' },
+            resolvedText: 'Year: 2025\nHolder: Bob'
+        })
+        expect(parsed.linePatterns.map(({ regex }) => regex)).toEqual(regexes)
+        parsed.linePatterns.forEach(({ regex }, index) => {
+            expect(regex).toBe(regexes[index])
+        })
     })
 })
 
@@ -296,6 +388,17 @@ describe('findNamedGroups (via parseExpectedPatterns)', () => {
         expect(result!.groups[0].pattern).toBe('\\(escaped\\)')
     })
 
+    it('ignores parentheses inside character classes while finding the group boundary', () => {
+        const text = 'Symbol: (?<symbol>[)])'
+        const result = parseExpectedPatterns(text)
+        if (result === null) throw new Error('Expected character-class group to parse')
+
+        expect(result.groups[0].pattern).toBe('[)]')
+        expect(result.parts).toEqual(['Symbol: ', '(?<symbol>[)])', ''])
+        expect(result.cleanedText).toBe('Symbol: <symbol>')
+        expect(cleanTemplate(text)).toBe('Symbol: <symbol>')
+    })
+
     it('handles empty pattern in group', () => {
         const text = '(?<empty>)'
         const result = parseExpectedPatterns(text)
@@ -303,21 +406,5 @@ describe('findNamedGroups (via parseExpectedPatterns)', () => {
         expect(result).not.toBeNull()
         expect(result!.groups[0].name).toBe('empty')
         expect(result!.groups[0].pattern).toBe('')
-    })
-})
-
-describe('cleanTemplate', () => {
-    it('replaces named groups with readable placeholders', () => {
-        expect(cleanTemplate('Copyright (?<year>\\d{4}) (?<holder>.+)')).toBe(
-            'Copyright <year> <holder>'
-        )
-    })
-
-    it('returns text unchanged when no groups present', () => {
-        expect(cleanTemplate('hello world')).toBe('hello world')
-    })
-
-    it('handles groups with complex patterns', () => {
-        expect(cleanTemplate('(?<name>.*?) end')).toBe('<name> end')
     })
 })

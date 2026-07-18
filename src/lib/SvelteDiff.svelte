@@ -67,8 +67,7 @@ certain dynamic regions (dates, names, versions) are expected to differ.
         type DisplayDiff,
         parseExpectedPatterns,
         extractCaptures,
-        tagExpectedRegions,
-        cleanTemplate
+        tagExpectedRegions
     } from './expectedPatterns.js'
 
     const {
@@ -89,6 +88,7 @@ certain dynamic regions (dates, names, versions) are expected to differ.
 
     let displayDiffs = $state<DisplayDiff[]>([])
     const dmp = $state<DiffMatchPatch>(new DiffMatchPatch())
+    const parseResult = $derived(parseExpectedPatterns(originalText))
 
     const computeDiff = (text1: string, text2: string) => {
         // trunk-ignore(eslint/camelcase)
@@ -96,7 +96,6 @@ certain dynamic regions (dates, names, versions) are expected to differ.
         // trunk-ignore(eslint/camelcase)
         dmp.Diff_EditCost = cleanupEfficiency
 
-        const parseResult = parseExpectedPatterns(text1)
         let diffText1 = text1
         let captures: Record<string, string> | undefined
         let captureRanges: import('./expectedPatterns.js').CaptureRange[] = []
@@ -109,7 +108,7 @@ certain dynamic regions (dates, names, versions) are expected to differ.
                 captureRanges = extractResult.captureRangesInText2
             } else {
                 // Regex didn't match — clean template so users see <name> not (?<name>...)
-                diffText1 = cleanTemplate(text1)
+                diffText1 = parseResult.cleanedText
             }
         }
 
