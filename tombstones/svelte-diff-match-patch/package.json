@@ -1,6 +1,6 @@
 {
     "name": "@humanspeak/svelte-diff-match-patch",
-    "version": "0.3.1",
+    "version": "0.3.2",
     "description": "Renamed to @humanspeak/svelte-diff. This package re-exports it so existing installs keep working.",
     "keywords": [
         "svelte",
@@ -36,7 +36,7 @@
         "index.d.ts"
     ],
     "dependencies": {
-        "@humanspeak/svelte-diff": "^0.3.1"
+        "@humanspeak/svelte-diff": "^0.3.2"
     },
     "peerDependencies": {
         "svelte": "^5.0.0"
