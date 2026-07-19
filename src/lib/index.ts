@@ -17,7 +17,13 @@ export {
     parseExpectedPatterns,
     tagExpectedRegions
 } from './expectedPatterns.js'
-export type { CaptureRange, DisplayDiff, PatternMatchResult } from './expectedPatterns.js'
+export type {
+    CaptureRange,
+    DisplayDiff,
+    ExtractResult,
+    ParseResult,
+    PatternMatchResult
+} from './expectedPatterns.js'
 /**
  * Custom Svelte 5 snippets for rendering each diff segment type.
  *

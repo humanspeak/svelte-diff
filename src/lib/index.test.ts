@@ -103,4 +103,30 @@ describe('index exports', () => {
         }
         expect(result).toBeDefined()
     })
+
+    it('should export ParseResult type', () => {
+        const parse: import('./index.js').ParseResult = {
+            groups: [{ name: 'year', pattern: '\\d{4}' }],
+            parts: ['', '(?<year>\\d{4})', ''],
+            matches: [{ fullMatch: '(?<year>\\d{4})', name: 'year', pattern: '\\d{4}', index: 0 }],
+            cleanedText: '<year>',
+            linePatterns: [
+                {
+                    lineText: '(?<year>\\d{4})',
+                    groups: [{ name: 'year', pattern: '\\d{4}', indexInLine: 0 }],
+                    regex: /(?<year>\d{4})/d
+                }
+            ]
+        }
+        expect(parse).toBeDefined()
+    })
+
+    it('should export ExtractResult type', () => {
+        const result: import('./index.js').ExtractResult = {
+            resolvedText: '2024',
+            captures: { year: '2024' },
+            captureRangesInText2: [{ name: 'year', start: 0, end: 4 }]
+        }
+        expect(result).toBeDefined()
+    })
 })
