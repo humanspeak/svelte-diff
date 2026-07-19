@@ -33,4 +33,4 @@
 - The two-worker full matrix passed 110/110 three consecutive times in 59.3, 50.7, and 51.6 seconds across Chromium, Firefox, WebKit, mobile Chrome, and mobile Safari; every inherited ceiling and both 005 SSR/hydration tests passed in every run.
 - Independent deterministic gates remain green: three consecutive targeted 005 runs passed 2/2, targeted Chromium passed 17/17, library tests passed 78/78, Svelte check reported zero diagnostics, package/publint passed, and scoped Trunk format/lint reported no issues.
 - Full contribution review found only the component, dedicated 005 diagnostic, shared performance coverage, and status artifacts changed; derived computation is consumed by SSR markup while callback notification remains in the client-only effect.
-- Action: PASS; PR https://github.com/humanspeak/svelte-diff/pull/173 opened for the verified snapshot. Merge remains the operator's decision.
+- Action: PASS; [PR #173](https://github.com/humanspeak/svelte-diff/pull/173) opened for the verified snapshot. Merge remains the operator's decision.
