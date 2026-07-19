@@ -7,8 +7,14 @@
 > `.agents/.plans/component-performance/README.md` when done unless a reviewer
 > told you they maintain the index.
 >
+> **Revision 2026-07-19**: Plan 004 was approved and merged with compact
+> rendering as the default for 0.4.0 and `compact={false}` as the legacy
+> equal-span escape hatch. Preserve both paths during SSR and hydration; this
+> supersedes the original opt-in predecessor assumption without changing Plan
+> 005's SSR scope or gates. Re-baseline the plan at `6fdbfba`.
+>
 > **Drift check (run first)**:
-> `git diff --stat 8e3082c..HEAD -- src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/routes/tests/component-performance/005/+page.svelte tests/component-performance.test.ts`
+> `git diff --stat 6fdbfba..HEAD -- src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/routes/tests/component-performance/005/+page.svelte tests/component-performance.test.ts`
 > Confirm Plans 001–004 are marked DONE and satisfy the expected predecessor
 > state below. Changes from those plans are expected; unrelated computation or
 > SSR changes are a STOP condition.
@@ -24,7 +30,7 @@
 - **Risk**: MED
 - **Depends on**: `001-compile-expected-patterns-once.md`, `002-linearize-expected-region-tagging.md`, `003-decouple-processing-callback.md`, `004-add-compact-dom-rendering.md`
 - **Category**: perf
-- **Planned at**: commit `8e3082c`, 2026-07-17
+- **Planned at**: commit `6fdbfba`, 2026-07-19
 
 ## Why this matters
 
@@ -65,8 +71,8 @@ Before this plan starts, predecessors must have produced this conceptual shape:
 - Plan 003: `computeDiff` returns one result object containing timing, raw diffs,
   captures, and display diffs; a calculation effect stores it; a separate
   callback effect invokes `onProcessing`.
-- Plan 004: markup supports opt-in compact equal rendering without changing the
-  default DOM.
+- Plan 004: markup defaults to compact equal rendering, while
+  `compact={false}` preserves the legacy equal-span DOM.
 
 Plans 001–004 created isolated numbered diagnostics and shared Playwright
 coverage. This plan creates the final `/tests/component-performance/005` SSR
@@ -277,7 +283,8 @@ generated build output must not be committed.
 - [ ] Pure computation is `$derived`; no calculation `$effect` remains.
 - [ ] `onProcessing` remains client-only and receives unchanged arguments.
 - [ ] Callback-only changes reuse the same raw diff array.
-- [ ] Default and compact DOM behavior both hydrate without duplication/errors.
+- [ ] The compact default and `compact={false}` legacy DOM both hydrate without
+      duplication/errors.
 - [ ] Trunk, all library tests, `pnpm check`, `pnpm build`, and full Playwright exit 0.
 - [ ] No route except the dedicated 005 diagnostic page, public API, docs app, or other
       out-of-scope file is modified.
