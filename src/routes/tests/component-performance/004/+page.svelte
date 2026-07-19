@@ -35,7 +35,7 @@
 
     const LINE_COUNT = 2000
     const SAMPLE_COUNT = 5
-    const CEILING_MS = 300
+    const CEILING_MS = 25
     const PROCESSING_TIMEOUT_MS = 5000
     const RUNNING_STATE_HOLD_MS = 250
     const PREVIEW_TEXT = [

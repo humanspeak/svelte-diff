@@ -6,8 +6,12 @@
 > `.agents/.plans/component-performance/README.md` when finished unless a
 > reviewer told you they maintain the index.
 >
+> **Revision 2026-07-19**: Tighten the settled-render ceiling from 300 ms to
+> 25 ms at maintainer request after repeated local samples peaked near 10 ms.
+> Re-baseline the plan at `ded1d12`; workload and DOM assertions are unchanged.
+>
 > **Drift check (run first)**:
-> `git diff --stat 8e3082c..HEAD -- src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/lib/index.ts src/lib/index.test.ts README.md src/routes/tests/component-performance/004/+page.svelte tests/component-performance.test.ts`
+> `git diff --stat ded1d12..HEAD -- src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/lib/index.ts src/lib/index.test.ts README.md src/routes/tests/component-performance/004/+page.svelte tests/component-performance.test.ts`
 > Plans 001–003 intentionally change the component, tests, and diagnostics. Confirm
 > their README rows are DONE and their postconditions remain. STOP on any other
 > mismatch with the rendering excerpts below.
@@ -23,7 +27,7 @@
 - **Risk**: MED
 - **Depends on**: `003-decouple-processing-callback.md`
 - **Category**: perf
-- **Planned at**: commit `8e3082c`, 2026-07-17
+- **Planned at**: commit `ded1d12`, 2026-07-19
 
 ## Why this matters
 
@@ -86,7 +90,7 @@ Constraints:
 | Purpose              | Command                                                                                                                                                                                                         | Expected on success               |
 | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
 | Targeted tests       | `pnpm vitest run src/lib/SvelteDiff.test.ts src/lib/index.test.ts --coverage.enabled=false --reporter=default`                                                                                                  | all component/type tests pass     |
-| Diagnostic E2E       | `pnpm playwright test tests/component-performance.test.ts --project=chromium -g "004"`                                                                                                                          | compact card passes within 300 ms |
+| Diagnostic E2E       | `pnpm playwright test tests/component-performance.test.ts --project=chromium -g "004"`                                                                                                                          | compact card passes within 25 ms  |
 | Unit suite           | `pnpm vitest run src/lib --coverage.enabled=false --reporter=default`                                                                                                                                           | all library tests pass            |
 | Type/Svelte check    | `pnpm check`                                                                                                                                                                                                    | exit 0                            |
 | Package verification | `pnpm build`                                                                                                                                                                                                    | exit 0, including publint         |
@@ -208,7 +212,7 @@ element counts, classes, and `textContent` directly.
 `pnpm vitest run src/lib/SvelteDiff.test.ts src/lib/index.test.ts --coverage.enabled=false --reporter=default`
 → all tests pass.
 
-### Step 5: Activate the 004 DOM-weight diagnostic and 300 ms ceiling
+### Step 5: Activate the 004 DOM-weight diagnostic and 25 ms ceiling
 
 Create `src/routes/tests/component-performance/004/+page.svelte` as a dedicated
 compact-mode probe. Render 2,000 identical newline-separated lines
@@ -219,8 +223,8 @@ probe in a collapsed `<details>` element, not `display:none`, and retain a
 After one warmup, perform five sequential updates where both original and
 modified text change to a new but still-identical 2,000-line value. Measure from
 the state change through the matching processing result and following `tick()`.
-Set the committed ceiling to **300 ms per settled render**. The diagnostic passes only
-when every sample is `<= 300 ms` and every settled probe has:
+Set the committed ceiling to **25 ms per settled render**. The diagnostic passes only
+when every sample is `<= 25 ms` and every settled probe has:
 
 - zero `<span>` elements for equal text;
 - exactly 1,999 `<br>` elements;
@@ -240,7 +244,7 @@ preview is visible. Include diagnostic text in failures.
 
 **Verify**:
 `pnpm playwright test tests/component-performance.test.ts --project=chromium -g "004"`
-→ green 004 page, five samples all `<= 300 ms`, zero spans, 1,999 breaks, and a
+→ green 004 page, five samples all `<= 25 ms`, zero spans, 1,999 breaks, and a
 visible compact-output preview.
 Run three times; STOP and report samples if the fixed workload misses the
 ceiling rather than weakening the threshold.
@@ -270,7 +274,7 @@ actually needed plus the batch README status update.
   lines; after implementation it renders zero spans and 99 breaks.
 - Preserve default DOM and every custom equal-renderer precedence path.
 - Cover newline edge cases and unchanged insert/remove/expected markup.
-- Prefer exact DOM counts over snapshots; retain the separate 300 ms browser
+- Prefer exact DOM counts over snapshots; retain the separate 25 ms browser
   ceiling as a user-perceived regression guard.
 - Show PASS/FAIL and complete workload/timing/DOM diagnostics on the dedicated 004 page.
 
@@ -282,7 +286,7 @@ actually needed plus the batch README status update.
 - [ ] Default DOM and custom renderer/class behavior are unchanged.
 - [ ] Newline break counts and text content are exact.
 - [ ] Diagnostic 004 visibly reports five samples, ceiling, maximum, and DOM
-      counts; all 2,000-line settled renders complete in `<= 300 ms`.
+      counts; all 2,000-line settled renders complete in `<= 25 ms`.
 - [ ] Trunk, all library tests, `pnpm check`, and `pnpm build` exit 0.
 - [ ] No out-of-scope file is modified.
 - [ ] The 004 row in the batch README is updated to DONE.
@@ -297,7 +301,7 @@ Stop and report if:
 - Supporting compact mode requires changing snippet signatures or wrapping
   arbitrary custom snippets in invalid inline markup.
 - Plan 003's result separation is lost or computation behavior changes.
-- The fixed 2,000-line compact workload exceeds 300 ms in any of three
+- The fixed 2,000-line compact workload exceeds 25 ms in any of three
   consecutive verification runs after implementation.
 - A verification fails twice after a reasonable fix attempt.
 
