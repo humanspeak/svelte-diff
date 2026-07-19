@@ -45,6 +45,16 @@
     let initialResultResolvers: Array<() => void> = []
     let activeRunId = 0
     let retainedDiffCount = $state(0)
+
+    /** Retains the exact raw diff array produced by the initial computation. */
+    const handleInitialProcessing: ProcessingCallback = (_timing, diffs) => {
+        if (retainedDiffs) return
+        retainedDiffs = diffs
+        retainedDiffCount = diffs.length
+        for (const resolve of initialResultResolvers) resolve()
+        initialResultResolvers = []
+    }
+
     let activeCallback = $state<ProcessingCallback>(handleInitialProcessing)
     let diagnostic = $state<DiagnosticResult>({
         status: 'running',
@@ -68,18 +78,6 @@
             `Failure reasons: ${diagnostic.failureReasons.join('; ') || 'None'}`
         ].join('\n')
     )
-
-    /** Retains the exact raw diff array produced by the initial computation. */
-    function handleInitialProcessing(
-        _timing: Parameters<ProcessingCallback>[0],
-        diffs: Parameters<ProcessingCallback>[1]
-    ): void {
-        if (retainedDiffs) return
-        retainedDiffs = diffs
-        retainedDiffCount = diffs.length
-        for (const resolve of initialResultResolvers) resolve()
-        initialResultResolvers = []
-    }
 
     /** Waits until the mounted component has produced its one retained result. */
     const waitForInitialResult = async (): Promise<void> => {
