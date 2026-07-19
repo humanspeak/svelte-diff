@@ -1,6 +1,10 @@
 import SvelteDiffDefault, {
+    cleanTemplate,
+    extractCaptures,
+    parseExpectedPatterns,
     SvelteDiff,
     SvelteDiffMatchPatch,
+    tagExpectedRegions,
     type CaptureRange,
     type DisplayDiff,
     type PatternMatchResult,
@@ -82,6 +86,13 @@ describe('index exports', () => {
         expect(diff).toBeDefined()
         const expectedDiff: DisplayDiff = { operation: 0, text: '2024', expected: 'year' }
         expect(expectedDiff).toBeDefined()
+    })
+
+    it('should re-export the expected-pattern engine functions', () => {
+        expect(typeof parseExpectedPatterns).toBe('function')
+        expect(typeof extractCaptures).toBe('function')
+        expect(typeof tagExpectedRegions).toBe('function')
+        expect(typeof cleanTemplate).toBe('function')
     })
 
     it('should export PatternMatchResult type', () => {
