@@ -104,7 +104,9 @@ certain dynamic regions (dates, names, versions) are expected to differ.
 
     let latestResult = $state.raw<DiffResult | null>(null)
     let previousInput: ComputationInput | null = null
-    const dmp = $state<DiffMatchPatch>(new DiffMatchPatch())
+    // Plain (non-reactive) scratch instance: only configured and called inside
+    // computeDiff, never read reactively, so it needs no $state wrapper.
+    const dmp = new DiffMatchPatch()
     const parseResult = $derived(parseExpectedPatterns(originalText))
 
     const computeDiff = (
