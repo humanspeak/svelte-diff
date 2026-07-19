@@ -174,6 +174,9 @@ certain dynamic regions (dates, names, versions) are expected to differ.
         }
     }
 
+    // Reactive props re-fire on rerender even when their values are unchanged,
+    // so compare inputs by value and reuse the cached result to keep diff
+    // identity stable when only non-computation props (e.g. onProcessing) change.
     const processingResult = $derived.by(() => {
         const input: ComputationInput = {
             originalText,
@@ -211,15 +214,19 @@ certain dynamic regions (dates, names, versions) are expected to differ.
         onProcessing?.(result.timing, result.diffs, result.captures)
     })
 
-    // Per segment type: child snippet > renderers entry > built-in fallback
+    // Per segment type: child snippet > renderers entry > built-in fallback.
+    // With no equal snippet/renderer/class, `compact` selects a wrapper-free
+    // text fallback so unchanged runs render as plain text nodes, not spans.
     const displayRenderers = $derived({
         remove: remove ?? renderers.remove ?? removeFallback,
         insert: insert ?? renderers.insert ?? insertFallback,
-        equal: equal ?? renderers.equal ?? equalFallback,
+        equal:
+            equal ??
+            renderers.equal ??
+            (compact && !rendererClasses.equal ? equalTextFallback : equalFallback),
         expected: expectedSnippet ?? renderers.expected ?? expectedFallback,
         lineBreak: lineBreak ?? renderers.lineBreak ?? lineBreakFallback
     })
-    const compactEqual = $derived(compact && !equal && !renderers.equal && !rendererClasses.equal)
 </script>
 
 {#each processingResult.displayDiffs as diff, index (index)}
@@ -235,21 +242,22 @@ certain dynamic regions (dates, names, versions) are expected to differ.
         {:else}
             {@render displayRenderers.expected(text, expected)}
         {/if}
-    {:else if text.includes('\n')}
-        {#each text.split('\n') as line, lineIndex (lineIndex)}
-            {#if lineIndex > 0}{@render displayRenderers.lineBreak()}{/if}{#if line.length > 0}{#if operation === 0 && compactEqual}{line}{:else}{@const renderer =
-                        operation === 0
-                            ? displayRenderers.equal
-                            : operation === -1
-                              ? displayRenderers.remove
-                              : displayRenderers.insert}{@render renderer(line)}{/if}{/if}
-        {/each}
-    {:else if operation === 0}
-        {#if compactEqual}{text}{:else}{@render displayRenderers.equal(text)}{/if}
-    {:else if operation === -1}
-        {@render displayRenderers.remove(text)}
-    {:else if operation === 1}
-        {@render displayRenderers.insert(text)}
+    {:else}
+        {@const renderer =
+            operation === 0
+                ? displayRenderers.equal
+                : operation === -1
+                  ? displayRenderers.remove
+                  : displayRenderers.insert}
+        {#if text.includes('\n')}
+            {#each text.split('\n') as line, lineIndex (lineIndex)}
+                {#if lineIndex > 0}{@render displayRenderers.lineBreak()}{/if}{#if line.length > 0}{@render renderer(
+                        line
+                    )}{/if}
+            {/each}
+        {:else}
+            {@render renderer(text)}
+        {/if}
     {/if}
 {/each}
 
@@ -271,6 +279,8 @@ certain dynamic regions (dates, names, versions) are expected to differ.
 {#snippet equalFallback(text: string)}
     <span class={rendererClasses.equal}>{text}</span>
 {/snippet}
+
+{#snippet equalTextFallback(text: string)}{text}{/snippet}
 
 {#snippet expectedFallback(text: string, groupName: string)}
     <span
