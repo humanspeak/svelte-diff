@@ -297,6 +297,58 @@ test('004 renders equal text with the compact default within the settled-render 
     await expect(page.getByTestId('mounted-compact-probe'), diagnostics).toBeAttached()
 })
 
+test.describe('005 server-rendered initial diff', () => {
+    test.use({ javaScriptEnabled: false })
+
+    test('005 renders meaningful diff markup without JavaScript', async ({ page }) => {
+        const start = performance.now()
+        await page.goto('/tests/component-performance/005')
+        const elapsed = performance.now() - start
+        const card = page.getByTestId('diagnostic-005')
+        const diagnostics = (await card.innerText()).trim()
+        const evidence = `Navigation: ${elapsed.toFixed(2)} ms\n${diagnostics}`
+
+        await expect(card.getByText('PASS — diff present in server HTML'), evidence).toBeVisible()
+        await expect(card.getByText('FAIL — diff missing from server HTML'), evidence).toBeHidden()
+
+        const probe = card.getByTestId('ssr-diff-probe')
+        await expect(probe.locator('.ssr-diagnostic-equal').first(), evidence).toBeVisible()
+        await expect(probe.locator('.ssr-diagnostic-remove').first(), evidence).toBeVisible()
+        await expect(probe.locator('.ssr-diagnostic-insert').first(), evidence).toBeVisible()
+        await expect(probe, evidence).toContainText('Server proof:')
+        await expect(probe, evidence).toContainText('amber')
+        await expect(probe, evidence).toContainText('cobalt')
+        expect(elapsed, evidence).toBeLessThanOrEqual(3000)
+    })
+})
+
+test('005 hydrates the server diff and reports navigation timing', async ({ page }) => {
+    const runtimeErrors: string[] = []
+    page.on('pageerror', (error) => runtimeErrors.push(error.message))
+    page.on('console', (message) => {
+        if (message.type() === 'error') runtimeErrors.push(message.text())
+    })
+
+    await page.goto('/tests/component-performance/005')
+    const card = await assertDiagnosticPass(page, '005')
+    const diagnostics = (await card.innerText()).trim()
+    const probe = card.getByTestId('ssr-diff-probe')
+
+    await expect(page.getByTestId('diagnostic-overall'), diagnostics).toHaveAttribute(
+        'data-status',
+        'pass'
+    )
+    await expect(page.getByTestId('diagnostic-overall'), diagnostics).toContainText('005: PASS')
+    await expect(card, diagnostics).toContainText('Actual navigation')
+    await expect(card, diagnostics).toContainText('3000 ms local preview navigation')
+    await expect(probe, diagnostics).toHaveText(
+        'Server proof: ambercobalt lighthouse remains steadybright.'
+    )
+    await expect(probe.locator('.ssr-diagnostic-remove'), diagnostics).toHaveCount(2)
+    await expect(probe.locator('.ssr-diagnostic-insert'), diagnostics).toHaveCount(2)
+    expect(runtimeErrors, diagnostics).toEqual([])
+})
+
 test('component performance diagnostics are split into focused pages', async ({ page }) => {
     await page.goto('/tests/component-performance')
 

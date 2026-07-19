@@ -104,11 +104,15 @@ certain dynamic regions (dates, names, versions) are expected to differ.
         compiledPattern: ReturnType<typeof parseExpectedPatterns>
     }
 
-    let latestResult = $state.raw<DiffResult | null>(null)
-    let previousInput: ComputationInput | null = null
+    interface ComputationCache {
+        input: ComputationInput
+        result: DiffResult
+    }
+
     // Plain (non-reactive) scratch instance: only configured and called inside
     // computeDiff, never read reactively, so it needs no $state wrapper.
     const dmp = new DiffMatchPatch()
+    let computationCache: ComputationCache | undefined
     const parseResult = $derived(parseExpectedPatterns(originalText))
 
     const computeDiff = (
@@ -170,7 +174,7 @@ certain dynamic regions (dates, names, versions) are expected to differ.
         }
     }
 
-    $effect(() => {
+    const processingResult = $derived.by(() => {
         const input: ComputationInput = {
             originalText,
             modifiedText,
@@ -180,17 +184,17 @@ certain dynamic regions (dates, names, versions) are expected to differ.
             compiledPattern: parseResult
         }
         if (
-            previousInput?.originalText === input.originalText &&
-            previousInput.modifiedText === input.modifiedText &&
-            previousInput.timeout === input.timeout &&
-            previousInput.cleanupSemantic === input.cleanupSemantic &&
-            previousInput.cleanupEfficiency === input.cleanupEfficiency &&
-            previousInput.compiledPattern === input.compiledPattern
-        )
-            return
+            computationCache?.input.originalText === input.originalText &&
+            computationCache.input.modifiedText === input.modifiedText &&
+            computationCache.input.timeout === input.timeout &&
+            computationCache.input.cleanupSemantic === input.cleanupSemantic &&
+            computationCache.input.cleanupEfficiency === input.cleanupEfficiency &&
+            computationCache.input.compiledPattern === input.compiledPattern
+        ) {
+            return computationCache.result
+        }
 
-        previousInput = input
-        latestResult = computeDiff(
+        const result = computeDiff(
             input.originalText,
             input.modifiedText,
             input.timeout,
@@ -198,11 +202,12 @@ certain dynamic regions (dates, names, versions) are expected to differ.
             input.cleanupEfficiency,
             input.compiledPattern
         )
+        computationCache = { input, result }
+        return result
     })
 
     $effect(() => {
-        const result = latestResult
-        if (!result) return
+        const result = processingResult
         onProcessing?.(result.timing, result.diffs, result.captures)
     })
 
@@ -217,7 +222,7 @@ certain dynamic regions (dates, names, versions) are expected to differ.
     const compactEqual = $derived(compact && !equal && !renderers.equal && !rendererClasses.equal)
 </script>
 
-{#each latestResult?.displayDiffs ?? [] as diff, index (index)}
+{#each processingResult.displayDiffs as diff, index (index)}
     {@const { operation, text, expected } = diff}
     {#if expected}
         {#if text.includes('\n')}
