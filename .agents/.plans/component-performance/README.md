@@ -64,7 +64,7 @@ add diagnostic cards or workloads back to the index page. Committed ceilings are
 | 001  | Five modified-text changes on a 750-group mounted component | 100 ms per change |
 | 002  | Three 10,000-diff/5,000-range tagging runs                  | 10 ms per run     |
 | 003  | Five callback-only swaps on a 3,000-line diff               | 75 ms per swap    |
-| 004  | Five settled compact renders of 2,000 lines                 | 300 ms per render |
+| 004  | Five settled compact renders of 2,000 lines                 | 25 ms per render  |
 | 005  | No-JavaScript local-preview navigation with SSR diff markup | 3,000 ms          |
 
 Executors must run each ceiling test three times after the fix. A miss is a STOP
@@ -87,6 +87,12 @@ These audit numbers are evidence, not the committed CI thresholds. Each plan
 defines its own fixed browser workload/ceiling alongside a deterministic
 regression proof.
 
+## Maintainer decisions
+
+- Compact rendering defaults to `true` in the 0.4.0 minor release. This is an
+  intentional DOM compatibility boundary: `compact={false}` preserves legacy
+  equal spans while consumers migrate selectors, styles, and DOM assertions.
+
 ## Findings considered and rejected
 
 - Debouncing prop updates: rejected for this batch. Debounce timing belongs to
@@ -94,10 +100,6 @@ regression proof.
   behavior.
 - Web Worker offloading: rejected. It can improve main-thread responsiveness but
   does not reduce total computation and adds worker packaging/API complexity.
-- Making compact rendering the default immediately: rejected as a silent minor
-  change because root API documentation promises default span rendering.
-  Plan 004 adds an opt-in prop; a future major may change the default with a
-  migration note.
 - Replacing repeated inline fallback styles with component CSS classes: deferred
   because it saves attribute bytes but has much lower leverage than removing
   unstyled equal elements.

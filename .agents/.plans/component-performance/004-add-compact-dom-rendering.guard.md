@@ -35,3 +35,31 @@ ded1d12 + working tree · final close-out of the tightened ceiling
 - Scoped Trunk check and `git diff --check` pass; the live page exposes `data-ceiling-ms="25"` while retaining zero-span and 1,999-break assertions.
 - Local CodeRabbit CLI completed its uncommitted review with no findings. A second source-directory-only attempt was terminated after stalling in analysis without output; it produced no contradictory finding.
 - Action: approved for an updated snapshot and PR #172 push; overwrite the close-out report with the tightened evidence.
+
+## Checkpoint 5 — 2026-07-19 07:08 — PLAN AMENDED
+
+a82afb4 · maintainer-directed default and release-boundary change
+
+- The maintainer explicitly chose `compact=true` as the public default and a 0.4.0 minor release, accepting the equal-span DOM compatibility change before SSR work begins.
+- The plan now requires `compact={false}` as the legacy-DOM escape hatch, package and docs-site migration guidance, default-path DOM tests, and a visible legacy-versus-default 004 preview; renderer/class precedence and the 25 ms workload remain unchanged.
+- Action: plan amended and re-baselined at `a82afb4`; the operator is implementing directly at maintainer request without an executor agent.
+
+## Checkpoint 6 — 2026-07-19 07:30 — ON TRACK
+
+a82afb4 + working tree · maintainer-directed default implementation and final verification
+
+- The public default is `compact=true`; explicit `compact=false` restores the
+  legacy equal spans. Renderer, class, and line-break precedence remain intact.
+- The default-path and compatibility unit tests pass, diagnostic 004 visibly
+  compares legacy and default DOM, and its fixed 2,000-line workload passes the
+  25 ms ceiling in repeated isolated runs and the combined 001–004 suite.
+- Package and docs checks/builds pass. CodeRabbit CLI reviewed source with no
+  findings; its actionable docs wording and example findings were corrected,
+  regenerated into static mirrors, and the final 9-file docs review completed
+  with no findings.
+- Scope review found and corrected stale 004 ceiling/default language in the
+  component-performance index. No unrelated generated social-card or GitHub
+  stats changes remain.
+- Action: approved for commit and PR #172 update as a `minor` release with the
+  `breaking-change` label. Direct implementation was requested by the
+  maintainer; no executor agent participated in this revision.

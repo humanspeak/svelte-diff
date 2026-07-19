@@ -46,18 +46,18 @@
     const createDocument = (revision: number) =>
         Array.from(
             { length: LINE_COUNT },
-            () => `Compact revision ${revision}: unchanged content`
+            () => `Default compact revision ${revision}: unchanged content`
         ).join('\n')
 
     let revision = 0
     let activeRunId = 0
     let pendingProcessing: PendingProcessing | null = null
     let probeWrapper: HTMLDivElement
+    let legacyPreview: HTMLDivElement
     let defaultPreview: HTMLDivElement
-    let compactPreview: HTMLDivElement
     let activeText = $state(createDocument(revision))
+    let legacyPreviewSpans = $state(3)
     let defaultPreviewSpans = $state(0)
-    let compactPreviewSpans = $state(0)
     let diagnostic = $state<DiagnosticResult>({
         status: 'running',
         samples: [],
@@ -69,7 +69,7 @@
     })
     const diagnosticText = $derived(
         [
-            `Workload: ${LINE_COUNT} identical lines rendered in compact mode`,
+            `Workload: ${LINE_COUNT} identical lines rendered with the compact default`,
             `Samples: ${diagnostic.samples.map((sample) => `${sample.elapsed.toFixed(2)} ms`).join(', ') || 'Not measured'}`,
             `Ceiling: ${CEILING_MS.toFixed(2)} ms per settled render`,
             `Observed maximum: ${diagnostic.maximum.toFixed(2)} ms`,
@@ -229,8 +229,8 @@
     onMount(() => {
         void (async () => {
             await tick()
+            legacyPreviewSpans = legacyPreview.querySelectorAll('span').length
             defaultPreviewSpans = defaultPreview.querySelectorAll('span').length
-            compactPreviewSpans = compactPreview.querySelectorAll('span').length
         })()
         void runDiagnostic()
         return () => {
@@ -250,10 +250,11 @@
         <a href="/tests/component-performance/003">← Previous: 003</a>
     </nav>
     <p class="eyebrow">DIAGNOSTIC 004</p>
-    <h1>Render unstyled equal text without wrappers</h1>
+    <h1>Render unstyled equal text without wrappers by default</h1>
     <p class="intro">
-        This page updates one real 2,000-line compact diff five times. Every settled render must
-        preserve the complete document and all line breaks while creating zero equal spans.
+        This page updates one real 2,000-line diff five times using the default compact behavior.
+        Every settled render must preserve the complete document and all line breaks while creating
+        zero equal spans.
     </p>
 
     <div
@@ -293,7 +294,7 @@
         <dl>
             <div>
                 <dt>Workload</dt>
-                <dd>{LINE_COUNT} identical lines in compact mode</dd>
+                <dd>{LINE_COUNT} identical lines using the compact default</dd>
             </div>
             <div>
                 <dt>Samples</dt>
@@ -342,32 +343,33 @@
             <strong>THE TEXT IS IDENTICAL</strong>
         </header>
         <p>
-            Both panels are live SvelteDiff output for the same three unchanged lines. Compact mode
-            keeps the text and breaks but removes the otherwise-empty equal wrappers.
+            Both panels are live SvelteDiff output for the same three unchanged lines. The new
+            default keeps the text and breaks but removes the otherwise-unneeded equal wrappers;
+            <code>compact=false</code> restores the legacy DOM.
         </p>
         <div class="preview-comparison">
             <section>
-                <p class="preview-label">DEFAULT DOM</p>
-                <strong>Default mode: {defaultPreviewSpans} equal spans</strong>
+                <p class="preview-label">LEGACY OPT-OUT</p>
+                <strong>compact=false: {legacyPreviewSpans} equal spans</strong>
+                <div class="preview-output" bind:this={legacyPreview}>
+                    <SvelteDiff
+                        originalText={PREVIEW_TEXT}
+                        modifiedText={PREVIEW_TEXT}
+                        compact={false}
+                    />
+                </div>
+            </section>
+            <div class="arrow" aria-hidden="true">→</div>
+            <section class="default-panel">
+                <p class="preview-label">NEW DEFAULT</p>
+                <strong>Default compact mode: {defaultPreviewSpans} equal spans</strong>
                 <div class="preview-output" bind:this={defaultPreview}>
                     <SvelteDiff originalText={PREVIEW_TEXT} modifiedText={PREVIEW_TEXT} />
                 </div>
             </section>
-            <div class="arrow" aria-hidden="true">→</div>
-            <section class="compact-panel">
-                <p class="preview-label">COMPACT DOM</p>
-                <strong>Compact mode: {compactPreviewSpans} equal spans</strong>
-                <div class="preview-output" bind:this={compactPreview}>
-                    <SvelteDiff
-                        originalText={PREVIEW_TEXT}
-                        modifiedText={PREVIEW_TEXT}
-                        compact={true}
-                    />
-                </div>
-            </section>
         </div>
         <p class="preview-note">
-            The measured probe scales the compact panel to 2,000 lines: spans: 0, breaks: 1999,
+            The measured probe scales the new default to 2,000 lines: spans: 0, breaks: 1999,
             complete text preserved.
         </p>
     </section>
@@ -382,7 +384,6 @@
             <SvelteDiff
                 originalText={activeText}
                 modifiedText={activeText}
-                compact={true}
                 onProcessing={handleProcessing}
             />
         </div>
@@ -532,7 +533,7 @@
         background: white;
         color: #0f172a;
     }
-    .preview-comparison .compact-panel {
+    .preview-comparison .default-panel {
         border-color: #15803d;
         background: #f0fdf4;
     }

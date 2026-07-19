@@ -50,7 +50,7 @@ certain dynamic regions (dates, names, versions) are expected to differ.
 @property {number} [timeout=1] - Maximum time in seconds to spend computing the diff (0 for unlimited)
 @property {boolean} [cleanupSemantic=false] - If true, applies semantic cleanup for human readability
 @property {number} [cleanupEfficiency=4] - Edit cost for efficiency cleanup; higher values are more aggressive
-@property {boolean} [compact=false] - If true, built-in equal segments without an equal class render as text. Custom equal snippets/renderers and `rendererClasses.equal` retain their requested markup, and line breaks continue through the `lineBreak` renderer.
+@property {boolean} [compact=true] - By default, built-in equal segments without an equal class render as text. Set to false to restore legacy equal spans. Custom equal snippets/renderers and `rendererClasses.equal` retain their requested markup, and line breaks continue through the `lineBreak` renderer.
 @property {function} [onProcessing] - Callback invoked after diff computation, receiving `(timing, diffs, captures?)`. The `captures` argument is a `Record<string, string>` when expected patterns match.
 @property {Snippet} [remove] - Child snippet rendering a removed segment. Takes precedence over `renderers.remove`.
 @property {Snippet} [insert] - Child snippet rendering an inserted segment. Takes precedence over `renderers.insert`.
@@ -77,7 +77,7 @@ certain dynamic regions (dates, names, versions) are expected to differ.
         timeout = 1,
         cleanupSemantic = false,
         cleanupEfficiency = 4,
-        compact = false,
+        compact = true,
         onProcessing,
         remove,
         insert,

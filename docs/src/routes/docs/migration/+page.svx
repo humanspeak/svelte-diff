@@ -19,6 +19,31 @@ description: Migrate from the previous SvelteDiffMatchPatch name or a hand-built
 
 # Migration Guide
 
+## 0.3.x to 0.4.0: compact equal text by default
+
+Starting in 0.4.0, `compact` defaults to `true`. Unstyled built-in equal text no longer receives
+unstyled wrapper `<span>` elements. Text content and intrinsic line breaks are unchanged when no
+selectors or styles depend on the legacy wrapper, and custom equal snippets, `renderers.equal`,
+and `rendererClasses.equal` keep their requested markup.
+
+If application CSS, tests, or DOM queries depend on the former equal spans, opt out while
+migrating:
+
+```svelte
+<script lang="ts">
+    import { SvelteDiff } from '@humanspeak/svelte-diff'
+</script>
+
+<SvelteDiff
+    originalText="The old text"
+    modifiedText="The new text"
+    compact={false}
+/>
+```
+
+Remove the opt-out after replacing selectors and styles that depend on unstyled equal `<span>`
+elements.
+
 ## From `SvelteDiffMatchPatch`
 
 The component was renamed to `SvelteDiff`. The old export remains as a deprecated alias, so migration can be incremental.

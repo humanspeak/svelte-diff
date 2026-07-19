@@ -172,11 +172,12 @@ export interface SvelteDiffProps {
      * Custom equal child snippets and `renderers.equal` retain their requested
      * markup, as does the built-in renderer when `rendererClasses.equal` is
      * nonempty. Line breaks continue through the configured or built-in
-     * `lineBreak` renderer. Default: `false`.
+     * `lineBreak` renderer. Default: `true`. Set this to `false` to restore
+     * the legacy equal `<span>` wrappers.
      *
      * ## Example
      * ```svelte
-     * <SvelteDiff originalText={a} modifiedText={b} compact={true} />
+     * <SvelteDiff originalText={a} modifiedText={b} compact={false} />
      * ```
      */
     compact?: boolean

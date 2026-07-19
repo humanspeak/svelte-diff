@@ -319,8 +319,7 @@ describe('SvelteDiff compact rendering', () => {
         const text = lines.join('\n')
         const { container } = render(SvelteDiff, {
             originalText: text,
-            modifiedText: text,
-            compact: true
+            modifiedText: text
         })
 
         expect(container.textContent).toBe(lines.join(''))
@@ -328,10 +327,11 @@ describe('SvelteDiff compact rendering', () => {
         expect(container.querySelectorAll('span')).toHaveLength(0)
     })
 
-    it('keeps the default equal span when compact is omitted', () => {
+    it('restores legacy equal spans when compact is false', () => {
         const { container } = render(SvelteDiff, {
             originalText: 'unchanged',
-            modifiedText: 'unchanged'
+            modifiedText: 'unchanged',
+            compact: false
         })
 
         expect(container.querySelector('span')?.textContent).toBe('unchanged')
