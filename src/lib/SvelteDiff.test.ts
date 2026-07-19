@@ -314,7 +314,7 @@ describe('SvelteDiff expected patterns', () => {
 })
 
 describe('SvelteDiff compact rendering', () => {
-    it('renders unstyled equal multiline text without span wrappers', () => {
+    it('renders multiline equal text without wrapper elements in compact mode', () => {
         const lines = Array.from({ length: 100 }, () => 'unchanged line')
         const text = lines.join('\n')
         const { container } = render(SvelteDiff, {
