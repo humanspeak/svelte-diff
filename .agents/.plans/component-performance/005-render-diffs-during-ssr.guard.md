@@ -17,3 +17,11 @@
 - Plan defect: exact `pnpm playwright test` failed 105/110 under ten-worker contention, including inherited 001/004 timing ceilings and a pre-existing mobile-Safari strict-locator race; every 005 test passed. The executor independently hit the same STOP condition twice (101/110 and 102/110).
 - Control: the unchanged complete matrix passed 110/110 with `pnpm playwright test --workers=1`, demonstrating that the hard timing ceilings are incompatible with the plan's unconstrained parallel invocation rather than exposing 005 behavior drift.
 - Action: reported to the operator; final judgment is blocked pending explicit approval to amend the complete E2E gate to the serial 110-test matrix. No PR opened.
+
+## Checkpoint 3 — 2026-07-19 13:34 — PLAN AMENDED
+
+266eb52 · operator-approved two-worker complete-matrix gate
+
+- Evidence: the unchanged 110-test matrix passed with two workers in 50.1 seconds, retained useful parallelism, and added only about four seconds versus the failing ten-worker run; the serial control took about 72 seconds.
+- Amendment: replace only the unconstrained full-matrix invocation with `pnpm playwright test --workers=2`; all five projects, 110 tests, workloads, assertions, timing ceilings, and targeted/repeated gates remain unchanged.
+- Action: operator approved testing this configuration on 2026-07-19; plan re-baselined at `266eb52` and batch status returned to IN PROGRESS for three-run verification.
