@@ -7,8 +7,21 @@
 > `.agents/.plans/component-performance/README.md` when done unless a reviewer
 > told you they maintain the index.
 >
+> **Revision 2026-07-19**: Plan 004 was approved and merged with compact
+> rendering as the default for 0.4.0 and `compact={false}` as the legacy
+> equal-span escape hatch. Preserve both paths during SSR and hydration; this
+> supersedes the original opt-in predecessor assumption without changing Plan
+> 005's SSR scope or gates. Re-baseline the plan at `6fdbfba`.
+>
+> **Revision 2026-07-19**: Cap the complete Playwright matrix at two workers.
+> The unconstrained ten-worker run repeatedly failed inherited 25–100 ms
+> browser ceilings under CPU contention while all 005 tests passed; the same
+> 110-test matrix passed with two workers in 50.1 seconds versus 46.2 seconds
+> for the failing run and about 72 seconds serially. Preserve all five projects,
+> tests, workloads, assertions, and ceilings. Re-baseline the plan at `266eb52`.
+>
 > **Drift check (run first)**:
-> `git diff --stat 8e3082c..HEAD -- src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/routes/tests/component-performance/005/+page.svelte tests/component-performance.test.ts`
+> `git diff --stat 266eb52..HEAD -- src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/routes/tests/component-performance/005/+page.svelte tests/component-performance.test.ts`
 > Confirm Plans 001–004 are marked DONE and satisfy the expected predecessor
 > state below. Changes from those plans are expected; unrelated computation or
 > SSR changes are a STOP condition.
@@ -24,7 +37,7 @@
 - **Risk**: MED
 - **Depends on**: `001-compile-expected-patterns-once.md`, `002-linearize-expected-region-tagging.md`, `003-decouple-processing-callback.md`, `004-add-compact-dom-rendering.md`
 - **Category**: perf
-- **Planned at**: commit `8e3082c`, 2026-07-17
+- **Planned at**: commit `266eb52`, 2026-07-19
 
 ## Why this matters
 
@@ -65,8 +78,8 @@ Before this plan starts, predecessors must have produced this conceptual shape:
 - Plan 003: `computeDiff` returns one result object containing timing, raw diffs,
   captures, and display diffs; a calculation effect stores it; a separate
   callback effect invokes `onProcessing`.
-- Plan 004: markup supports opt-in compact equal rendering without changing the
-  default DOM.
+- Plan 004: markup defaults to compact equal rendering, while
+  `compact={false}` preserves the legacy equal-span DOM.
 
 Plans 001–004 created isolated numbered diagnostics and shared Playwright
 coverage. This plan creates the final `/tests/component-performance/005` SSR
@@ -85,7 +98,7 @@ conventional commits. Preserve all public props and callback arguments.
 | Unit suite                  | `pnpm vitest run src/lib --coverage.enabled=false --reporter=default`                                                                                          | all library tests pass                     |
 | Type/Svelte check           | `pnpm check`                                                                                                                                                   | exit 0                                     |
 | Package verification        | `pnpm build`                                                                                                                                                   | exit 0, including publint                  |
-| Full E2E                    | `pnpm playwright test`                                                                                                                                         | all configured browser projects pass       |
+| Full E2E                    | `pnpm playwright test --workers=2`                                                                                                                             | all configured browser projects pass       |
 | Format                      | `trunk fmt src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/routes/tests/component-performance/005/+page.svelte tests/component-performance.test.ts`   | exit 0                                     |
 | Lint                        | `trunk check src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/routes/tests/component-performance/005/+page.svelte tests/component-performance.test.ts` | exit 0                                     |
 
@@ -247,7 +260,7 @@ trunk check src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/routes/test
 pnpm vitest run src/lib --coverage.enabled=false --reporter=default
 pnpm check
 pnpm build
-pnpm playwright test
+pnpm playwright test --workers=2
 ```
 
 Expected: every command exits 0 across all configured projects. `git status
@@ -277,8 +290,10 @@ generated build output must not be committed.
 - [ ] Pure computation is `$derived`; no calculation `$effect` remains.
 - [ ] `onProcessing` remains client-only and receives unchanged arguments.
 - [ ] Callback-only changes reuse the same raw diff array.
-- [ ] Default and compact DOM behavior both hydrate without duplication/errors.
-- [ ] Trunk, all library tests, `pnpm check`, `pnpm build`, and full Playwright exit 0.
+- [ ] The compact default and `compact={false}` legacy DOM both hydrate without
+      duplication/errors.
+- [ ] Trunk, all library tests, `pnpm check`, `pnpm build`, and the two-worker
+      full Playwright matrix exit 0.
 - [ ] No route except the dedicated 005 diagnostic page, public API, docs app, or other
       out-of-scope file is modified.
 - [ ] The 005 row in the batch README is updated to DONE.

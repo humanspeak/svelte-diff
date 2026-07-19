@@ -21,6 +21,7 @@ lint:
         - linters: [ALL]
           paths:
               - '**/worker-configuration.d.ts'
+              - .agents/.plans/**
               - convex/_generated/**
         - linters: [eslint]
           paths:
