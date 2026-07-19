@@ -232,6 +232,36 @@ test('002 tags expected regions within the forward-sweep ceiling', async ({ page
     await expect(output.locator('[data-expected="amount"]')).toContainText('$12,450.00')
 })
 
+test('003 swaps processing callbacks within the cached-result ceiling', async ({ page }) => {
+    await page.goto('/tests/component-performance/003')
+
+    await expect(
+        page.getByRole('heading', { name: 'Decouple diff computation from callbacks' })
+    ).toBeVisible()
+    const card = await assertDiagnosticPass(page, '003')
+    const diagnostics = (await card.innerText()).trim()
+    await expect(card, diagnostics).toContainText('3000 lines / changes every tenth line')
+    await expect(card.getByTestId('diagnostic-003-samples').getByRole('listitem')).toHaveCount(5)
+    await expect(card, diagnostics).toHaveAttribute('data-callback-count', '5')
+    await expect(card, diagnostics).toHaveAttribute('data-identity-matches', '5')
+    await expect(card, diagnostics).toHaveAttribute('data-failure-reasons', '')
+    await expect(card.getByTestId('callback-identity-summary'), diagnostics).toHaveText(
+        'Identity matches: 5/5'
+    )
+    await expect(page.getByTestId('diagnostic-overall'), diagnostics).toHaveAttribute(
+        'data-status',
+        'pass'
+    )
+
+    const preview = page.getByTestId('callback-capability-preview')
+    await expect(preview, diagnostics).toBeVisible()
+    await expect(preview, diagnostics).toContainText('What callback swapping actually does')
+    await expect(preview, diagnostics).toContainText('baseline revenue is $10,000')
+    await expect(preview, diagnostics).toContainText('updated revenue is $12,500')
+    await expect(preview.getByText('SAME DIFF ARRAY'), diagnostics).toHaveCount(5)
+    await expect(page.getByTestId('mounted-diff-probe'), diagnostics).toBeAttached()
+})
+
 test('component performance diagnostics are split into focused pages', async ({ page }) => {
     await page.goto('/tests/component-performance')
 
