@@ -29,23 +29,6 @@ A powerful, customizable diff-match-patch component for Svelte with TypeScript s
 - 🔍 Real-time diff updates
 - 🎯 Expected patterns — mark dynamic regions (dates, names) as "expected" instead of diffs
 
-## Recent Updates
-
-### New Features
-
-- Expected patterns — use named regex capture groups to mark dynamic regions as "expected" instead of diffs
-- Added detailed timing information for diff operations
-- Enhanced cleanup algorithms for better diff results
-- Improved performance for large text comparisons
-- Added TypeScript types for all component props and events
-- Implemented proper state management with Svelte 5 runes
-
-### Testing Improvements
-
-- Enhanced Playwright E2E test coverage
-- Added comprehensive tests for cleanup algorithms
-- Improved test reliability with proper component mounting checks
-
 ## Installation
 
 ```bash
@@ -75,9 +58,9 @@ My animation's comical, unusual, and whimsical,
 I'm quite adept at funny gags, comedic theory I have read,
 From wicked puns and stupid jokes to anvils that drop on your head.`)
 
-    const onProcessing = (timing, diff) => {
+    const onProcessing = (timing, diffs) => {
         console.log('Diff timing:', timing)
-        console.log('Diff result:', diff)
+        console.log('Diff result:', diffs)
     }
 </script>
 
@@ -116,17 +99,22 @@ import type { SvelteDiffTiming, SvelteDiffTuple, SvelteDiffProps } from '@humans
 
 ## Props
 
-| Prop              | Type       | Default | Description                                    |
-| ----------------- | ---------- | ------- | ---------------------------------------------- |
-| originalText      | `string`   | -       | The original text to compare against           |
-| modifiedText      | `string`   | -       | The modified text to compare with original     |
-| timeout           | `number`   | 1       | Timeout in seconds for diff computation        |
-| cleanupSemantic   | `boolean`  | false   | Enable semantic cleanup for better readability |
-| cleanupEfficiency | `number`   | 4       | Efficiency cleanup level (0-4)                 |
-| compact           | `boolean`  | true    | Render unstyled equal text without spans       |
-| onProcessing      | `function` | -       | Callback for timing and diff information       |
-| rendererClasses   | `object`   | -       | CSS classes for diff highlighting              |
-| renderers         | `object`   | -       | Custom Svelte snippets for rendering           |
+| Prop                | Type                        | Default    | Description                                                                           |
+| ------------------- | --------------------------- | ---------- | ------------------------------------------------------------------------------------- |
+| `originalText`      | `string`                    | _required_ | The original (before/source) text to compare                                          |
+| `modifiedText`      | `string`                    | _required_ | The modified (after/target) text to compare                                           |
+| `timeout`           | `number`                    | `1`        | Max diff computation time in seconds; `0` is unlimited                                |
+| `cleanupSemantic`   | `boolean`                   | `false`    | Optimize edit boundaries for human readability                                        |
+| `cleanupEfficiency` | `number`                    | `4`        | Edit cost used by efficiency cleanup; `0` disables it                                 |
+| `compact`           | `boolean`                   | `true`     | Render unstyled equal text without wrapper spans; `false` restores legacy equal spans |
+| `onProcessing`      | `function`                  | —          | Receives `(timing, diffs, captures?)` after each computation                          |
+| `rendererClasses`   | `RendererClasses`           | `{}`       | CSS classes for the built-in `remove`/`insert`/`equal`/`expected` spans               |
+| `renderers`         | `Partial<Renderers>`        | `{}`       | Snippet map for individual segment types                                              |
+| `remove`            | `Snippet<[string]>`         | —          | Child snippet for removed text (wins over `renderers.remove`)                         |
+| `insert`            | `Snippet<[string]>`         | —          | Child snippet for inserted text (wins over `renderers.insert`)                        |
+| `equal`             | `Snippet<[string]>`         | —          | Child snippet for unchanged text (wins over `renderers.equal`)                        |
+| `expected`          | `Snippet<[string, string]>` | —          | Child snippet for expected values, receiving `(text, groupName)`                      |
+| `lineBreak`         | `Snippet<[]>`               | —          | Child snippet rendered between lines                                                  |
 
 ## Custom Rendering with Snippets
 
@@ -273,6 +261,28 @@ The `onProcessing` callback receives captured values as its third argument:
 
 If no capture groups are present in `originalText`, the component behaves exactly as before — no changes needed to existing code.
 
+## Programmatic API
+
+The expected-pattern engine is also exported as framework-agnostic functions, so you can compute matches and tag diffs without mounting the component:
+
+```typescript
+import {
+    parseExpectedPatterns,
+    extractCaptures,
+    tagExpectedRegions,
+    cleanTemplate
+} from '@humanspeak/svelte-diff'
+```
+
+| Function                | Signature                                                            | Description                                                                                                               |
+| ----------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `parseExpectedPatterns` | `(text) => ParseResult \| null`                                      | Parse and compile `(?<name>pattern)` named groups from a template. Returns `null` when the text contains no named groups. |
+| `extractCaptures`       | `(originalText, modifiedText, parseResult) => ExtractResult \| null` | Extract captured values and their positions from the modified text. Returns `null` when the template does not match.      |
+| `tagExpectedRegions`    | `(diffs, captureRanges) => DisplayDiff[]`                            | Split raw diff tuples so regions overlapping a capture range are tagged as `expected`.                                    |
+| `cleanTemplate`         | `(text) => string`                                                   | Replace `(?<name>pattern)` syntax with readable `<name>` placeholders.                                                    |
+
+These are the same functions the component uses internally; see [`src/lib/expectedPatterns.ts`](src/lib/expectedPatterns.ts) for full JSDoc.
+
 ## Events
 
 The component emits a `processing` event with timing and diff information:
@@ -281,10 +291,10 @@ The component emits a `processing` event with timing and diff information:
 <script lang="ts">
     import type { SvelteDiffTiming, SvelteDiffTuple } from '@humanspeak/svelte-diff'
 
-    const onProcessing = (timing: SvelteDiffTiming, diff: SvelteDiffTuple) => {
-        console.log('Diff computation time:', timing.computeTime)
-        console.log('Cleanup time:', timing.cleanupTime)
-        console.log('Total changes:', diff.length)
+    const onProcessing = (timing: SvelteDiffTiming, diffs: SvelteDiffTuple[]) => {
+        console.log('Diff main time:', timing.main)
+        console.log('Cleanup time:', timing.cleanup)
+        console.log('Diff segments:', diffs.length)
     }
 </script>
 

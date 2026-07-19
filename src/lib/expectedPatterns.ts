@@ -67,15 +67,34 @@ interface CompiledLinePattern {
     regex: RegExp
 }
 
-interface ParseResult {
+/**
+ * Compiled result of parsing named capture groups from a template.
+ *
+ * Returned by {@link parseExpectedPatterns}; carries the immutable metadata
+ * reused by {@link extractCaptures} for repeated extraction against modified text.
+ */
+export interface ParseResult {
+    /**
+     * @internal Engine detail — not part of the stable public API; may change in
+     * any future release. Parsed capture groups in source order.
+     */
     groups: ParsedGroup[]
-    /** Literal text and full group syntax interleaved in source order. */
+    /**
+     * @internal Engine detail — not part of the stable public API; may change in
+     * any future release. Literal text and full group syntax interleaved in source order.
+     */
     parts: string[]
-    /** Ordered source matches retained from the single template scan. */
+    /**
+     * @internal Engine detail — not part of the stable public API; may change in
+     * any future release. Ordered source matches retained from the single template scan.
+     */
     matches: GroupMatch[]
     /** Template text with named groups replaced by readable placeholders. */
     cleanedText: string
-    /** Ordered, compiled extraction plans for lines containing named groups. */
+    /**
+     * @internal Engine detail — not part of the stable public API; may change in
+     * any future release. Ordered, compiled extraction plans for lines containing named groups.
+     */
     linePatterns: CompiledLinePattern[]
 }
 
@@ -372,7 +391,12 @@ export const cleanTemplate = (text: string): string => {
     return cleanedText + text.slice(lastIndex)
 }
 
-interface ExtractResult {
+/**
+ * Result of extracting capture values and positions from modified text.
+ *
+ * Returned by {@link extractCaptures} when every compiled line pattern matches.
+ */
+export interface ExtractResult {
     resolvedText: string
     captures: Record<string, string>
     captureRangesInText2: CaptureRange[]

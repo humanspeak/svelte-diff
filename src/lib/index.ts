@@ -11,7 +11,19 @@ export { SvelteDiff }
  * be removed in a future major version.
  */
 export const SvelteDiffMatchPatch = SvelteDiff
-export type { CaptureRange, DisplayDiff, PatternMatchResult } from './expectedPatterns.js'
+export {
+    cleanTemplate,
+    extractCaptures,
+    parseExpectedPatterns,
+    tagExpectedRegions
+} from './expectedPatterns.js'
+export type {
+    CaptureRange,
+    DisplayDiff,
+    ExtractResult,
+    ParseResult,
+    PatternMatchResult
+} from './expectedPatterns.js'
 /**
  * Custom Svelte 5 snippets for rendering each diff segment type.
  *
