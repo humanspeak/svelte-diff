@@ -123,6 +123,7 @@ import type { SvelteDiffTiming, SvelteDiffTuple, SvelteDiffProps } from '@humans
 | timeout           | `number`   | 1       | Timeout in seconds for diff computation        |
 | cleanupSemantic   | `boolean`  | false   | Enable semantic cleanup for better readability |
 | cleanupEfficiency | `number`   | 4       | Efficiency cleanup level (0-4)                 |
+| compact           | `boolean`  | false   | Render unstyled equal text without spans       |
 | onProcessing      | `function` | -       | Callback for timing and diff information       |
 | rendererClasses   | `object`   | -       | CSS classes for diff highlighting              |
 | renderers         | `object`   | -       | Custom Svelte snippets for rendering           |
@@ -313,6 +314,12 @@ The `cleanupEfficiency` level (0-4) controls how aggressively the algorithm:
 - For large texts, consider increasing the `timeout` value
 - Use `cleanupSemantic` for better readability in small to medium texts
 - Use `cleanupEfficiency` for better performance in large texts
+- Use `compact={true}` to omit wrappers around built-in equal text when you do not need an equal class or custom equal renderer:
+
+    ```svelte
+    <SvelteDiff {originalText} {modifiedText} compact={true} />
+    ```
+
 - Monitor the `onProcessing` callback for timing information
 
 <!-- docs-kit:ecosystem start -->

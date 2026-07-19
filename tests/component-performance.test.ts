@@ -262,6 +262,37 @@ test('003 swaps processing callbacks within the cached-result ceiling', async ({
     await expect(page.getByTestId('mounted-diff-probe'), diagnostics).toBeAttached()
 })
 
+test('004 renders compact equal text within the settled-render ceiling', async ({ page }) => {
+    await page.goto('/tests/component-performance/004')
+
+    await expect(
+        page.getByRole('heading', { name: 'Render unstyled equal text without wrappers' })
+    ).toBeVisible()
+    const card = await assertDiagnosticPass(page, '004')
+    const diagnostics = (await card.innerText()).trim()
+    await expect(card, diagnostics).toContainText('2000 identical lines in compact mode')
+    await expect(card.getByTestId('diagnostic-004-samples').getByRole('listitem')).toHaveCount(5)
+    await expect(card, diagnostics).toHaveAttribute('data-span-count', '0')
+    await expect(card, diagnostics).toHaveAttribute('data-break-count', '1999')
+    await expect(card, diagnostics).toHaveAttribute('data-failure-reasons', '')
+    await expect(card.getByTestId('compact-dom-counts'), diagnostics).toHaveText(
+        'spans: 0, breaks: 1999'
+    )
+    await expect(page.getByTestId('diagnostic-overall'), diagnostics).toHaveAttribute(
+        'data-status',
+        'pass'
+    )
+
+    const preview = page.getByTestId('compact-capability-preview')
+    await expect(preview, diagnostics).toBeVisible()
+    await expect(preview, diagnostics).toContainText('What compact rendering actually removes')
+    await expect(preview, diagnostics).toContainText('First unchanged line')
+    await expect(preview, diagnostics).toContainText('Default mode: 3 equal spans')
+    await expect(preview, diagnostics).toContainText('Compact mode: 0 equal spans')
+    await expect(preview, diagnostics).toContainText('spans: 0, breaks: 1999')
+    await expect(page.getByTestId('mounted-compact-probe'), diagnostics).toBeAttached()
+})
+
 test('component performance diagnostics are split into focused pages', async ({ page }) => {
     await page.goto('/tests/component-performance')
 

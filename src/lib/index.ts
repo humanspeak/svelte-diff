@@ -167,6 +167,20 @@ export interface SvelteDiffProps {
      */
     cleanupEfficiency?: number
     /**
+     * If `true`, built-in equal segments without an equal class render as text.
+     *
+     * Custom equal child snippets and `renderers.equal` retain their requested
+     * markup, as does the built-in renderer when `rendererClasses.equal` is
+     * nonempty. Line breaks continue through the configured or built-in
+     * `lineBreak` renderer. Default: `false`.
+     *
+     * ## Example
+     * ```svelte
+     * <SvelteDiff originalText={a} modifiedText={b} compact={true} />
+     * ```
+     */
+    compact?: boolean
+    /**
      * Callback invoked after diff computation with timing, diffs, and optional captures.
      *
      * @param timing - `{ main, cleanup, total }` in milliseconds.
