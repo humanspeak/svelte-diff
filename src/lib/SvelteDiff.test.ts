@@ -151,6 +151,7 @@ describe('SvelteDiff component', () => {
                 timeout: 2,
                 cleanupSemantic: true,
                 cleanupEfficiency: 8,
+                compact: true,
                 onProcessing,
                 rendererClasses: { remove: 'del', insert: 'ins', equal: 'eq' },
                 renderers: {}
@@ -309,5 +310,117 @@ describe('SvelteDiff expected patterns', () => {
         const titledSpans = container.querySelectorAll('span[title]')
         expect(titledSpans.length).toBe(0)
         expect(container.textContent).toContain('brave')
+    })
+})
+
+describe('SvelteDiff compact rendering', () => {
+    it('renders multiline equal text without wrapper elements in compact mode', () => {
+        const lines = Array.from({ length: 100 }, () => 'unchanged line')
+        const text = lines.join('\n')
+        const { container } = render(SvelteDiff, {
+            originalText: text,
+            modifiedText: text
+        })
+
+        expect(container.textContent).toBe(lines.join(''))
+        expect(container.querySelectorAll('br')).toHaveLength(99)
+        expect(container.querySelectorAll('span')).toHaveLength(0)
+    })
+
+    it('restores legacy equal spans when compact is false', () => {
+        const { container } = render(SvelteDiff, {
+            originalText: 'unchanged',
+            modifiedText: 'unchanged',
+            compact: false
+        })
+
+        expect(container.querySelector('span')?.textContent).toBe('unchanged')
+    })
+
+    it('keeps classed equal spans in compact mode', () => {
+        const { container } = render(SvelteDiff, {
+            originalText: 'unchanged',
+            modifiedText: 'unchanged',
+            compact: true,
+            rendererClasses: { equal: 'test-equal' }
+        })
+
+        expect(container.querySelector('.test-equal')?.textContent).toBe('unchanged')
+    })
+
+    it('keeps a child equal snippet in compact mode', () => {
+        const { container } = render(SvelteDiff, {
+            originalText: 'unchanged',
+            modifiedText: 'unchanged',
+            compact: true,
+            equal: textSnippet('child-equal')
+        })
+
+        expect(container.querySelector('.child-equal')?.textContent).toBe('unchanged')
+    })
+
+    it('keeps renderers.equal in compact mode', () => {
+        const { container } = render(SvelteDiff, {
+            originalText: 'unchanged',
+            modifiedText: 'unchanged',
+            compact: true,
+            renderers: { equal: textSnippet('renderers-equal') }
+        })
+
+        expect(container.querySelector('.renderers-equal')?.textContent).toBe('unchanged')
+    })
+
+    it('keeps insert, remove, and expected spans in compact mode', () => {
+        const changed = render(SvelteDiff, {
+            originalText: 'shared old',
+            modifiedText: 'shared new',
+            compact: true
+        }).container
+        const expected = render(SvelteDiff, {
+            originalText: 'Version (?<version>\\d+)',
+            modifiedText: 'Version 2',
+            compact: true
+        }).container
+
+        expect(changed.querySelector('span[style*="background-color: red"]')?.textContent).toBe(
+            'old'
+        )
+        expect(changed.querySelector('span[style*="background-color: green"]')?.textContent).toBe(
+            'new'
+        )
+        expect(expected.querySelector('span[title="version"]')?.textContent).toBe('2')
+    })
+
+    it('preserves leading, trailing, and consecutive line breaks', () => {
+        const text = '\nalpha\n\nomega\n'
+        const { container } = render(SvelteDiff, {
+            originalText: text,
+            modifiedText: text,
+            compact: true
+        })
+        const readableOutput = container.cloneNode(true) as HTMLElement
+        readableOutput.querySelectorAll('br').forEach((lineBreak) => lineBreak.replaceWith('|'))
+
+        expect(readableOutput.textContent).toBe('|alpha||omega|')
+        expect(container.querySelectorAll('br')).toHaveLength(4)
+        expect(container.querySelectorAll('span')).toHaveLength(0)
+    })
+
+    it('keeps a custom line-break renderer in compact mode', () => {
+        const { container } = render(SvelteDiff, {
+            originalText: 'alpha\nbeta\ngamma',
+            modifiedText: 'alpha\nbeta\ngamma',
+            compact: true,
+            renderers: {
+                lineBreak: createRawSnippet<[]>(() => ({
+                    render: () => '<hr class="custom-break">'
+                }))
+            }
+        })
+
+        expect(container.textContent).toBe('alphabetagamma')
+        expect(container.querySelectorAll('.custom-break')).toHaveLength(2)
+        expect(container.querySelectorAll('br')).toHaveLength(0)
+        expect(container.querySelectorAll('span')).toHaveLength(0)
     })
 })

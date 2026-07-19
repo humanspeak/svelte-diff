@@ -8,6 +8,8 @@ node_modules
 .wrangler
 /.svelte-kit
 /build
+/static/llms.txt
+/static/llms-full.txt
 
 # OS
 .DS_Store

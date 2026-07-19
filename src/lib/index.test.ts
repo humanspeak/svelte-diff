@@ -48,7 +48,8 @@ describe('index exports', () => {
     it('should export SvelteDiffProps type', () => {
         const props: SvelteDiffProps = {
             originalText: '',
-            modifiedText: ''
+            modifiedText: '',
+            compact: false
         }
         expect(props).toBeDefined()
     })

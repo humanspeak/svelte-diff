@@ -21,6 +21,27 @@ description: Measure SvelteDiff computation and cleanup time, set timeouts, and 
 
 SvelteDiff computes whenever `originalText`, `modifiedText`, or a cleanup option changes. The `onProcessing` callback exposes the cost of that work.
 
+## Compact equal-text DOM
+
+`compact` defaults to `true`. Unstyled built-in equal segments render as text instead of
+wrapper spans, reducing DOM weight without changing text content or intrinsic line breaks when no
+selectors or styles depend on the legacy wrapper. Custom equal snippets, `renderers.equal`, and
+`rendererClasses.equal` retain their requested markup.
+
+Use the legacy DOM only when existing selectors or styles require equal spans:
+
+```svelte
+<script lang="ts">
+    import { SvelteDiff } from '@humanspeak/svelte-diff'
+</script>
+
+<SvelteDiff
+    originalText="The old text"
+    modifiedText="The new text"
+    compact={false}
+/>
+```
+
 ## Measure a diff
 
 ```svelte

@@ -46,7 +46,10 @@ pnpm add @humanspeak/svelte-diff
 </p>
 ```
 
-By default, removed text is red with a strike-through, inserted text is green, and unchanged text is unstyled. Text is escaped by Svelte; the component does not inject an HTML string.
+By default, removed text is red with a strike-through, inserted text is green, and unchanged text
+is unstyled. Unstyled unchanged text uses compact DOM without wrapper spans; pass
+`compact={false}` when migrating selectors or styles that require the legacy equal spans. Text is
+escaped by Svelte; the component does not inject an HTML string.
 
 ## Reactive inputs
 

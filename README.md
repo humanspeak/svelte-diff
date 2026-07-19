@@ -123,6 +123,7 @@ import type { SvelteDiffTiming, SvelteDiffTuple, SvelteDiffProps } from '@humans
 | timeout           | `number`   | 1       | Timeout in seconds for diff computation        |
 | cleanupSemantic   | `boolean`  | false   | Enable semantic cleanup for better readability |
 | cleanupEfficiency | `number`   | 4       | Efficiency cleanup level (0-4)                 |
+| compact           | `boolean`  | true    | Render unstyled equal text without spans       |
 | onProcessing      | `function` | -       | Callback for timing and diff information       |
 | rendererClasses   | `object`   | -       | CSS classes for diff highlighting              |
 | renderers         | `object`   | -       | Custom Svelte snippets for rendering           |
@@ -313,6 +314,17 @@ The `cleanupEfficiency` level (0-4) controls how aggressively the algorithm:
 - For large texts, consider increasing the `timeout` value
 - Use `cleanupSemantic` for better readability in small to medium texts
 - Use `cleanupEfficiency` for better performance in large texts
+- Unstyled built-in equal text renders without wrapper spans by default. Set `compact={false}` only when you need the legacy equal-span DOM:
+
+    ```svelte
+    <SvelteDiff {originalText} {modifiedText} compact={false} />
+    ```
+
+    In 0.4.0, `compact` defaults to `true`. If selectors or styles depend on the previous
+    unstyled equal `<span>` elements, pass `compact={false}` while migrating. Equal child
+    snippets, `renderers.equal`, and `rendererClasses.equal` continue to keep their requested
+    markup.
+
 - Monitor the `onProcessing` callback for timing information
 
 <!-- docs-kit:ecosystem start -->

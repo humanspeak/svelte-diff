@@ -26,6 +26,7 @@ The package exports the component as both the default export and a named export.
 | `timeout` | `number` | `1` | Maximum diff computation time in seconds; `0` is unlimited |
 | `cleanupSemantic` | `boolean` | `false` | Optimize edit boundaries for human readability |
 | `cleanupEfficiency` | `number` | `4` | Edit cost used by efficiency cleanup; `0` disables it |
+| `compact` | `boolean` | `true` | Render unstyled equal text without wrapper spans; `false` restores legacy equal spans |
 | `onProcessing` | `function` | — | Receive timing, raw tuples, and optional captures |
 | `rendererClasses` | `RendererClasses` | `{}` | Classes for built-in segment spans |
 | `renderers` | `Partial<Renderers>` | `{}` | Snippet map for individual segment types |
@@ -49,7 +50,11 @@ Resolution happens independently for every segment type:
 
 1. A direct child snippet such as `{#snippet insert(text)}`
 2. The matching property in `renderers`
-3. The built-in fallback span
+3. The built-in fallback
+
+For unchanged text, the default compact fallback emits text directly when no equal class or
+renderer is configured. Set `compact={false}` to restore the legacy equal `<span>`. Removed,
+inserted, expected, and customized equal segments retain their normal elements.
 
 That means you can override one type and leave all others on their defaults.
 
