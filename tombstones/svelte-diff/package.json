@@ -1,6 +1,6 @@
 {
     "name": "svelte-diff",
-    "version": "0.3.2",
+    "version": "0.3.3",
     "description": "Alias for @humanspeak/svelte-diff — a Svelte 5 component for visual string diffing using the diff-match-patch algorithm.",
     "keywords": [
         "svelte",
@@ -36,7 +36,7 @@
         "index.d.ts"
     ],
     "dependencies": {
-        "@humanspeak/svelte-diff": "^0.3.2"
+        "@humanspeak/svelte-diff": "^0.3.3"
     },
     "peerDependencies": {
         "svelte": "^5.0.0"
