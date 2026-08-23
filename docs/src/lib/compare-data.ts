@@ -28,7 +28,7 @@ export const competitors: Competitor[] = [
     {
         slug: 'vs-jsdiff',
         name: 'jsdiff',
-        tagline: 'Hand-Rolled Rendering vs Drop-In Component',
+        tagline: 'Algorithm Library vs Ready-to-Render Svelte 5 Component',
         description:
             'jsdiff (the npm "diff" package) is the default answer for text diffing in JavaScript — and it is excellent at computing diffs. But it renders nothing: every Svelte project that uses it re-implements the same change-object-to-markup loop. @humanspeak/svelte-diff is that missing rendering layer as a Svelte 5 component.',
         website: 'https://github.com/kpdecker/jsdiff',
@@ -105,7 +105,7 @@ export const competitors: Competitor[] = [
     {
         slug: 'vs-diff-match-patch',
         name: 'diff-match-patch',
-        tagline: 'Raw Algorithm vs Wired-Up Component',
+        tagline: 'Algorithm Library vs Ready-to-Render Svelte 5 Component',
         description:
             "Google's diff-match-patch is the canonical text-diffing algorithm — and it is exactly what @humanspeak/svelte-diff runs internally (via the TypeScript port diff-match-patch-ts). The difference is everything around the algorithm: reactivity, cleanup wiring, rendering, and types, packaged as a Svelte 5 component instead of an imperative API you integrate by hand.",
         website: 'https://github.com/google/diff-match-patch',
@@ -190,7 +190,7 @@ export const competitors: Competitor[] = [
     {
         slug: 'vs-diff2html',
         name: 'diff2html',
-        tagline: 'Git Patch Viewer vs Inline Text Diff',
+        tagline: 'Git-Patch HTML Generator vs Reactive Svelte 5 Component',
         description:
             'diff2html turns unified diff text — git patches — into polished, GitHub-style side-by-side or line-by-line HTML. It is the right tool for visualizing patches, and the wrong shape for comparing two strings inside a Svelte app: it needs pre-generated diff text as input and renders via an HTML string or imperative DOM wrapper plus a global stylesheet, rather than a Svelte component.',
         website: 'https://diff2html.xyz',
