@@ -313,7 +313,7 @@ When `cleanupSemantic` is enabled, the diff algorithm will:
 
 ### Efficiency Cleanup
 
-The `cleanupEfficiency` level (0-4) controls how aggressively the algorithm:
+The `cleanupEfficiency` edit cost (default `4`) controls how aggressively the algorithm:
 
 - Factors out short commonalities
 - Reduces computational overhead

@@ -10,6 +10,9 @@ node_modules
 /build
 /static/llms.txt
 /static/llms-full.txt
+/static/compare/
+/static/og-default.png
+/static/twitter-default.png
 
 # OS
 .DS_Store

@@ -94,6 +94,7 @@ describe('SvelteDiff component', () => {
             value: 'alpha beta charlie target',
             expectedText: 'target'
         },
+        { dependency: 'timeout', value: 0 },
         { dependency: 'cleanupSemantic', value: true },
         { dependency: 'cleanupEfficiency', value: 8 }
     ] as const)(
@@ -245,6 +246,17 @@ describe('SvelteDiff expected patterns', () => {
         expect(expectedSpan).toBeTruthy()
         expect(expectedSpan!.textContent).toBe('2024')
         expect(expectedSpan!.getAttribute('style')).toContain('background-color')
+    })
+
+    it('renders multiline expected regions across line breaks', () => {
+        const { container } = render(SvelteDiff, {
+            originalText: 'Value: (?<value>[\\s\\S]+)',
+            modifiedText: 'Value: alpha\nbeta'
+        })
+
+        const expectedSpans = container.querySelectorAll('span[title="value"]')
+        expect([...expectedSpans].map((span) => span.textContent)).toEqual(['alpha', 'beta'])
+        expect(container.querySelectorAll('br')).toHaveLength(1)
     })
 
     it('falls back to normal diff with cleaned template when regex does not match', () => {

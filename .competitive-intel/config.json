@@ -1,0 +1,78 @@
+{
+    "project": "@humanspeak/svelte-diff",
+    "category": "Svelte 5 diff component — diff-match-patch-based text comparison with drop-in rendering, semantic/efficiency cleanup, and 'expected patterns'",
+
+    "self_npm": "@humanspeak/svelte-diff",
+    "self_repo": "humanspeak/svelte-diff",
+
+    "ahrefs_project_id": 8934904,
+    "github_handle": "jaysin586",
+    "repo_triage": {
+        "enabled": true,
+        "_comment": "Public repo — GITHUB_TOKEN raises rate limits; public-read fallback works without it. Surfaces open PRs/issues NOT opened by github_handle, and threads awaiting your reply since the previous last_run."
+    },
+
+    "self_features": [
+        "Drop-in Svelte 5 component (renders the diff for you, not just an algorithm)",
+        "diff-match-patch engine (via diff-match-patch-ts) with a configurable timeout guard for large texts",
+        "Configurable cleanup — semantic and efficiency modes",
+        "Expected patterns — mark dynamic regions (dates, names) as 'expected' instead of diffs",
+        "Customizable rendering via CSS classes OR Svelte snippets",
+        "Real-time reactive updates (Svelte 5 runes)",
+        "onProcessing timing + diff statistics",
+        "Complete TypeScript strict typing"
+    ],
+
+    "non_goals": [
+        "Side-by-side file view / git patch (files, hunks, headers) awareness — that's diff2html's domain",
+        "Standalone patch create / apply + fuzzy match utilities — that's the raw diff-match-patch library",
+        "Framework-agnostic use — this is a Svelte component, not a generic JS lib"
+    ],
+
+    "competitors": [
+        {
+            "npm": "diff",
+            "repo": "kpdecker/jsdiff",
+            "note": "jsdiff — the ubiquitous framework-agnostic JS diff algorithm; we render, it doesn't"
+        },
+        {
+            "npm": "diff-match-patch",
+            "repo": "google/diff-match-patch",
+            "note": "Google's original algorithm this space is built on; unmaintained, no rendering, no Svelte"
+        },
+        {
+            "npm": "diff2html",
+            "repo": "rtfpessoa/diff2html",
+            "note": "git-diff → HTML (side-by-side/line view); different shape (file diffs) but overlaps on 'diff viewer' search"
+        }
+    ],
+
+    "watchlist": [
+        {
+            "npm": "diff-match-patch-ts",
+            "repo": "rars/diff-match-patch-ts",
+            "note": "the TS port we depend on — watch for algorithm/perf changes upstream"
+        }
+    ],
+
+    "seo": {
+        "enabled": true,
+        "docs_domain": "diff.svelte.page",
+        "gsc_dir": ".competitive-intel/gsc",
+        "gsc_staleness_days": 14,
+        "_comment": "Cross-references the local GSC export (gitignored) with Ahrefs for keyword/blog/site-fix recommendations. 11 keywords in Ahrefs rank tracker (project 8934904)."
+    },
+
+    "compare_data_paths": ["docs/src/lib/compare-data.ts"],
+    "page_validation": {
+        "download_tolerance": 0.3,
+        "maintenance_thresholds": {
+            "repository_inactivity_months": 6,
+            "npm_release_age_months": 12
+        },
+        "_comment": "compare-data.ts drives the /compare 'vs' pages (vs-jsdiff, vs-diff-match-patch, vs-diff2html). Validator checks framework claims, hardcoded download figures, and them: feature cells on competitor version bumps. For maintained/active claims, flag either six months without a repository push or twelve months without an npm publish."
+    },
+
+    "slack_channel": "C0BP5BF1UTX",
+    "_slack_channel_comment": "#claude-reports in human-speak.slack.com via the shared webhook in common.env — same channel as the other OSS digests."
+}
