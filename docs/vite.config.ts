@@ -12,8 +12,8 @@ import { sveltekit } from '@sveltejs/kit/vite'
 import tailwindcss from '@tailwindcss/vite'
 import { defineConfig } from 'vite'
 
-import { competitors } from './src/lib/compare-data'
-import { docsConfig } from './src/lib/docs-config'
+import { competitors, ours } from './src/lib/compare-data.ts'
+import { docsConfig } from './src/lib/docs-config.ts'
 
 const indexNowKey = '3f47a8d0c1be4b0ca5f8d7e2a9136c44'
 
@@ -43,6 +43,7 @@ export default defineConfig({
             pkgName: docsConfig.name,
             description:
                 'A Svelte 5 text-diff component with semantic cleanup, expected-pattern matching, typed custom renderers, reactive updates, and timing callbacks.',
+            comparisons: { ours, competitors },
             prepend: 'static/llms-prepend.md',
             append: 'static/llms-append.md'
         }),
