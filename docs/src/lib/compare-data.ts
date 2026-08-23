@@ -9,7 +9,7 @@ export const ours: ComparisonOurs = {
 
 const shared = {
     prosUs: [
-        'Drop-in Svelte 5 component — two strings in, rendered diff out',
+        'Ready-to-use Svelte 5 component — pass two strings, get a rendered diff',
         'Svelte 5 runes-native — reactive to prop changes, no manual recompute',
         'Semantic and efficiency cleanup built in (readable diffs, not character noise)',
         'Expected patterns — mark dynamic regions (dates, names, versions) as "expected" with named regex capture groups instead of showing them as diffs',
@@ -39,10 +39,10 @@ export const competitors: Competitor[] = [
         features: [
             { name: 'Computes text diffs', us: true, them: true },
             {
-                name: 'Drop-in Svelte 5 component',
-                us: true,
-                them: false,
-                note: 'jsdiff returns change objects; the UI is up to you'
+                name: 'Ready-to-use Svelte component',
+                us: 'Svelte 5 component',
+                them: 'No — algorithm library',
+                note: 'jsdiff returns change objects; you build and wire the Svelte UI'
             },
             { name: 'Renders the diff for you', us: true, them: false },
             {
@@ -119,7 +119,12 @@ export const competitors: Competitor[] = [
                 us: 'diff-match-patch (same core, TypeScript port)',
                 them: 'diff-match-patch'
             },
-            { name: 'Drop-in Svelte 5 component', us: true, them: false },
+            {
+                name: 'Ready-to-use Svelte component',
+                us: 'Svelte 5 component',
+                them: 'No — algorithm library',
+                note: 'diff-match-patch exposes imperative APIs; you build and wire the Svelte UI'
+            },
             {
                 name: 'Semantic cleanup',
                 us: 'cleanupSemantic prop',
@@ -127,7 +132,7 @@ export const competitors: Competitor[] = [
             },
             {
                 name: 'Efficiency cleanup',
-                us: 'cleanupEfficiency prop (0–4)',
+                us: 'cleanupEfficiency edit-cost prop (default 4)',
                 them: 'Manual call + editCost tuning'
             },
             {
@@ -143,7 +148,7 @@ export const competitors: Competitor[] = [
             {
                 name: 'Rendering',
                 us: 'Svelte snippets or CSS classes',
-                them: 'diff_prettyHtml() — inline-styled, not customizable'
+                them: 'diff_prettyHtml() — hard-coded inline styles, no rendering hooks'
             },
             {
                 name: 'TypeScript',
@@ -154,7 +159,7 @@ export const competitors: Competitor[] = [
                 name: 'Actively maintained',
                 us: true,
                 them: false,
-                note: 'Last npm release in 2019; Google archived the upstream repository'
+                note: 'Last npm release in 2020; Google archived the upstream repository'
             },
             { name: 'Fuzzy match & patch APIs', us: false, them: true }
         ],
@@ -167,9 +172,9 @@ export const competitors: Competitor[] = [
         ],
         consUs: shared.consUs,
         consThem: [
-            'Unmaintained — last npm release in 2019, upstream repository archived',
+            'Unmaintained — last npm release in 2020, upstream repository archived',
             'Imperative API: you own the compute-on-change wiring, cleanup calls, and rendering',
-            'diff_prettyHtml() output is inline-styled HTML you cannot customize',
+            'diff_prettyHtml() uses hard-coded inline styles and provides no rendering hooks',
             'No bundled TypeScript types'
         ],
         verdict:
@@ -187,7 +192,7 @@ export const competitors: Competitor[] = [
         name: 'diff2html',
         tagline: 'Git Patch Viewer vs Inline Text Diff',
         description:
-            'diff2html turns unified diff text — git patches — into polished, GitHub-style side-by-side or line-by-line HTML. It is the right tool for visualizing patches, and the wrong shape for comparing two strings inside a Svelte app: it needs pre-generated diff text as input and renders via HTML strings and a global stylesheet rather than Svelte components.',
+            'diff2html turns unified diff text — git patches — into polished, GitHub-style side-by-side or line-by-line HTML. It is the right tool for visualizing patches, and the wrong shape for comparing two strings inside a Svelte app: it needs pre-generated diff text as input and renders via an HTML string or imperative DOM wrapper plus a global stylesheet, rather than a Svelte component.',
         website: 'https://diff2html.xyz',
         github: 'https://github.com/rtfpessoa/diff2html',
         npm: 'diff2html',
@@ -201,10 +206,10 @@ export const competitors: Competitor[] = [
                 note: 'To compare two strings with diff2html you must generate patch text first (e.g. jsdiff createPatch)'
             },
             {
-                name: 'Drop-in Svelte component',
-                us: true,
-                them: false,
-                note: 'Framework-agnostic HTML generator'
+                name: 'Ready-to-use Svelte component',
+                us: 'Svelte 5 component',
+                them: 'No — HTML generator',
+                note: 'diff2html generates or inserts HTML; it is not a Svelte component'
             },
             { name: 'Inline character-level diff', us: true, them: 'Within changed lines' },
             { name: 'Side-by-side file view', us: false, them: true },
@@ -217,7 +222,7 @@ export const competitors: Competitor[] = [
             {
                 name: 'Output',
                 us: 'Real DOM via Svelte',
-                them: 'HTML string ({@html}) + required stylesheet'
+                them: 'HTML string or imperative DOM injection + stylesheet'
             },
             {
                 name: 'Expected patterns (ignore dynamic regions)',
@@ -237,7 +242,7 @@ export const competitors: Competitor[] = [
         consUs: [...shared.consUs, 'No side-by-side or per-file patch view'],
         consThem: [
             'Requires unified diff text as input — comparing two strings means generating a patch first',
-            'Renders via HTML strings and a global stylesheet, not components',
+            'Renders via an HTML string or imperative DOM wrapper and a global stylesheet, not components',
             'Customization is CSS overrides, not your own markup',
             'Heavier payload than a single-purpose component'
         ],
