@@ -68,6 +68,14 @@ describe('parseExpectedPatterns', () => {
         expect(parseExpectedPatterns(malformed)).toBeNull()
         expect(cleanTemplate(malformed)).toBe(malformed)
     })
+
+    it.each(['(?<1invalid>\\w+)', '(?<missing-close\\w+)'])(
+        'rejects malformed named-group marker %s',
+        (malformed) => {
+            expect(parseExpectedPatterns(malformed)).toBeNull()
+            expect(cleanTemplate(malformed)).toBe(malformed)
+        }
+    )
 })
 
 describe('cleanTemplate', () => {
