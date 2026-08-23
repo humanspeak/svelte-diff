@@ -237,7 +237,7 @@ export const competitors: Competitor[] = [
             'Polished GitHub-style diff UI out of the box',
             'Side-by-side and line-by-line view modes',
             'Understands real git patches — files, hunks, renames',
-            'Framework-agnostic and actively maintained'
+            'Framework-agnostic and maintained, with less frequent releases'
         ],
         consUs: [...shared.consUs, 'No side-by-side or per-file patch view'],
         consThem: [
