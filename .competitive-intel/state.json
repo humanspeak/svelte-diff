@@ -1,0 +1,159 @@
+{
+    "last_run": "2026-08-23",
+    "fetched_at": "2026-08-23T08:22:24Z",
+    "project": "@humanspeak/svelte-diff",
+    "self": {
+        "npm": "@humanspeak/svelte-diff",
+        "repo": "humanspeak/svelte-diff",
+        "latest_version": "0.4.1",
+        "last_publish": "2026-07-23",
+        "weekly_downloads": 71,
+        "stars": 10,
+        "archived": false,
+        "pushed_at": "2026-08-12",
+        "last_release": "2026-07-23",
+        "svelte_peer": "^5.0.0",
+        "error": null
+    },
+    "competitors": [
+        {
+            "npm": "diff",
+            "repo": "kpdecker/jsdiff",
+            "latest_version": "9.0.0",
+            "last_publish": "2026-04-13",
+            "weekly_downloads": 141003962,
+            "stars": 9193,
+            "archived": false,
+            "pushed_at": "2026-08-18",
+            "last_release": null,
+            "svelte_peer": null,
+            "error": null
+        },
+        {
+            "npm": "diff-match-patch",
+            "repo": "google/diff-match-patch",
+            "latest_version": "1.0.5",
+            "last_publish": "2020-05-20",
+            "weekly_downloads": 6238099,
+            "stars": 8141,
+            "archived": true,
+            "pushed_at": "2024-05-22",
+            "last_release": null,
+            "svelte_peer": null,
+            "error": null
+        },
+        {
+            "npm": "diff2html",
+            "repo": "rtfpessoa/diff2html",
+            "latest_version": "3.4.56",
+            "last_publish": "2026-01-31",
+            "weekly_downloads": 568640,
+            "stars": 3397,
+            "archived": false,
+            "pushed_at": "2026-05-08",
+            "last_release": "2026-01-01",
+            "svelte_peer": null,
+            "error": null
+        }
+    ],
+    "watchlist": [
+        {
+            "npm": "diff-match-patch-ts",
+            "repo": "rars/diff-match-patch-ts",
+            "latest_version": "2.0.0",
+            "last_publish": "2026-06-16",
+            "weekly_downloads": 286451,
+            "stars": 20,
+            "archived": false,
+            "pushed_at": "2026-07-06",
+            "last_release": "2026-07-06",
+            "svelte_peer": null,
+            "error": null
+        }
+    ],
+    "open_gaps": [
+        {
+            "id": "granularity-modes",
+            "gap": "Word / line / sentence / JSON diff granularity (jsdiff has it, we don't)",
+            "source": "diff (jsdiff) 9.0.0",
+            "why_it_matters": "Character-level diffs read badly for prose and config files; the only jsdiff capability that is not a declared non-goal.",
+            "worth_doing": "yes - additive diffMode prop, does not disturb drop-in ergonomics",
+            "opened": "2026-08-23"
+        }
+    ],
+    "config_corrections_pending": [],
+    "compare_validation": {
+        "diff": {
+            "page": "vs-jsdiff",
+            "validated_against_version": "9.0.0",
+            "validated_on": "2026-08-23",
+            "findings": []
+        },
+        "diff-match-patch": {
+            "page": "vs-diff-match-patch",
+            "validated_against_version": "1.0.5",
+            "validated_on": "2026-08-23",
+            "findings": []
+        },
+        "diff2html": {
+            "page": "vs-diff2html",
+            "validated_against_version": "3.4.56",
+            "validated_on": "2026-08-23",
+            "findings": [
+                "'actively maintained' softening - last publish 2026-01-31, last push 2026-05-08; recheck next quarter"
+            ]
+        }
+    },
+    "rank_tracker": {
+        "date": "2026-08-23",
+        "date_compared": "2026-08-16",
+        "summary": {
+            "tracked": 11,
+            "ranked": 5,
+            "top3": 0,
+            "top10": 0,
+            "improved": 3,
+            "newly_ranking": 2,
+            "declined": 0,
+            "avg_position": 19.8
+        },
+        "positions": {
+            "diff match patch svelte": 15,
+            "svelte diff": 19,
+            "svelte-diff": 19,
+            "svelte diff viewer": 22,
+            "svelte diff component": 24,
+            "compare two strings javascript": null,
+            "diff match patch": null,
+            "diff npm": null,
+            "diff-match-patch": null,
+            "javascript diff library": null,
+            "jsdiff": null
+        }
+    },
+    "seo": {
+        "export_date": "2026-08-22",
+        "striking_distance": [],
+        "underperforming_pages": [
+            {
+                "page": "https://diff.svelte.page/",
+                "clicks": 1.0,
+                "impressions": 137.0,
+                "ctr": 0.73,
+                "position": 16.34
+            }
+        ],
+        "recommendations_open": [
+            "verify /compare/* pages are indexed and internally linked (zero impressions)",
+            "target 'jsdiff' (vol 90, KD 9) via the existing vs-jsdiff page",
+            "earn 'svelte diff viewer' with a compare-two-strings section on /"
+        ]
+    },
+    "repo_triage": {
+        "since": "2026-07-24",
+        "new_external_prs": 0,
+        "new_external_issues": 0,
+        "awaiting_your_reply": 0,
+        "bot_prs": 4
+    }
+}
