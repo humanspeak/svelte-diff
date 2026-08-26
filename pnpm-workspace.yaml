@@ -2,7 +2,7 @@ packages:
     - .
     - docs
 allowBuilds:
-    '@humanspeak/docs-kit@https://codeload.github.com/humanspeak/docs-kit/tar.gz/728b1f534ebcf10674a04839cbd987d7e000be16': true
+    '@humanspeak/docs-kit@https://codeload.github.com/humanspeak/docs-kit/tar.gz/7f9018cb91c5497c7ebd2bfca2c28aab9e1116ae': true
     # pnpm 11 matches git-hosted dependencies by package name and resolved URL.
     # Refresh this commit when the docs-kit tag in docs/package.json changes.
     '@sentry/cli': true
