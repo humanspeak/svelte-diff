@@ -25,7 +25,7 @@
         "@cloudflare/workers-types": "^5.20260821.1",
         "@eslint/compat": "^2.1.0",
         "@eslint/js": "^10.0.1",
-        "@humanspeak/svelte-motion": "^0.9.3",
+        "@humanspeak/svelte-motion": "^0.10.0",
         "@lucide/svelte": "^1.33.0",
         "@sveltejs/adapter-cloudflare": "^7.2.9",
         "@sveltejs/kit": "^2.70.3",
