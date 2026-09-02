@@ -7,7 +7,7 @@ cli:
 plugins:
     sources:
         - id: trunk
-          ref: v1.10.2
+          ref: v1.11.0
           uri: https://github.com/trunk-io/plugins
 # Many linters and tools depend on runtimes - configure them here. (https://docs.trunk.io/runtimes)
 runtimes:
@@ -17,6 +17,8 @@ runtimes:
         - node@24.15.0
 # This is the section where you manage your linters. (https://docs.trunk.io/check/configuration)
 lint:
+    disabled:
+        - actionlint
     ignore:
         - linters: [ALL]
           paths:
@@ -63,7 +65,6 @@ lint:
     enabled:
         - grype@0.116.0
         - sort-package-json@4.0.0
-        - actionlint@1.7.12
         - checkov@3.3.8
         - eslint@10.7.0
         - git-diff-check
@@ -77,6 +78,7 @@ lint:
         - taplo@0.10.0
         - trufflehog@3.95.9
         - yamllint@1.38.0
+        - zizmor@1.30.0
 actions:
     disabled:
         - trunk-announce
