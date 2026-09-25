@@ -12,8 +12,8 @@ import { sveltekit } from '@sveltejs/kit/vite'
 import tailwindcss from '@tailwindcss/vite'
 import { defineConfig } from 'vite'
 
-import { competitors, ours } from './src/lib/compare-data.ts'
-import { docsConfig } from './src/lib/docs-config.ts'
+import { competitors, ours } from './src/lib/compare-data.js'
+import { docsConfig } from './src/lib/docs-config.js'
 
 const indexNowKey = '3f47a8d0c1be4b0ca5f8d7e2a9136c44'
 
