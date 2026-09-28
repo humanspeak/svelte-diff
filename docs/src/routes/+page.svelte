@@ -29,9 +29,9 @@
 
     const seo = getSeoContext()
     if (seo) {
-        seo.title = 'svelte-diff · readable text diffs for Svelte 5'
+        seo.title = 'Svelte Diff Viewer | Compare Two Strings in Svelte 5'
         seo.description =
-            'Render readable text diffs in Svelte 5 with semantic cleanup, expected patterns, typed snippets, reactive updates, and timing callbacks.'
+            'Compare two strings with a reactive Svelte 5 diff viewer. Try the live demo, highlight insertions and deletions, and mark expected changes with named patterns.'
     }
 
     const initialOriginal = `Release v1.8.0 is ready for review.
@@ -103,6 +103,24 @@ Owner: Developer Experience`
             body: 'Inspect core, cleanup, and total timing alongside the raw diff tuples.'
         }
     ]
+
+    const comparisons = [
+        {
+            name: 'jsdiff',
+            href: '/compare/vs-jsdiff',
+            description: 'Choose between a JavaScript diff library with word and line modes and a ready-to-render Svelte component.'
+        },
+        {
+            name: 'diff-match-patch',
+            href: '/compare/vs-diff-match-patch',
+            description: 'Compare the underlying algorithm library with a Svelte component that handles reactivity, cleanup, and rendering.'
+        },
+        {
+            name: 'diff2html',
+            href: '/compare/vs-diff2html',
+            description: 'Decide whether you need a git-patch viewer with side-by-side files or an inline diff of two plain strings.'
+        }
+    ]
 </script>
 
 <div class="brut-wrap flex min-h-svh flex-col">
@@ -150,7 +168,7 @@ Owner: Developer Experience`
                 </div>
             </div>
             <div class="corner bl">FIG-001</div>
-            <div class="corner br">SHEET 01 / 05</div>
+            <div class="corner br">SHEET 01 / 06</div>
         </section>
 
         <section class="kpis" aria-label="Package key performance indicators">
@@ -165,14 +183,22 @@ Owner: Developer Experience`
             {/each}
         </section>
 
-        <section class="demo-section">
+        <section class="demo-section" id="compare-two-strings">
             <div class="lede">
                 <div>FIG-002 / LIVE DIFF</div>
-                <h2>edit the <span>comparison</span>.</h2>
+                <h2>Compare two strings in <span>Svelte</span>.</h2>
                 <p>
-                    Change either document. SvelteDiff reacts immediately, applies semantic cleanup,
-                    and reports the work it performed.
+                    Use this Svelte diff viewer to highlight insertions and deletions inline.
+                    Pass your before and after strings as <code>originalText</code> and
+                    <code>modifiedText</code>; the diff updates whenever either value changes.
+                    Edit the text below to try semantic cleanup on real changes.
                 </p>
+                <p>
+                    Comparing timestamps, versions, or generated IDs? Use
+                    <a href="/docs/guides/expected-patterns">expected patterns</a>
+                    to keep intentional changes visible without treating them as ordinary edits.
+                </p>
+                <a href="/docs/getting-started#compare-two-strings-in-svelte">build your own Svelte diff viewer ↗</a>
                 <a href="/examples/live-editor">open full example ↗</a>
             </div>
 
@@ -202,7 +228,12 @@ Owner: Developer Experience`
                         <span>OUT / SEMANTIC DIFF</span>
                         <span>total · {timing.total.toFixed(2)}ms</span>
                     </div>
-                    <div class="diff-output rendered-diff">
+                    <div
+                        class="diff-output rendered-diff"
+                        role="region"
+                        aria-label="Compared text"
+                        tabindex="0"
+                    >
                         <SvelteDiff
                             {originalText}
                             {modifiedText}
@@ -245,9 +276,32 @@ Owner: Developer Experience`
             </div>
         </section>
 
+        <section class="features" aria-labelledby="compare-heading">
+            <div class="lede">
+                <div>FIG-004 / COMPARE</div>
+                <h2 id="compare-heading">Choose your <span>diff tool</span>.</h2>
+                <p>
+                    Find the right tool for comparing strings in Svelte, computing diff data,
+                    or displaying git patches. Explore the features and tradeoffs of each option.
+                </p>
+                <a href="/compare">all comparisons ↗</a>
+            </div>
+            <div class="feature-grid">
+                {#each comparisons as comparison, index (comparison.href)}
+                    <a href={comparison.href}>
+                        <div class="id">№ {String(index + 1).padStart(2, '0')} / 03</div>
+                        <div class="arrow">↗</div>
+                        <h3>Svelte Diff vs {comparison.name}</h3>
+                        <p>{comparison.description}</p>
+                        <i></i>
+                    </a>
+                {/each}
+            </div>
+        </section>
+
         <section class="ai-section" id="ai-ready">
             <div class="lede">
-                <div>FIG-004 / AI-READY</div>
+                <div>FIG-005 / AI-READY</div>
                 <h2>built for <span>ai-assisted</span> code.</h2>
                 <p>
                     Point Cursor, Claude Code, or any LLM at the manifests below and it gets the
@@ -316,7 +370,7 @@ Owner: Developer Experience`
                 <small>{copied ? '✓ copied to clipboard' : 'click to copy'}</small>
             </button>
             <div class="info right">
-                <div>SHEET 05 / 05</div>
+                <div>SHEET 06 / 06</div>
                 <div>END OF DOCUMENT</div>
                 <a class="v" href="#top">↩ TO TOP</a>
             </div>
@@ -555,6 +609,7 @@ Owner: Developer Experience`
 
     .lede h2 span { color: var(--brut-accent); }
     .lede p { margin: 12px 0 0; color: var(--brut-ink-2); font: 13px/1.55 'Inter Variable', 'Inter', system-ui, sans-serif; letter-spacing: 0; }
+    .lede p a { color: var(--brut-accent); text-underline-offset: 3px; }
     .lede > a { display: inline-block; margin-top: 18px; color: var(--brut-accent); font-size: 11px; text-decoration: none; }
     .lede > a:hover { text-decoration: underline; text-underline-offset: 4px; }
 
@@ -563,6 +618,11 @@ Owner: Developer Experience`
         overflow: hidden;
         border: 1px solid var(--brut-rule);
         background: var(--brut-bg);
+    }
+
+    .demo-panel {
+        display: grid;
+        grid-template-rows: auto auto 1fr auto;
     }
 
     .panel-bar,
@@ -593,7 +653,8 @@ Owner: Developer Experience`
     .editors textarea:focus { box-shadow: inset 0 0 0 1px var(--brut-accent); }
 
     .output-label { display: flex; justify-content: space-between; border-bottom: 1px solid var(--brut-rule); }
-    .rendered-diff { min-height: 130px; padding: 22px; color: var(--brut-ink); font-size: 13px; }
+    .rendered-diff { min-height: 130px; max-height: 24rem; overflow: auto; padding: 22px; color: var(--brut-ink); font-size: 13px; }
+    .rendered-diff:focus-visible { outline: 1px solid var(--brut-accent); outline-offset: -1px; }
     .panel-footer { justify-content: flex-end; border-top: 1px solid var(--brut-rule); border-bottom: 0; }
 
     .feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--brut-rule); border-left: 1px solid var(--brut-rule); }

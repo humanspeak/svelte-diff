@@ -31,7 +31,10 @@ npm install @humanspeak/svelte-diff
 pnpm add @humanspeak/svelte-diff
 ```
 
-## Your first diff
+## Compare two strings in Svelte
+
+To build an inline Svelte diff viewer, pass the original and modified strings to `SvelteDiff`.
+Enable `cleanupSemantic` to make edits in prose easier to read:
 
 ```svelte
 <script lang="ts">
@@ -50,6 +53,10 @@ By default, removed text is red with a strike-through, inserted text is green, a
 is unstyled. Unstyled unchanged text uses compact DOM without wrapper spans; pass
 `compact={false}` when migrating selectors or styles that require the legacy equal spans. Text is
 escaped by Svelte; the component does not inject an HTML string.
+
+Try the [live diff viewer](/#compare-two-strings) or the [basic diff example](/examples/basic-diff).
+For dates, versions, and generated IDs that are supposed to change, use
+[expected patterns](/docs/guides/expected-patterns) to label those values separately.
 
 ## Reactive inputs
 
@@ -102,6 +109,12 @@ Use `rendererClasses` when you want to keep the default `<span>` markup:
 ```
 
 Use child snippets when you need different elements, attributes, icons, or animation. See [Custom Rendering](/docs/guides/custom-rendering).
+
+## Choosing a diff tool
+
+- [Svelte Diff vs jsdiff](/compare/vs-jsdiff) — choose a rendered Svelte component or a JavaScript library that returns diff data, including word and line modes.
+- [Svelte Diff vs diff-match-patch](/compare/vs-diff-match-patch) — compare the underlying algorithm library with its reactive Svelte component integration.
+- [Svelte Diff vs diff2html](/compare/vs-diff2html) — choose inline string comparison or a git-patch viewer with side-by-side files.
 
 ## Next steps
 
