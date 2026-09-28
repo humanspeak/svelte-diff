@@ -6,6 +6,17 @@
 > adjacent `README.md` status when finished, unless a supervising reviewer owns
 > that index. This is an implementation handoff, not an instruction to publish.
 >
+> Revision 2026-09-28: Use `/docs/guides-diff-modes.md` for the generated guide
+> mirror. Inspected docs-kit `doc-mirrors.js:84` flattens nested route slashes;
+> the original nested mirror URL was a planning error. The HTML guide route and
+> required HTTP/content checks are unchanged. Guard corrects this factual path
+> under the authorized dispatch; no generator change or acceptance reduction.
+>
+> Revision 2026-09-28: The required whole-page width check also exposed existing
+> desktop overflow in the homepage's large install-command footer. Permit a
+> narrow wrapping/minimum-width correction in that existing homepage rule so
+> the desktop acceptance gate can pass without weakening it. No footer redesign.
+>
 > **Drift check, run first:**
 > `git diff --stat 57a9526..HEAD -- src/lib src/routes/tests/diff-modes tests/diff-modes.test.ts README.md docs .github/workflows/docs-diff-modes.yml`
 > Compare any changed files with the current-state excerpts and contracts below.
@@ -20,7 +31,7 @@
 - **Depends on:** none; existing component-performance plans 001–005 are already DONE
 - **Category:** direction
 - **Confidence:** HIGH in the gap and integration points; the implementation is not yet prototyped
-- **Planned at:** commit `57a9526`, 2026-09-28
+- **Planned at:** commit `3a40701`, 2026-09-28 (same source baseline as `57a9526`)
 
 ## Why this matters
 
@@ -36,23 +47,24 @@ Sentence segmentation and structural JSON comparison are separate future work.
 - `src/lib/SvelteDiff.svelte:69` destructures reactive props; `:96` defines the
   computation input/cache. At `:147` the current computation is:
 
-  ```ts
-  const startTotal = performance.now()
-  const diffs = dmp.diff_main(diffText1, text2)
-  const endMain = performance.now()
+    ```ts
+    const startTotal = performance.now()
+    const diffs = dmp.diff_main(diffText1, text2)
+    const endMain = performance.now()
 
-  const startCleanup = performance.now()
-  if (semanticCleanup) {
-      dmp.diff_cleanupSemantic(diffs)
-  } else if (efficiencyCleanup > 0) {
-      dmp.diff_cleanupEfficiency(diffs)
-  }
-  ```
+    const startCleanup = performance.now()
+    if (semanticCleanup) {
+        dmp.diff_cleanupSemantic(diffs)
+    } else if (efficiencyCleanup > 0) {
+        dmp.diff_cleanupEfficiency(diffs)
+    }
+    ```
 
-  Capture extraction runs before this block, replacing the template with
-  `extractResult.resolvedText`, or `compiledPattern.cleanedText` on mismatch.
-  `tagExpectedRegions` runs after diff/cleanup. The result is computed by
-  `$derived.by`, available during SSR; only callback delivery uses `$effect`.
+    Capture extraction runs before this block, replacing the template with
+    `extractResult.resolvedText`, or `compiledPattern.cleanedText` on mismatch.
+    `tagExpectedRegions` runs after diff/cleanup. The result is computed by
+    `$derived.by`, available during SSR; only callback delivery uses `$effect`.
+
 - `src/lib/index.ts:95` exports `{ main, cleanup, total }` timing; `:115` aliases
   the dependency's `Diff` tuple as `SvelteDiffTuple`; `:121` begins `SvelteDiffProps`.
   Keep existing aliases and callback argument shapes.
@@ -107,14 +119,28 @@ must not be re-exported from the package root unless specified here.
 
 ```svelte
 <script lang="ts">
-    import { CodeReferenceV2, ExampleV2, formatSheetLabel, type ExampleSection } from '@humanspeak/docs-kit'
+    import {
+        CodeReferenceV2,
+        ExampleV2,
+        formatSheetLabel,
+        type ExampleSection
+    } from '@humanspeak/docs-kit'
     import { demoCodeSample } from '$lib/demo-loaders'
     import CleanupModes from '$lib/examples/cleanup-modes/demos/CleanupModes.svelte'
 </script>
 
 {#snippet demo()}<CleanupModes />{/snippet}
 {#snippet code()}
-    <CodeReferenceV2 samples={[demoCodeSample('cleanup-modes/demos/CleanupModes.svelte', 'cleanup-modes', 'CleanupModes.svelte')]} columns={1} />
+    <CodeReferenceV2
+        samples={[
+            demoCodeSample(
+                'cleanup-modes/demos/CleanupModes.svelte',
+                'cleanup-modes',
+                'CleanupModes.svelte'
+            )
+        ]}
+        columns={1}
+    />
 {/snippet}
 ```
 
@@ -175,8 +201,8 @@ diffMode?: SvelteDiffMode // default: 'character'
    modified text exactly. Expected annotations may split a displayed word/line;
    whole-token guarantees apply to raw diff boundaries, not snippet invocations.
    Removals remain removals: a replaced line can show a captured value in the
-  deleted line as well as an expected annotation in its replacement. Explain
-  and test this; do not silently suppress deleted source text.
+   deleted line as well as an expected annotation in its replacement. Explain
+   and test this; do not silently suppress deleted source text.
    Use template `Release (?<version>v\\d+)` and actual `Release v2 ready` as
    one concrete fixture: resolved source is `Release v2`, and line mode replaces
    it with the complete actual line while annotating `v2` on the target side.
@@ -206,7 +232,8 @@ Only modify/create these authored files:
 - `src/routes/tests/diff-modes/+page.svelte` (new isolated browser fixture)
 - `tests/diff-modes.test.ts` (new)
 - `README.md`
-- `docs/src/routes/+page.svelte` (mode selector, mode labels/links, mirror-count copy only)
+- `docs/src/routes/+page.svelte` (mode selector, mode labels/links, mirror-count copy,
+  and narrow install-footer wrapping correction for the whole-page width gate)
 - `docs/src/lib/docsNav.ts`, `docs/src/lib/compare-data.ts`
 - `docs/src/routes/examples/+page.svelte`
 - `docs/src/routes/examples/word-diff/+page.svelte` (new)
@@ -251,21 +278,21 @@ Run from repository root unless a command says otherwise. Use Node 24 and the
 declared pnpm 11.22.0. Scripts below are present at the planned commit; the two
 diff-modes test files and docs Playwright config are created by this plan.
 
-| Purpose | Command | Success |
-| --- | --- | --- |
-| Install, executor only | `pnpm install --frozen-lockfile` | exit 0; lockfile unchanged |
-| Library typecheck | `pnpm run check` | 0 errors/warnings |
-| Focused unit tests | `pnpm exec vitest run src/lib/diffModes.test.ts src/lib/SvelteDiff.test.ts src/lib/index.test.ts --reporter=verbose` | all pass after implementation |
-| Full unit/coverage suite | `pnpm run test` | exit 0 |
-| Package and root app build | `pnpm run build` | exit 0, including publint |
-| Root browser tests | `pnpm exec playwright test --config=playwright.config.ts` | all five configured projects pass |
-| Focused root browser tests | `pnpm exec playwright test tests/diff-modes.test.ts --project=chromium` | all new cases pass |
-| Docs source check | `pnpm --filter docs check` | 0 errors/warnings; artifact caveat below |
-| Docs production build | `pnpm --filter docs build` | exit 0, including favicon validation |
-| Docs browser tests | `pnpm exec playwright test --config=docs/playwright.config.ts` | desktop/mobile tests pass |
-| Formatting, executor only | `trunk fmt` | formatting applied; inspect resulting diff |
-| Authoritative lint | `trunk check` | no failures |
-| Whitespace/scope | `git diff --check` and `git status --short` | no errors; only scoped authored changes |
+| Purpose                    | Command                                                                                                              | Success                                    |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| Install, executor only     | `pnpm install --frozen-lockfile`                                                                                     | exit 0; lockfile unchanged                 |
+| Library typecheck          | `pnpm run check`                                                                                                     | 0 errors/warnings                          |
+| Focused unit tests         | `pnpm exec vitest run src/lib/diffModes.test.ts src/lib/SvelteDiff.test.ts src/lib/index.test.ts --reporter=verbose` | all pass after implementation              |
+| Full unit/coverage suite   | `pnpm run test`                                                                                                      | exit 0                                     |
+| Package and root app build | `pnpm run build`                                                                                                     | exit 0, including publint                  |
+| Root browser tests         | `pnpm exec playwright test --config=playwright.config.ts`                                                            | all five configured projects pass          |
+| Focused root browser tests | `pnpm exec playwright test tests/diff-modes.test.ts --project=chromium`                                              | all new cases pass                         |
+| Docs source check          | `pnpm --filter docs check`                                                                                           | 0 errors/warnings; artifact caveat below   |
+| Docs production build      | `pnpm --filter docs build`                                                                                           | exit 0, including favicon validation       |
+| Docs browser tests         | `pnpm exec playwright test --config=docs/playwright.config.ts`                                                       | desktop/mobile tests pass                  |
+| Formatting, executor only  | `trunk fmt`                                                                                                          | formatting applied; inspect resulting diff |
+| Authoritative lint         | `trunk check`                                                                                                        | no failures                                |
+| Whitespace/scope           | `git diff --check` and `git status --short`                                                                          | no errors; only scoped authored changes    |
 
 Trunk enables ESLint, Prettier, markdownlint, git-diff-check, security/dependency
 scanners, and workflow validators. Do not substitute package-script lint or
@@ -288,24 +315,24 @@ disable hooks to make the gate pass. `.agents/.plans/**` is excluded by Trunk.
   Run the docs build, then this equivalent source check while temporarily moving
   only the ignored generated entry point, restoring it even on failure:
 
-  ```bash
-  python3 - <<'PY'
-  from pathlib import Path
-  import subprocess
-  worker = Path('docs/.svelte-kit/cloudflare/_worker.js')
-  backup = worker.with_suffix('.js.source-check-backup')
-  assert not backup.exists(), 'Existing backup: stop and inspect'
-  moved = worker.exists()
-  if moved:
-      worker.rename(backup)
-  try:
-      result = subprocess.run(['pnpm', '--filter', 'docs', 'check'])
-  finally:
-      if moved:
-          backup.rename(worker)
-  raise SystemExit(result.returncode)
-  PY
-  ```
+    ```bash
+    python3 - <<'PY'
+    from pathlib import Path
+    import subprocess
+    worker = Path('docs/.svelte-kit/cloudflare/_worker.js')
+    backup = worker.with_suffix('.js.source-check-backup')
+    assert not backup.exists(), 'Existing backup: stop and inspect'
+    moved = worker.exists()
+    if moved:
+        worker.rename(backup)
+    try:
+        result = subprocess.run(['pnpm', '--filter', 'docs', 'check'])
+    finally:
+        if moved:
+            backup.rename(worker)
+    raise SystemExit(result.returncode)
+    PY
+    ```
 
 - The docs build refreshes tracked `docs/src/lib/github-stats.json`. Save its
   baseline and restore only the build's own incidental change before finishing.
@@ -315,10 +342,10 @@ disable hooks to make the gate pass. `.agents/.plans/**` is excluded by Trunk.
   port in `docs/README.md`. Root browser fixtures use 4173. Use 8524 for the new
   independent docs preview test server. Do not send docs tests to the root app.
 
-Reference: https://github.com/google/diff-match-patch/wiki/Line-or-Word-Diffs
+Reference: <https://github.com/google/diff-match-patch/wiki/Line-or-Word-Diffs>
 explains the encode/diff/decode approach. Its sample private API calls are not
 the integration API to use here. The installed dependency source is the precise
-implementation baseline. https://github.com/kpdecker/jsdiff#api explains why a
+implementation baseline. <https://github.com/kpdecker/jsdiff#api> explains why a
 future JSON mode needs a separate normalization contract.
 
 ## Steps
@@ -358,7 +385,9 @@ export const computeTokenDiff = (
     after: string,
     mode: 'word' | 'line',
     timeout: number
-): Diff[] => { /* tokenize, encode, compare, decode */ }
+): Diff[] => {
+    /* tokenize, encode, compare, decode */
+}
 ```
 
 - Handle equality and empty inputs first. Empty/empty is `[]`; identical
@@ -439,9 +468,9 @@ passes. `pnpm run build` must succeed before marking the integration ready.
 Create two separately addressable examples; do not satisfy this with only a
 dropdown buried in an existing page:
 
-| Route and demo | Required content and interaction |
-| --- | --- |
-| `/examples/word-diff`, `word-diff/demos/WordDiff.svelte` | Editable prose; initial `The cat sleeps.` -> `The car sleeps.`; character and word results for the same inputs; reset; visible explanation of whitespace/punctuation and cleanup behavior |
+| Route and demo                                           | Required content and interaction                                                                                                                                                                                    |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/examples/word-diff`, `word-diff/demos/WordDiff.svelte` | Editable prose; initial `The cat sleeps.` -> `The car sleeps.`; character and word results for the same inputs; reset; visible explanation of whitespace/punctuation and cleanup behavior                           |
 | `/examples/line-diff`, `line-diff/demos/LineDiff.svelte` | Editable configuration with `count=10` -> `count=20` and an unchanged line; character and line results; reset; preset illustrating blank lines/final newline; explanation that JSON/config input remains plain text |
 
 Use `ExampleV2`, `CodeReferenceV2`, `demoCodeSample`, `ExampleSection`, and the
@@ -515,17 +544,17 @@ Create `/docs/guides/diff-modes` with frontmatter, SEO context, and a matching
 
 Update all these authored surfaces together:
 
-| File | Required change |
-| --- | --- |
-| `README.md` | Feature summary, mode type import, prop table/default, word/line snippets, guide/example links, cleanup qualification |
-| `docs/src/routes/docs/api/svelte-diff/+page.svx` | `diffMode` prop, default, allowed values; scope cleanup precedence to character; callback/capture semantics |
-| `docs/src/routes/docs/api/types/+page.svx` | Export/import and definition of `SvelteDiffMode`; timing meanings; tuples still contain original text |
-| `docs/src/routes/docs/getting-started/+page.svx` | Small mode-choice section and next-step links; retain existing simple default example |
-| `docs/src/routes/docs/guides/cleanup/+page.svx` | Distinguish granularity from cleanup; qualify all precedence/recommendations |
-| `docs/src/routes/docs/guides/expected-patterns/+page.svx` | Mode interaction and capture-tagging caveat with a concrete changed-line example |
-| `docs/src/routes/docs/guides/performance/+page.svx` | Include mode in recomputation inputs; describe token costs/deadline/fallback; remove obsolete character-only scope claim |
-| `docs/static/llms-prepend.md` | Default and supported modes, cleanup scope, truthful token-mode limitations |
-| `docs/src/lib/compare-data.ts` | Split word/line support from sentence/JSON support; word/line true for us, sentence/JSON false; update shared limitation copy without claiming feature parity |
+| File                                                      | Required change                                                                                                                                               |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `README.md`                                               | Feature summary, mode type import, prop table/default, word/line snippets, guide/example links, cleanup qualification                                         |
+| `docs/src/routes/docs/api/svelte-diff/+page.svx`          | `diffMode` prop, default, allowed values; scope cleanup precedence to character; callback/capture semantics                                                   |
+| `docs/src/routes/docs/api/types/+page.svx`                | Export/import and definition of `SvelteDiffMode`; timing meanings; tuples still contain original text                                                         |
+| `docs/src/routes/docs/getting-started/+page.svx`          | Small mode-choice section and next-step links; retain existing simple default example                                                                         |
+| `docs/src/routes/docs/guides/cleanup/+page.svx`           | Distinguish granularity from cleanup; qualify all precedence/recommendations                                                                                  |
+| `docs/src/routes/docs/guides/expected-patterns/+page.svx` | Mode interaction and capture-tagging caveat with a concrete changed-line example                                                                              |
+| `docs/src/routes/docs/guides/performance/+page.svx`       | Include mode in recomputation inputs; describe token costs/deadline/fallback; remove obsolete character-only scope claim                                      |
+| `docs/static/llms-prepend.md`                             | Default and supported modes, cleanup scope, truthful token-mode limitations                                                                                   |
+| `docs/src/lib/compare-data.ts`                            | Split word/line support from sentence/JSON support; word/line true for us, sentence/JSON false; update shared limitation copy without claiming feature parity |
 
 Do not call line mode a structural JSON diff or word mode multilingual linguistic
 segmentation. Preserve accurate jsdiff advantages (sentence/JSON, patches,
@@ -579,7 +608,7 @@ In `docs/tests/diff-modes.test.ts`, verify:
    scrollTop while its footer stays below the output region. Reset returns to
    the initial content. Include a long unbroken string to catch width overflow.
 6. `/sitemap.xml` contains the three new routes. Fetch
-   `/docs/guides/diff-modes.md`, `/examples/word-diff.md`, and
+   `/docs/guides-diff-modes.md`, `/examples/word-diff.md`, and
    `/examples/line-diff.md`; all return 200 with current mode/source content.
    `/llms.txt` links new pages and `/llms-full.txt` includes the mode contract.
    Confirm declared social-card URLs resolve to nonempty images.
@@ -621,20 +650,20 @@ authored changes remain. Do not claim hosted CI passed unless it actually ran.
 Tests should prove behavior, not implementation layout. No blanket snapshots of
 all diff tie-break choices and no real-time timeout assertions.
 
-| Layer | Cases and required assertions |
-| --- | --- |
-| Helper golden cases | `cat` -> `car` removes/inserts whole words; changed config replaces full line and preserves unchanged line; insert/delete-only and empty/equal inputs |
-| Losslessness | Rebuild source from operations other than insert and target from operations other than remove; exact equality including whitespace/newlines/Unicode for every fixture |
-| Word tokens | Multiple spaces, tabs, NBSP, punctuation-only changes, apostrophes, hyphens, underscores, digits, combining marks, accented/non-Latin runs, emoji, lone surrogate code units; no text loss or normalization |
-| Lines | LF/CRLF/lone CR, mixed endings, blank lines, trailing newline addition/removal, no final newline, long single line, reordered/repeated lines |
-| Boundaries | Walk cumulative source and target offsets of raw tuples; every boundary is in the corresponding tokenizer-boundary set; test both cleanup props enabled to ensure they cannot split tokens |
-| Capacity | Just below/at/above 65,535 distinct tokens shared across both texts; test IDs crossing the surrogate range, including adjacent high/low surrogate IDs representing different tokens; overflow reconstructs both complete inputs via coarse replacement |
-| Deadline | Mock `Date.now` progression, restore it after each test; expiry during preparation/decoding returns full replacement; engine receives one deadline with checklines false; zero remains unlimited; avoid timer-dependent sleeps |
-| Component compatibility | Omitted vs explicit character yields equal tuples/DOM; defaults unchanged; each mode recomputes on text/mode change; callback-only swaps preserve array identity; cleanup zero only in token modes |
-| Patterns/renderers | Matches, mismatch placeholders, captures spanning words/lines, capture inside a replaced line, expected snippet group names, remove/insert/equal/snippet precedence, custom lineBreak, compact on/off |
-| Types | Public mode union accepts three literals and rejects sentence/json using type assertions/expected compile errors; existing aliases remain assignable |
-| Browser | New modes in initial SSR HTML, hydration, interactive mode changes, accessible controls and internal scrolling, desktop/mobile docs layouts and source display |
-| Existing gates | Existing unit, snippet, default, expected-pattern, performance, and five-project root browser suites remain green |
+| Layer                   | Cases and required assertions                                                                                                                                                                                                                          |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Helper golden cases     | `cat` -> `car` removes/inserts whole words; changed config replaces full line and preserves unchanged line; insert/delete-only and empty/equal inputs                                                                                                  |
+| Losslessness            | Rebuild source from operations other than insert and target from operations other than remove; exact equality including whitespace/newlines/Unicode for every fixture                                                                                  |
+| Word tokens             | Multiple spaces, tabs, NBSP, punctuation-only changes, apostrophes, hyphens, underscores, digits, combining marks, accented/non-Latin runs, emoji, lone surrogate code units; no text loss or normalization                                            |
+| Lines                   | LF/CRLF/lone CR, mixed endings, blank lines, trailing newline addition/removal, no final newline, long single line, reordered/repeated lines                                                                                                           |
+| Boundaries              | Walk cumulative source and target offsets of raw tuples; every boundary is in the corresponding tokenizer-boundary set; test both cleanup props enabled to ensure they cannot split tokens                                                             |
+| Capacity                | Just below/at/above 65,535 distinct tokens shared across both texts; test IDs crossing the surrogate range, including adjacent high/low surrogate IDs representing different tokens; overflow reconstructs both complete inputs via coarse replacement |
+| Deadline                | Mock `Date.now` progression, restore it after each test; expiry during preparation/decoding returns full replacement; engine receives one deadline with checklines false; zero remains unlimited; avoid timer-dependent sleeps                         |
+| Component compatibility | Omitted vs explicit character yields equal tuples/DOM; defaults unchanged; each mode recomputes on text/mode change; callback-only swaps preserve array identity; cleanup zero only in token modes                                                     |
+| Patterns/renderers      | Matches, mismatch placeholders, captures spanning words/lines, capture inside a replaced line, expected snippet group names, remove/insert/equal/snippet precedence, custom lineBreak, compact on/off                                                  |
+| Types                   | Public mode union accepts three literals and rejects sentence/json using type assertions/expected compile errors; existing aliases remain assignable                                                                                                   |
+| Browser                 | New modes in initial SSR HTML, hydration, interactive mode changes, accessible controls and internal scrolling, desktop/mobile docs layouts and source display                                                                                         |
+| Existing gates          | Existing unit, snippet, default, expected-pattern, performance, and five-project root browser suites remain green                                                                                                                                      |
 
 Use `src/lib/SvelteDiff.test.ts` for component style and `tests/snippets.test.ts`
 for browser interactions. For reconstruction with expected patterns, compare the
@@ -646,28 +675,28 @@ the test demonstrates the concrete readability enhancement over current behavior
 
 ## Done criteria
 
-- [ ] All commands in the final gate pass; evidence recorded with versions.
-- [ ] Step 1 failures are recorded and the same assertions now pass.
-- [ ] `diffMode` defaults to character and `SvelteDiffMode` is publicly exported.
-- [ ] Word/line raw tuples are lossless, token-aligned, and protected against
-  timeout/capacity truncation and surrogate-ID decoding mistakes.
-- [ ] Existing callback identity, expected-pattern, snippet, compact, SSR, and
-  performance checks pass without weakening their assertions or ceilings.
-- [ ] Two public example pages and one guide exist, are navigable, and pass
-  desktop/mobile/SSR/source-panel tests against the built docs application.
-- [ ] The homepage's Compare two strings in Svelte section has an accessible
-  Character/Word/Line selector that immediately updates the current comparison
-  without replacing input text; Reset restores sample strings and Character.
-- [ ] Homepage mode/cleanup labels are accurate, and all three modes preserve
-  responsive controls, bottom-aligned footer, and bounded keyboard scrolling.
-- [ ] API, README, cleanup/performance/pattern guidance, comparisons, and LLM
-  references agree on supported modes, defaults, and limitations.
-- [ ] Generated sitemap, mirrors, LLM references, and social-card URLs include
-  the new content and pass HTTP/content checks.
-- [ ] The docs verification workflow validates without deployment permissions.
-- [ ] No dependency, lockfile, version, unrelated generated-stat, or other
-  out-of-scope authored changes; `git diff --check` is clean.
-- [ ] Adjacent index status updated with results and any unresolved follow-up.
+- [x] All commands in the final gate pass; evidence recorded with versions.
+- [x] Step 1 failures are recorded and the same assertions now pass.
+- [x] `diffMode` defaults to character and `SvelteDiffMode` is publicly exported.
+- [x] Word/line raw tuples are lossless, token-aligned, and protected against
+      timeout/capacity truncation and surrogate-ID decoding mistakes.
+- [x] Existing callback identity, expected-pattern, snippet, compact, SSR, and
+      performance checks pass without weakening their assertions or ceilings.
+- [x] Two public example pages and one guide exist, are navigable, and pass
+      desktop/mobile/SSR/source-panel tests against the built docs application.
+- [x] The homepage's Compare two strings in Svelte section has an accessible
+      Character/Word/Line selector that immediately updates the current comparison
+      without replacing input text; Reset restores sample strings and Character.
+- [x] Homepage mode/cleanup labels are accurate, and all three modes preserve
+      responsive controls, bottom-aligned footer, and bounded keyboard scrolling.
+- [x] API, README, cleanup/performance/pattern guidance, comparisons, and LLM
+      references agree on supported modes, defaults, and limitations.
+- [x] Generated sitemap, mirrors, LLM references, and social-card URLs include
+      the new content and pass HTTP/content checks.
+- [x] The docs verification workflow validates without deployment permissions.
+- [x] No dependency, lockfile, version, unrelated generated-stat, or other
+      out-of-scope authored changes; `git diff --check` is clean.
+- [x] Adjacent index status updated with results and any unresolved follow-up.
 
 ## STOP conditions
 
