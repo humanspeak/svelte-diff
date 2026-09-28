@@ -707,8 +707,8 @@ Owner: Developer Experience`
     .prompt-example code { color: var(--brut-ink-2); font: 13px/1.6 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, monospace; }
     .prompt-example em { color: var(--brut-accent); font-style: normal; }
 
-    .big-footer { display: grid; grid-template-columns: 200px 1fr 200px; gap: 24px; align-items: end; border-top: 1px solid var(--brut-rule); padding: 60px 24px 36px; }
-    .big-footer > button { position: relative; border: 0; background: transparent; color: var(--brut-ink); padding: 0; font-family: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, monospace; font-size: clamp(40px, 7vw, 96px); line-height: 0.9; letter-spacing: -0.06em; text-align: left; text-transform: lowercase; cursor: pointer; }
+    .big-footer { display: grid; grid-template-columns: 200px minmax(0, 1fr) 200px; gap: 24px; align-items: end; border-top: 1px solid var(--brut-rule); padding: 60px 24px 36px; }
+    .big-footer > button { position: relative; min-width: 0; overflow-wrap: anywhere; border: 0; background: transparent; color: var(--brut-ink); padding: 0; font-family: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, monospace; font-size: clamp(40px, 7vw, 96px); line-height: 0.9; letter-spacing: -0.06em; text-align: left; text-transform: lowercase; cursor: pointer; }
     .big-footer > button > span { color: var(--brut-accent); }
     .big-footer > button > small { display: block; height: 16px; min-width: 200px; margin-top: 16px; overflow: hidden; color: var(--brut-ink-3); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; }
     .big-footer .info { color: var(--brut-ink-3); font-size: 11px; line-height: 1.8; letter-spacing: 0.12em; }
