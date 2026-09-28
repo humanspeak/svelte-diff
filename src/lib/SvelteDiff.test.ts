@@ -1,6 +1,7 @@
-import { render, waitFor } from '@testing-library/svelte'
+import { fireEvent, render, waitFor } from '@testing-library/svelte'
 import { createRawSnippet } from 'svelte'
 import { describe, expect, it, vi } from 'vitest'
+import DiffModesFixture from '../routes/tests/diff-modes/+page.svelte'
 import SvelteDiff from './SvelteDiff.svelte'
 
 const textSnippet = (className: string) =>
@@ -629,6 +630,107 @@ describe('token mode display contracts', () => {
                 renderers: { equal: textSnippet('equal-map') }
             })
             expect(container.querySelectorAll('.equal-map')).toHaveLength(2)
+        }
+    )
+})
+
+describe('display shape transitions', () => {
+    it('retains renderer nodes for same-shape text changes', async () => {
+        const props = { originalText: 'cat', modifiedText: 'car', diffMode: 'line' as const }
+        const { container, rerender } = render(SvelteDiff, props)
+        const removed = container.querySelector('span')
+        await rerender({ ...props, originalText: 'dog' })
+        expect(container.querySelector('span')).toBe(removed)
+        expect(removed?.textContent).toBe('dog')
+    })
+
+    it('updates expected captures across display shapes in both directions', async () => {
+        const props = {
+            originalText: 'Value: (?<value>[\\s\\S]+)',
+            modifiedText: 'Value: alpha',
+            compact: false
+        }
+        const { container, rerender } = render(SvelteDiff, props)
+        await rerender({ ...props, modifiedText: 'Value: beta\ngamma' })
+        expect(
+            [...container.querySelectorAll('[title="value"]')].map((node) => node.textContent)
+        ).toEqual(['beta', 'gamma'])
+        expect(container.textContent).toBe('Value: betagamma')
+        expect(container.querySelectorAll('br')).toHaveLength(1)
+        await rerender(props)
+        expect(container.textContent).toBe('Value: alpha')
+        expect(container.querySelectorAll('[title="value"]')).toHaveLength(1)
+        expect(container.querySelectorAll('br')).toHaveLength(0)
+    })
+
+    it('clears old snippet DOM after mode changes and bound input edits', async () => {
+        const { getByLabelText, getByRole } = render(DiffModesFixture)
+        const result = getByRole('region', { name: 'Interactive result' })
+        await fireEvent.change(getByLabelText(/Diff mode/), { target: { value: 'line' } })
+        await fireEvent.input(getByLabelText('Before'), {
+            target: { value: 'count=10\nkeep=true\n' }
+        })
+        await fireEvent.input(getByLabelText('After'), {
+            target: { value: 'count=20\nkeep=true\n' }
+        })
+        expect(result.textContent).toBe('count=10count=20keep=true')
+        expect(getByRole('region', { name: 'Default character' }).textContent).toBe(
+            'count=120keep=true'
+        )
+    })
+
+    it('replaces custom snippets when line edits become multiline', async () => {
+        const props = {
+            originalText: 'The cat sleeps.',
+            modifiedText: 'The car sleeps.',
+            diffMode: 'line' as const,
+            remove: textSnippet('removed'),
+            insert: textSnippet('inserted'),
+            equal: textSnippet('equal')
+        }
+        const { container, rerender } = render(SvelteDiff, props)
+        await rerender({ ...props, originalText: 'count=10\nkeep=true\n' })
+        await rerender({
+            ...props,
+            originalText: 'count=10\nkeep=true\n',
+            modifiedText: 'count=20\nkeep=true\n'
+        })
+        expect([...container.querySelectorAll('.removed')].map((node) => node.textContent)).toEqual(
+            ['count=10']
+        )
+        expect(
+            [...container.querySelectorAll('.inserted')].map((node) => node.textContent)
+        ).toEqual(['count=20'])
+        expect(container.textContent).toBe('count=10count=20keep=true')
+        await rerender(props)
+        expect(container.textContent).toBe('The cat sleeps.The car sleeps.')
+        expect(container.querySelectorAll('br')).toHaveLength(0)
+    })
+
+    it.each(['character', 'word', 'line'] as const)(
+        'matches a fresh %s render after sequential input edits in both directions',
+        async (diffMode) => {
+            vi.useRealTimers()
+            const props = {
+                cleanupEfficiency: 0,
+                originalText: 'The cat sleeps.',
+                modifiedText: 'The car sleeps.',
+                diffMode
+            }
+            const { container, rerender } = render(SvelteDiff, props)
+            const edits = [
+                { originalText: 'count=10\nkeep=true\n' },
+                { modifiedText: 'count=20\nkeep=true\n' },
+                { originalText: 'The cat sleeps.' },
+                { modifiedText: 'The car sleeps.' }
+            ]
+            for (const edit of edits) {
+                Object.assign(props, edit)
+                await rerender(props)
+                const fresh = render(SvelteDiff, props)
+                expect(container.innerHTML).toBe(fresh.container.innerHTML)
+                fresh.unmount()
+            }
         }
     )
 })

@@ -247,34 +247,38 @@ certain dynamic regions (dates, names, versions) are expected to differ.
 
 {#each processingResult.displayDiffs as diff, index (index)}
     {@const { operation, text, expected } = diff}
-    {#if expected}
-        {#if text.includes('\n')}
-            {#each text.split('\n') as line, lineIndex (lineIndex)}
-                {#if lineIndex > 0}{@render displayRenderers.lineBreak()}{/if}{#if line.length > 0}{@render displayRenderers.expected(
-                        line,
-                        expected
-                    )}{/if}
-            {/each}
+    <!-- Hydrated snippet ranges need a fresh owner when switching display shape.
+         Same-shape text updates keep their existing renderer and DOM. -->
+    {#key text.includes('\n')}
+        {#if expected}
+            {#if text.includes('\n')}
+                {#each text.split('\n') as line, lineIndex (lineIndex)}
+                    {#if lineIndex > 0}{@render displayRenderers.lineBreak()}{/if}{#if line.length > 0}{@render displayRenderers.expected(
+                            line,
+                            expected
+                        )}{/if}
+                {/each}
+            {:else}
+                {@render displayRenderers.expected(text, expected)}
+            {/if}
         {:else}
-            {@render displayRenderers.expected(text, expected)}
+            {@const renderer =
+                operation === 0
+                    ? displayRenderers.equal
+                    : operation === -1
+                      ? displayRenderers.remove
+                      : displayRenderers.insert}
+            {#if text.includes('\n')}
+                {#each text.split('\n') as line, lineIndex (lineIndex)}
+                    {#if lineIndex > 0}{@render displayRenderers.lineBreak()}{/if}{#if line.length > 0}{@render renderer(
+                            line
+                        )}{/if}
+                {/each}
+            {:else}
+                {@render renderer(text)}
+            {/if}
         {/if}
-    {:else}
-        {@const renderer =
-            operation === 0
-                ? displayRenderers.equal
-                : operation === -1
-                  ? displayRenderers.remove
-                  : displayRenderers.insert}
-        {#if text.includes('\n')}
-            {#each text.split('\n') as line, lineIndex (lineIndex)}
-                {#if lineIndex > 0}{@render displayRenderers.lineBreak()}{/if}{#if line.length > 0}{@render renderer(
-                        line
-                    )}{/if}
-            {/each}
-        {:else}
-            {@render renderer(text)}
-        {/if}
-    {/if}
+    {/key}
 {/each}
 
 {#snippet removeFallback(text: string)}

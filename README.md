@@ -122,6 +122,45 @@ import type {
 | `expected`          | `Snippet<[string, string]>` | —             | Child snippet for expected values, receiving `(text, groupName)`                      |
 | `lineBreak`         | `Snippet<[]>`               | —             | Child snippet rendered between lines                                                  |
 
+## Word and line comparison
+
+```svelte
+<script lang="ts">
+    import SvelteDiff from '@humanspeak/svelte-diff'
+    const proseBefore = 'The cat sleeps.'
+    const proseAfter = 'The car sleeps.'
+    const configBefore = 'count=10\nkeep=true\n'
+    const configAfter = 'count=20\nkeep=true\n'
+</script>
+
+<SvelteDiff originalText={proseBefore} modifiedText={proseAfter} diffMode="word" />
+<SvelteDiff originalText={configBefore} modifiedText={configAfter} diffMode="line" />
+```
+
+Character remains the default. Word mode compares Unicode letter/mark/number/underscore
+runs, whitespace runs, and separate punctuation; apostrophes/hyphens separate words.
+It is case-sensitive and not locale-aware: continuous CJK runs are single tokens,
+and emoji grapheme clusters are not guaranteed atomic. Line mode preserves whole
+lines including LF, CRLF, lone CR, blank lines, and an unterminated final line.
+Neither mode normalizes text or runs semantic/efficiency cleanup. JSON remains
+plain text; sentence and structural JSON modes are unsupported.
+
+Raw callback tuples contain original text, using resolved/cleaned source with expected
+patterns. Capture annotations and newline renderers can split displayed tokens;
+a replaced line retains its captured value in the deletion as well as annotating
+it in the replacement. Changing mode recomputes; callback-only changes reuse tuples.
+SSR computes the initial diff, with callback delivery on the client.
+
+Token-mode `main` includes preparation, encoding, diffing, and decoding; `cleanup`
+is zero. Timings exclude pattern extraction and DOM rendering. One best-effort
+seconds-based deadline covers token work (`timeout={0}` is unlimited). Expiry or
+more than 65,535 distinct tokens across the inputs can produce a full replacement,
+never truncated text. Work is synchronous without virtualization or workers.
+
+Read the [diff modes guide](https://diff.svelte.page/docs/guides/diff-modes),
+[editable word example](https://diff.svelte.page/examples/word-diff), and
+[editable line example](https://diff.svelte.page/examples/line-diff).
+
 ## Custom Rendering with Snippets
 
 You can customize how the diff is rendered using Svelte snippets. This gives you full control over the HTML structure and styling of each diff part.
@@ -373,42 +412,3 @@ MIT © [Humanspeak, Inc.](LICENSE)
 Made with ❤️ by [Humanspeak](https://humanspeak.com)
 
 <!-- docs-kit:ecosystem end -->
-
-## Word and line comparison
-
-```svelte
-<script lang="ts">
-    import SvelteDiff from '@humanspeak/svelte-diff'
-    const proseBefore = 'The cat sleeps.'
-    const proseAfter = 'The car sleeps.'
-    const configBefore = 'count=10\nkeep=true\n'
-    const configAfter = 'count=20\nkeep=true\n'
-</script>
-
-<SvelteDiff originalText={proseBefore} modifiedText={proseAfter} diffMode="word" />
-<SvelteDiff originalText={configBefore} modifiedText={configAfter} diffMode="line" />
-```
-
-Character remains the default. Word mode compares Unicode letter/mark/number/underscore
-runs, whitespace runs, and separate punctuation; apostrophes/hyphens separate words.
-It is case-sensitive and not locale-aware: continuous CJK runs are single tokens,
-and emoji grapheme clusters are not guaranteed atomic. Line mode preserves whole
-lines including LF, CRLF, lone CR, blank lines, and an unterminated final line.
-Neither mode normalizes text or runs semantic/efficiency cleanup. JSON remains
-plain text; sentence and structural JSON modes are unsupported.
-
-Raw callback tuples contain original text, using resolved/cleaned source with expected
-patterns. Capture annotations and newline renderers can split displayed tokens;
-a replaced line retains its captured value in the deletion as well as annotating
-it in the replacement. Changing mode recomputes; callback-only changes reuse tuples.
-SSR computes the initial diff, with callback delivery on the client.
-
-Token-mode `main` includes preparation, encoding, diffing, and decoding; `cleanup`
-is zero. Timings exclude pattern extraction and DOM rendering. One best-effort
-seconds-based deadline covers token work (`timeout={0}` is unlimited). Expiry or
-more than 65,535 distinct tokens across the inputs can produce a full replacement,
-never truncated text. Work is synchronous without virtualization or workers.
-
-Read the [diff modes guide](https://diff.svelte.page/docs/guides/diff-modes),
-[editable word example](https://diff.svelte.page/examples/word-diff), and
-[editable line example](https://diff.svelte.page/examples/line-diff).

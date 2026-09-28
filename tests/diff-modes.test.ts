@@ -45,6 +45,10 @@ test('hydrates, switches units, edits and preserves custom capture markup', asyn
     await expect(result.locator('del')).toHaveText('count=10')
     await expect(result.locator('ins')).toHaveText('count=20')
     await expect(result.locator('[data-equal]')).toHaveText('keep=true')
+    await expect(result).toHaveText('count=10count=20keep=true')
+    await expect(page.getByRole('region', { name: 'Default character' })).toHaveText(
+        'count=120keep=true'
+    )
     await expect(page.locator('[data-custom-break]')).toHaveCount(3)
     const capture = page.getByRole('region', { name: 'Expected capture' })
     await expect(capture.locator('del')).toHaveText('Release v2')
@@ -52,5 +56,17 @@ test('hydrates, switches units, edits and preserves custom capture markup', asyn
     await expect(capture.locator('mark')).toHaveAttribute('title', 'version')
     await mode.selectOption('character')
     await expect(result.locator('del')).toHaveText('1')
+    await expect(result.locator('ins')).toHaveText('2')
+    await expect(result).toHaveText('count=120keep=true')
+    await mode.selectOption('line')
+    await page.getByLabel('Before', { exact: true }).fill('The cat sleeps.')
+    await page.getByLabel('After', { exact: true }).fill('The car sleeps.')
+    await expect(result.locator('del')).toHaveText('The cat sleeps.')
+    await expect(result.locator('ins')).toHaveText('The car sleeps.')
+    await expect(result).toHaveText('The cat sleeps.The car sleeps.')
+    await expect(result.locator('br')).toHaveCount(0)
+    await expect(page.getByRole('region', { name: 'Default character' })).toHaveText(
+        'The catr sleeps.'
+    )
     expect(errors).toEqual([])
 })

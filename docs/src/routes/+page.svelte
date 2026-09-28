@@ -214,13 +214,14 @@ Owner: Developer Experience`
                     <span><i>cleanup</i> <b>{timing.cleanup.toFixed(2)}ms</b></span>
                     <span><i>segments</i> <b>{segmentCount}</b></span>
                     <span class="live">● LIVE</span>
-                    <label class="mode-control">Diff mode
-                        <select bind:value={diffMode}>
+                    <div class="mode-control">
+                        <label for="homepage-diff-mode">Diff mode</label>
+                        <select id="homepage-diff-mode" bind:value={diffMode}>
                             <option value="character">Character</option>
                             <option value="word">Word</option>
                             <option value="line">Line</option>
                         </select>
-                    </label>
+                    </div>
                     <button type="button" onclick={resetDemo}>↻ reset</button>
                 </div>
 

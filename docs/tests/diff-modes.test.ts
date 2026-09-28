@@ -11,11 +11,14 @@ const assertScroll = async (region: Locator, footer: Locator) => {
     await region.focus()
     await region.press('PageDown')
     await expect.poll(() => region.evaluate((element) => element.scrollTop)).toBeGreaterThan(0)
-    const outputBox = await region.boundingBox()
-    const footerBox = await footer.boundingBox()
-    expect(outputBox).not.toBeNull()
-    expect(footerBox).not.toBeNull()
-    expect(footerBox!.y).toBeGreaterThanOrEqual(outputBox!.y + outputBox!.height - 1)
+    const footerHandle = await footer.elementHandle()
+    expect(footerHandle).not.toBeNull()
+    const { outputBottom, footerTop } = await region.evaluate((element, footerElement) => ({
+        outputBottom: element.getBoundingClientRect().bottom,
+        footerTop: footerElement!.getBoundingClientRect().top
+    }), footerHandle!)
+    await footerHandle!.dispose()
+    expect(footerTop).toBeGreaterThanOrEqual(outputBottom - 1)
 }
 const collectFeatureErrors = (page: Page) => {
     const errors: string[] = []
@@ -46,8 +49,22 @@ for (const route of routes) {
             await expect(page.locator('a[href="/docs/guides/expected-patterns"]').first()).toBeAttached()
         }
         await expect(page.getByRole('navigation', { name: 'Breadcrumb', includeHidden: true })).toContainText(route.startsWith('/examples/') ? 'Examples' : 'Guides')
-        const breadcrumb = page.locator('script[type="application/ld+json"]').filter({ hasText: 'BreadcrumbList' })
-        expect(await breadcrumb.allTextContents()).toEqual(expect.arrayContaining([expect.stringContaining(route.startsWith('/examples/') ? 'Examples' : 'Guides')]))
+        await expect(async () => {
+            const scripts = await page.locator('script[type="application/ld+json"]').allTextContents()
+            const breadcrumb = scripts.map((text) => JSON.parse(text)).find((data) => data['@type'] === 'BreadcrumbList')
+            expect(breadcrumb).toBeDefined()
+            expect(breadcrumb.itemListElement).toEqual(expect.arrayContaining([
+                expect.objectContaining({
+                    name: route.startsWith('/examples/') ? 'Examples' : 'Guides'
+                }),
+                expect.objectContaining({ name: route.endsWith('word-diff') ? 'Word Diff' : route.endsWith('line-diff') ? 'Line Diff' : 'Diff Modes' }),
+                expect.objectContaining({ name: 'Home', item: 'https://diff.svelte.page/' }),
+                expect.objectContaining({
+                    name: route.startsWith('/examples/') ? 'Examples' : 'Docs',
+                    item: `https://diff.svelte.page${route.startsWith('/examples/') ? '/examples' : '/docs/getting-started'}`
+                })
+            ]))
+        }).toPass({ timeout: 5000 })
         const imageUrl = await page.locator('meta[property="og:image"]').getAttribute('content')
         expect(imageUrl).toBeTruthy()
         const image = await request.get(new URL(imageUrl!).pathname)
@@ -132,9 +149,11 @@ test('homepage mode control preserves edits, labels, reset and scrolling', async
         await expect(demo.locator('.output-label')).toContainText(mode.toUpperCase())
         await expect(demo.locator('.panel-footer')).toContainText(`mode · ${mode}`)
         await expect(demo.locator('.panel-footer')).toContainText(mode === 'character' ? 'semantic' : 'skipped')
-        const footerBox = await demo.locator('.panel-footer').boundingBox()
-        const panelBox = await demo.locator('.demo-panel').boundingBox()
-        expect(Math.abs(footerBox!.y + footerBox!.height - panelBox!.y - panelBox!.height)).toBeLessThanOrEqual(2)
+        const footerOffset = await demo.locator('.demo-panel').evaluate((panel) => {
+            const footer = panel.querySelector('.panel-footer')!
+            return Math.abs(footer.getBoundingClientRect().bottom - panel.getBoundingClientRect().bottom)
+        })
+        expect(footerOffset).toBeLessThanOrEqual(2)
     }
     await selector.focus()
     await selector.press('Home')
