@@ -214,13 +214,22 @@ Owner: Developer Experience`
                     <span><i>cleanup</i> <b>{timing.cleanup.toFixed(2)}ms</b></span>
                     <span><i>segments</i> <b>{segmentCount}</b></span>
                     <span class="live">● LIVE</span>
-                    <div class="mode-control">
-                        <label for="homepage-diff-mode">Diff mode</label>
-                        <select id="homepage-diff-mode" bind:value={diffMode}>
-                            <option value="character">Character</option>
-                            <option value="word">Word</option>
-                            <option value="line">Line</option>
-                        </select>
+                    <div class="mode-control" role="radiogroup" aria-labelledby="homepage-diff-mode">
+                        <span id="homepage-diff-mode">Diff mode</span>
+                        <div class="mode-options">
+                            <label>
+                                <input type="radio" name="homepage-diff-mode" value="character" bind:group={diffMode} />
+                                <span>Character</span>
+                            </label>
+                            <label>
+                                <input type="radio" name="homepage-diff-mode" value="word" bind:group={diffMode} />
+                                <span>Word</span>
+                            </label>
+                            <label>
+                                <input type="radio" name="homepage-diff-mode" value="line" bind:group={diffMode} />
+                                <span>Line</span>
+                            </label>
+                        </div>
                     </div>
                     <button type="button" onclick={resetDemo}>↻ reset</button>
                 </div>
@@ -655,8 +664,15 @@ Owner: Developer Experience`
         font-size: 10.5px;
     }
 
-    .mode-control { display: flex; align-items: center; gap: 0.5rem; }
-    .mode-control select { max-width: 100%; background: var(--brut-bg); color: var(--brut-ink); border: 1px solid var(--brut-rule); padding: 4px; }
+    .mode-control { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; min-width: 0; max-width: 100%; }
+    .mode-options { display: flex; min-width: 0; max-width: 100%; }
+    .mode-options label { position: relative; min-width: 0; cursor: pointer; }
+    .mode-options input { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
+    .mode-options span { display: block; border: 1px solid var(--brut-rule); background: var(--brut-bg); padding: 5px 8px; color: var(--brut-ink-2); }
+    .mode-options label + label span { border-left: 0; }
+    .mode-options label:hover span { color: var(--brut-accent); }
+    .mode-options input:checked + span { background: var(--brut-accent); color: var(--brut-bg); }
+    .mode-options input:focus-visible + span { position: relative; z-index: 1; outline: 2px solid var(--brut-ink); outline-offset: 2px; }
     .panel-bar i { color: var(--brut-ink-3); font-style: normal; }
     .panel-bar b, .panel-footer b { color: var(--brut-ink); font-weight: 500; }
     .panel-bar .live { margin-left: auto; color: var(--brut-accent); }
