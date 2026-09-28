@@ -25,6 +25,7 @@ Everything public is exported from the package root.
 import SvelteDiff, {
     SvelteDiff as NamedSvelteDiff,
     type SvelteDiffProps,
+    type SvelteDiffMode,
     type SvelteDiffTiming,
     type SvelteDiffTuple,
     type Renderers,
@@ -43,6 +44,14 @@ import SvelteDiff, {
 | `SvelteDiff` | Named export of the same component |
 | `SvelteDiffMatchPatch` | Deprecated compatibility alias |
 
+## `SvelteDiffMode`
+
+```typescript
+type SvelteDiffMode = 'character' | 'word' | 'line'
+```
+
+`SvelteDiffProps.diffMode` is optional and defaults to `character`. Deprecated prop aliases inherit it. Sentence and JSON are not accepted. See [Diff Modes](/docs/guides/diff-modes).
+
 ## `SvelteDiffTiming`
 
 ```typescript
@@ -53,9 +62,11 @@ type SvelteDiffTiming = {
 }
 ```
 
-All values are milliseconds. `main` measures the core algorithm, `cleanup` measures the selected cleanup pass, and `total` covers both.
+All values are milliseconds. For character mode, `main` measures the core algorithm and `cleanup` measures the selected cleanup pass. For word/line, `main` includes tokenization, encoding, diffing, and decoding; `cleanup` is exactly zero. `total` covers the timed computation, excluding expected-pattern preprocessing and DOM rendering.
 
 ## `SvelteDiffTuple`
+
+Tuples always contain original text, never encoded IDs. With expected patterns, the source projection is resolved/cleaned source. Capture annotations can split displayed tokens without changing raw tuples.
 
 An alias for `Diff` from `diff-match-patch-ts`. Each tuple is an operation and its text:
 

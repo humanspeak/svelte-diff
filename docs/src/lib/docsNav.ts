@@ -1,9 +1,8 @@
+import { examples } from '$lib/examplesIndex'
 import type { Breadcrumb, NavSection } from '@humanspeak/docs-kit'
 import {
-    Activity,
     ArrowRightLeft,
     BookOpen,
-    Braces,
     Code,
     Gauge,
     GitCompareArrows,
@@ -14,7 +13,6 @@ import {
     Settings2,
     Sparkles,
     Swords,
-    Timer,
     Type
 } from '@lucide/svelte'
 
@@ -47,6 +45,7 @@ export const docsSections: NavSection[] = [
         items: [
             { title: 'Custom Rendering', href: '/docs/guides/custom-rendering', icon: Paintbrush },
             { title: 'Expected Patterns', href: '/docs/guides/expected-patterns', icon: Regex },
+            { title: 'Diff Modes', href: '/docs/guides/diff-modes', icon: Type },
             { title: 'Cleanup Modes', href: '/docs/guides/cleanup', icon: Sparkles },
             { title: 'Timing & Performance', href: '/docs/guides/performance', icon: Gauge }
         ]
@@ -56,12 +55,9 @@ export const docsSections: NavSection[] = [
         icon: Play,
         items: [
             { title: 'All Examples', href: '/examples', icon: Play, exact: true },
-            { title: 'Basic Diff', href: '/examples/basic-diff', icon: GitCompareArrows },
-            { title: 'Live Editor', href: '/examples/live-editor', icon: Activity },
-            { title: 'Expected Patterns', href: '/examples/expected-patterns', icon: Regex },
-            { title: 'Custom Snippets', href: '/examples/custom-snippets', icon: Braces },
-            { title: 'Cleanup Modes', href: '/examples/cleanup-modes', icon: Sparkles },
-            { title: 'Timing', href: '/examples/timing', icon: Timer }
+            ...examples.map(({ slug, title, icon }) => ({
+                title, href: `/examples/${slug}`, icon
+            }))
         ]
     },
     {

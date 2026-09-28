@@ -1,0 +1,77 @@
+name: Docs diff modes
+
+permissions:
+    contents: read
+
+on:
+    pull_request:
+        paths:
+            - docs/**
+            - src/lib/**
+            - package.json
+            - pnpm-lock.yaml
+            - pnpm-workspace.yaml
+            - svelte.config.js
+            - vite.config.ts
+            - tsconfig.json
+            - .github/workflows/docs-diff-modes.yml
+    push:
+        branches: [main]
+        paths:
+            - docs/**
+            - src/lib/**
+            - package.json
+            - pnpm-lock.yaml
+            - pnpm-workspace.yaml
+            - svelte.config.js
+            - vite.config.ts
+            - tsconfig.json
+            - .github/workflows/docs-diff-modes.yml
+
+concurrency:
+    group: docs-diff-modes-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    verify:
+        runs-on: ubuntu-latest
+        timeout-minutes: 25
+        steps:
+            - uses: actions/checkout@v7 # zizmor: ignore[unpinned-uses]
+              with:
+                  persist-credentials: false
+            - uses: pnpm/action-setup@v6 # zizmor: ignore[unpinned-uses]
+            - uses: actions/setup-node@v7 # zizmor: ignore[unpinned-uses]
+              with:
+                  node-version: 24
+            - run: pnpm install --frozen-lockfile
+            - run: pnpm exec playwright install --with-deps chromium
+            - run: pnpm run package
+            - run: pnpm --filter docs build
+            - name: Check docs source
+              run: |
+                  python3 - <<'PY'
+                  from pathlib import Path
+                  import subprocess
+                  worker = Path('docs/.svelte-kit/cloudflare/_worker.js')
+                  backup = worker.with_suffix('.js.source-check-backup')
+                  assert not backup.exists(), 'Existing backup: stop and inspect'
+                  moved = worker.exists()
+                  if moved:
+                      worker.rename(backup)
+                  try:
+                      result = subprocess.run(['pnpm', '--filter', 'docs', 'check'])
+                  finally:
+                      if moved:
+                          backup.rename(worker)
+                  raise SystemExit(result.returncode)
+                  PY
+            - run: pnpm exec playwright test --config=docs/playwright.config.ts
+            - name: Upload failure artifacts
+              if: failure()
+              uses: actions/upload-artifact@v7 # zizmor: ignore[unpinned-uses]
+              with:
+                  name: docs-diff-modes-results
+                  path: docs/test-results
+                  if-no-files-found: ignore
+                  retention-days: 7

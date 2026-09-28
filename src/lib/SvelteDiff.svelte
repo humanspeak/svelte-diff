@@ -3,7 +3,7 @@
 
 A Svelte 5 component that visually compares two strings using the diff-match-patch algorithm.
 
-Supports character-level diffing, semantic and efficiency cleanup, custom rendering via Svelte snippets, and flexible CSS-class styling.
+Supports character, word, and line diffing, semantic and efficiency cleanup, custom rendering via Svelte snippets, and flexible CSS-class styling.
 
 ### Expected Patterns
 
@@ -47,9 +47,10 @@ certain dynamic regions (dates, names, versions) are expected to differ.
 
 @property {string} originalText - The original (left-side) string to compare (the "before" or source text). May contain `(?<name>pattern)` capture groups for expected-pattern matching.
 @property {string} modifiedText - The modified (right-side) string to compare (the "after" or target text)
+@property {'character'|'word'|'line'} [diffMode='character'] - Comparison granularity; word/line skip both cleanup passes
 @property {number} [timeout=1] - Maximum time in seconds to spend computing the diff (0 for unlimited)
-@property {boolean} [cleanupSemantic=false] - If true, applies semantic cleanup for human readability
-@property {number} [cleanupEfficiency=4] - Edit cost for efficiency cleanup; higher values are more aggressive
+@property {boolean} [cleanupSemantic=false] - If true, applies character-mode semantic cleanup; ignored for word/line
+@property {number} [cleanupEfficiency=4] - Character-mode efficiency edit cost; ignored for word/line
 @property {boolean} [compact=true] - By default, built-in equal segments without an equal class render as text. Set to false to restore legacy equal spans. Custom equal snippets/renderers and `rendererClasses.equal` retain their requested markup, and line breaks continue through the `lineBreak` renderer.
 @property {function} [onProcessing] - Callback invoked after diff computation, receiving `(timing, diffs, captures?)`. The `captures` argument is a `Record<string, string>` when expected patterns match.
 @property {Snippet} [remove] - Child snippet rendering a removed segment. Takes precedence over `renderers.remove`.
@@ -63,7 +64,13 @@ certain dynamic regions (dates, names, versions) are expected to differ.
 
 <script lang="ts">
     import { DiffMatchPatch } from 'diff-match-patch-ts'
-    import type { SvelteDiffProps, SvelteDiffTiming, SvelteDiffTuple } from './index.js'
+    import { computeTokenDiff } from './diffModes.js'
+    import type {
+        SvelteDiffMode,
+        SvelteDiffProps,
+        SvelteDiffTiming,
+        SvelteDiffTuple
+    } from './index.js'
     import {
         type DisplayDiff,
         parseExpectedPatterns,
@@ -75,6 +82,7 @@ certain dynamic regions (dates, names, versions) are expected to differ.
         originalText,
         modifiedText,
         timeout = 1,
+        diffMode = 'character',
         cleanupSemantic = false,
         cleanupEfficiency = 4,
         compact = true,
@@ -98,6 +106,7 @@ certain dynamic regions (dates, names, versions) are expected to differ.
     interface ComputationInput {
         originalText: string
         modifiedText: string
+        diffMode: SvelteDiffMode
         timeout: number
         cleanupSemantic: boolean
         cleanupEfficiency: number
@@ -119,6 +128,7 @@ certain dynamic regions (dates, names, versions) are expected to differ.
         text1: string,
         text2: string,
         diffTimeout: number,
+        mode: SvelteDiffMode,
         semanticCleanup: boolean,
         efficiencyCleanup: number,
         compiledPattern: ReturnType<typeof parseExpectedPatterns>
@@ -145,20 +155,23 @@ certain dynamic regions (dates, names, versions) are expected to differ.
         }
 
         const startTotal = performance.now()
-        const diffs = dmp.diff_main(diffText1, text2)
+        const diffs =
+            mode === 'character'
+                ? dmp.diff_main(diffText1, text2)
+                : computeTokenDiff(dmp, diffText1, text2, mode, diffTimeout)
         const endMain = performance.now()
 
         const startCleanup = performance.now()
-        if (semanticCleanup) {
+        if (mode === 'character' && semanticCleanup) {
             dmp.diff_cleanupSemantic(diffs)
-        } else if (efficiencyCleanup > 0) {
+        } else if (mode === 'character' && efficiencyCleanup > 0) {
             dmp.diff_cleanupEfficiency(diffs)
         }
         const endTotal = performance.now()
 
         const timing = {
             main: endMain - startTotal,
-            cleanup: endTotal - startCleanup,
+            cleanup: mode === 'character' ? endTotal - startCleanup : 0,
             total: endTotal - startTotal
         }
         const displayDiffs =
@@ -182,6 +195,7 @@ certain dynamic regions (dates, names, versions) are expected to differ.
             originalText,
             modifiedText,
             timeout,
+            diffMode,
             cleanupSemantic,
             cleanupEfficiency,
             compiledPattern: parseResult
@@ -190,6 +204,7 @@ certain dynamic regions (dates, names, versions) are expected to differ.
             computationCache?.input.originalText === input.originalText &&
             computationCache.input.modifiedText === input.modifiedText &&
             computationCache.input.timeout === input.timeout &&
+            computationCache.input.diffMode === input.diffMode &&
             computationCache.input.cleanupSemantic === input.cleanupSemantic &&
             computationCache.input.cleanupEfficiency === input.cleanupEfficiency &&
             computationCache.input.compiledPattern === input.compiledPattern
@@ -201,6 +216,7 @@ certain dynamic regions (dates, names, versions) are expected to differ.
             input.originalText,
             input.modifiedText,
             input.timeout,
+            input.diffMode,
             input.cleanupSemantic,
             input.cleanupEfficiency,
             input.compiledPattern
@@ -231,34 +247,38 @@ certain dynamic regions (dates, names, versions) are expected to differ.
 
 {#each processingResult.displayDiffs as diff, index (index)}
     {@const { operation, text, expected } = diff}
-    {#if expected}
-        {#if text.includes('\n')}
-            {#each text.split('\n') as line, lineIndex (lineIndex)}
-                {#if lineIndex > 0}{@render displayRenderers.lineBreak()}{/if}{#if line.length > 0}{@render displayRenderers.expected(
-                        line,
-                        expected
-                    )}{/if}
-            {/each}
+    <!-- Hydrated snippet ranges need a fresh owner when switching display shape.
+         Same-shape text updates keep their existing renderer and DOM. -->
+    {#key text.includes('\n')}
+        {#if expected}
+            {#if text.includes('\n')}
+                {#each text.split('\n') as line, lineIndex (lineIndex)}
+                    {#if lineIndex > 0}{@render displayRenderers.lineBreak()}{/if}{#if line.length > 0}{@render displayRenderers.expected(
+                            line,
+                            expected
+                        )}{/if}
+                {/each}
+            {:else}
+                {@render displayRenderers.expected(text, expected)}
+            {/if}
         {:else}
-            {@render displayRenderers.expected(text, expected)}
+            {@const renderer =
+                operation === 0
+                    ? displayRenderers.equal
+                    : operation === -1
+                      ? displayRenderers.remove
+                      : displayRenderers.insert}
+            {#if text.includes('\n')}
+                {#each text.split('\n') as line, lineIndex (lineIndex)}
+                    {#if lineIndex > 0}{@render displayRenderers.lineBreak()}{/if}{#if line.length > 0}{@render renderer(
+                            line
+                        )}{/if}
+                {/each}
+            {:else}
+                {@render renderer(text)}
+            {/if}
         {/if}
-    {:else}
-        {@const renderer =
-            operation === 0
-                ? displayRenderers.equal
-                : operation === -1
-                  ? displayRenderers.remove
-                  : displayRenderers.insert}
-        {#if text.includes('\n')}
-            {#each text.split('\n') as line, lineIndex (lineIndex)}
-                {#if lineIndex > 0}{@render displayRenderers.lineBreak()}{/if}{#if line.length > 0}{@render renderer(
-                        line
-                    )}{/if}
-            {/each}
-        {:else}
-            {@render renderer(text)}
-        {/if}
-    {/if}
+    {/key}
 {/each}
 
 {#snippet removeFallback(text: string)}

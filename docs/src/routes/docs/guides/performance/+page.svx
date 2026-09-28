@@ -19,7 +19,7 @@ description: Measure SvelteDiff computation and cleanup time, set timeouts, and 
 
 # Timing & Performance
 
-SvelteDiff computes whenever `originalText`, `modifiedText`, or a cleanup option changes. The `onProcessing` callback exposes the cost of that work.
+SvelteDiff computes whenever `originalText`, `modifiedText`, `diffMode`, `timeout`, or a cleanup option changes. The `onProcessing` callback exposes the cost of that work.
 
 ## Compact equal-text DOM
 
@@ -83,7 +83,7 @@ For large editor documents, debounce text input before updating the values passe
 ```typescript
 let timer: ReturnType<typeof setTimeout>
 
-function scheduleDiff(value: string) {
+const scheduleDiff = (value: string) => {
     clearTimeout(timer)
     timer = setTimeout(() => {
         modifiedText = value
@@ -93,10 +93,16 @@ function scheduleDiff(value: string) {
 
 ## Cleanup cost
 
-`timing.cleanup` includes whichever cleanup pass was selected. Semantic cleanup generally does more readability work than efficiency cleanup. Measure with representative data instead of assuming the faster choice.
+`timing.cleanup` includes whichever character-mode cleanup pass was selected; it is exactly zero for word/line. Semantic cleanup generally does more readability work than efficiency cleanup. Measure with representative data instead of assuming the faster choice.
 
 ## Scope
 
-The component performs character-level text diffing and renders the result. It does not virtualize large output, move computation to a worker, or expose incremental diff computation. For extremely large documents, consider preprocessing by line or using a specialized editor diff engine.
+The component compares characters (default), words, or lines and renders the result. It does not virtualize large output, move computation to a worker, or expose incremental diff computation. For extremely large documents, consider a specialized editor diff engine.
 
 Use the [timing example](/examples/timing) to edit inputs and watch the callback values update.
+
+## Token work and deadlines
+
+For word/line, `main` includes lossless tokenization, encoding, diffing, and decoding. `total` covers the timed computation. Expected-pattern preprocessing and DOM rendering are excluded. One absolute deadline covers all token stages, checked periodically during preparation and decoding. Expiry may return a full delete/insert; more than 65,535 distinct tokens shared across the inputs uses the same coarse fallback. Neither fallback truncates text or switches to character boundaries.
+
+This seconds-based timeout is best effort, not a hard cap on regex execution, one large token allocation, or rendering. Token modes remain synchronous and do not offload, virtualize, or debounce work. SSR computes initial markup. Changing only `onProcessing` preserves the tuple array identity. See [Diff Modes](/docs/guides/diff-modes) for exact token rules.
