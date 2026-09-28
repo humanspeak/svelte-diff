@@ -1,5 +1,9 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 
+const demoStorageKey = 'svelte-diff:homepage-demo:v1'
+const sampleBefore = 'Release v1.8.0 is ready for review.\nThe documentation will ship after launch.\nOwner: Product Engineering'
+const sampleAfter = 'Release v2.0.0 is ready for final review.\nThe documentation will ship with the launch.\nOwner: Developer Experience'
+
 const modes = ['word', 'line'] as const
 const routes = ['/examples/word-diff', '/examples/line-diff', '/docs/guides/diff-modes']
 const titleCase = (text: string) => text[0].toUpperCase() + text.slice(1)
@@ -173,6 +177,18 @@ test('homepage mode control preserves edits, labels, reset and scrolling', async
     await expect(demo.locator('.output-label')).toContainText('WORD')
     await expect(demo.locator('.panel-footer')).toContainText('mode · word')
     await assertWidth(page)
+    const segmentBoxes = await selector.locator('.mode-options label > span').evaluateAll((segments) =>
+        segments.map((segment) => {
+            const { width, height } = segment.getBoundingClientRect()
+            return { width, height }
+        })
+    )
+    expect(segmentBoxes).toHaveLength(3)
+    for (const dimension of ['width', 'height'] as const) {
+        const sizes = segmentBoxes.map((box) => box[dimension])
+        expect(Math.min(...sizes)).toBeGreaterThan(0)
+        expect(Math.max(...sizes) - Math.min(...sizes)).toBeLessThanOrEqual(1)
+    }
     const controlBox = await selector.boundingBox()
     expect(controlBox!.x).toBeGreaterThanOrEqual(0)
     expect(controlBox!.x + controlBox!.width).toBeLessThanOrEqual(page.viewportSize()!.width)
@@ -203,6 +219,126 @@ test('homepage mode control preserves edits, labels, reset and scrolling', async
     for (const href of routes) await expect(demo.locator(`a[href="${href}"]`)).toBeVisible()
     expect(errors).toEqual([])
 })
+
+test('homepage restores exact edits and mode, and reset forgets only the demo', async ({ page }) => {
+    const errors = collectFeatureErrors(page)
+    await page.goto('/#compare-two-strings')
+    const demo = page.locator('#compare-two-strings')
+    const before = demo.getByLabel('SRC-A / BEFORE')
+    const after = demo.getByLabel('SRC-B / AFTER')
+    const mode = (name: string) => demo.getByRole('radio', { name, exact: true })
+    const readSaved = () => page.evaluate((key) => localStorage.getItem(key), demoStorageKey)
+    await expect(before).toHaveValue(sampleBefore)
+    await expect(after).toHaveValue(sampleAfter)
+    await expect(mode('Character')).toBeChecked()
+    await expect.poll(readSaved).toBeNull()
+
+    // Changing only the mode must survive a reload with both sample texts intact.
+    await demo.getByText('Word', { exact: true }).click()
+    await page.reload()
+    await expect(mode('Word')).toBeChecked()
+    await expect(before).toHaveValue(sampleBefore)
+    await expect(after).toHaveValue(sampleAfter)
+
+    const original = '  Café 👩🏽‍💻\n\n東京 e\u0301\tfin\n'
+    const modified = 'Δοκιμή 🐈\n  新しい行\n\n'
+    await before.fill(original)
+    await after.fill(modified)
+    await demo.getByText('Line', { exact: true }).click()
+    await page.reload()
+    await expect(before).toHaveValue(original)
+    await expect(after).toHaveValue(modified)
+    await expect(mode('Line')).toBeChecked()
+    await before.fill('')
+    await page.reload()
+    await expect(before).toHaveValue('')
+    await expect(after).toHaveValue(modified)
+    await expect(mode('Line')).toBeChecked()
+    await before.fill(original)
+    await after.fill('')
+    await page.reload()
+    await expect(before).toHaveValue(original)
+    await expect(after).toHaveValue('')
+    await expect(mode('Line')).toBeChecked()
+
+    await page.evaluate(() => localStorage.setItem('unrelated-preference', 'keep'))
+    await demo.getByRole('button', { name: /reset/i }).click()
+    await expect(before).toHaveValue(sampleBefore)
+    await expect(after).toHaveValue(sampleAfter)
+    await expect(mode('Character')).toBeChecked()
+    await expect.poll(readSaved).toBeNull()
+    await page.reload()
+    await expect(before).toHaveValue(sampleBefore)
+    await expect(after).toHaveValue(sampleAfter)
+    await expect(mode('Character')).toBeChecked()
+    await expect.poll(readSaved).toBeNull()
+    expect(await page.evaluate(() => localStorage.getItem('unrelated-preference'))).toBe('keep')
+    expect(errors).toEqual([])
+})
+
+for (const [description, saved] of [
+    ['corrupt JSON', '{broken'],
+    ['null', 'null'],
+    ['missing fields', '{}'],
+    ['non-string original', JSON.stringify({ originalText: 42, modifiedText: '', diffMode: 'word' })],
+    ['non-string modified', JSON.stringify({ originalText: '', modifiedText: false, diffMode: 'line' })],
+    ['invalid mode', JSON.stringify({ originalText: 'saved', modifiedText: 'saved', diffMode: 'WORD' })]
+]) {
+    test(`homepage ignores ${description} and remains editable`, async ({ page }) => {
+        const errors = collectFeatureErrors(page)
+        await page.goto('/')
+        await page.evaluate(({ key, saved }) => localStorage.setItem(key, saved), { key: demoStorageKey, saved })
+        await page.reload()
+        const demo = page.locator('#compare-two-strings')
+        await expect(demo.getByLabel('SRC-A / BEFORE')).toHaveValue(sampleBefore)
+        await expect(demo.getByLabel('SRC-B / AFTER')).toHaveValue(sampleAfter)
+        await expect(demo.getByRole('radio', { name: 'Character', exact: true })).toBeChecked()
+        await demo.getByLabel('SRC-A / BEFORE').fill('cat')
+        await demo.getByLabel('SRC-B / AFTER').fill('dog')
+        await demo.getByText('Word', { exact: true }).click()
+        await expect(demo.locator('.diff-remove')).toHaveText('cat')
+        await expect(demo.locator('.diff-insert')).toHaveText('dog')
+        expect(errors).toEqual([])
+    })
+}
+
+for (const operation of ['getItem', 'setItem', 'removeItem'] as const) {
+    test(`homepage remains usable when storage ${operation} is denied`, async ({ page }) => {
+        const errors = collectFeatureErrors(page)
+        await page.addInitScript(({ key, operation }) => {
+            const original = Storage.prototype[operation]
+            Object.defineProperty(Storage.prototype, operation, {
+                configurable: true,
+                writable: true,
+                value: function (this: Storage, itemKey: string, value?: string) {
+                    if (itemKey === key) throw new DOMException('Demo storage denied', 'SecurityError')
+                    return Reflect.apply(original, this, [itemKey, value])
+                }
+            })
+        }, { key: demoStorageKey, operation })
+        await page.goto('/#compare-two-strings')
+        const demo = page.locator('#compare-two-strings')
+        const before = demo.getByLabel('SRC-A / BEFORE')
+        const after = demo.getByLabel('SRC-B / AFTER')
+        await expect(before).toHaveValue(sampleBefore)
+        await expect(after).toHaveValue(sampleAfter)
+        await expect(demo.getByRole('radio', { name: 'Character', exact: true })).toBeChecked()
+        await before.fill('cat')
+        await after.fill('dog')
+        await demo.getByText('Line', { exact: true }).click()
+        await expect(demo.getByRole('radio', { name: 'Line', exact: true })).toBeChecked()
+        await expect(demo.locator('.diff-remove')).toHaveText('cat')
+        await expect(demo.locator('.diff-insert')).toHaveText('dog')
+        await demo.getByRole('button', { name: /reset/i }).click()
+        await expect(before).toHaveValue(sampleBefore)
+        await expect(after).toHaveValue(sampleAfter)
+        await expect(demo.getByRole('radio', { name: 'Character', exact: true })).toBeChecked()
+        await before.fill('')
+        await after.fill('still editable')
+        await expect(demo.getByRole('region', { name: 'Compared text' })).toHaveText('still editable')
+        expect(errors).toEqual([])
+    })
+}
 
 test('index cards, sitemap, Markdown mirrors and LLM references include modes', async ({ page, request }) => {
     await page.goto('/examples')

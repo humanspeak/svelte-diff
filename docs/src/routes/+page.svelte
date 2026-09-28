@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { onMount } from 'svelte'
     import {
         FooterV2,
         HeaderV2,
@@ -42,12 +43,56 @@ Owner: Product Engineering`
 The documentation will ship with the launch.
 Owner: Developer Experience`
 
+    const demoStorageKey = 'svelte-diff:homepage-demo:v1'
+    let restored = $state(false)
     let diffMode = $state<SvelteDiffMode>('character')
     let originalText = $state(initialOriginal)
     let modifiedText = $state(initialModified)
     let timing = $state<SvelteDiffTiming>({ main: 0, cleanup: 0, total: 0 })
     let segmentCount = $state(0)
     let copied = $state(false)
+
+    const removeSavedDemo = () => {
+        try {
+            localStorage.removeItem(demoStorageKey)
+        } catch {
+            // Storage may be blocked; the demo remains usable in memory.
+        }
+    }
+
+    onMount(() => {
+        try {
+            const saved: unknown = JSON.parse(localStorage.getItem(demoStorageKey) ?? 'null')
+            if (
+                saved !== null && typeof saved === 'object' &&
+                'originalText' in saved && typeof saved.originalText === 'string' &&
+                'modifiedText' in saved && typeof saved.modifiedText === 'string' &&
+                'diffMode' in saved &&
+                (saved.diffMode === 'character' || saved.diffMode === 'word' || saved.diffMode === 'line')
+            ) {
+                originalText = saved.originalText
+                modifiedText = saved.modifiedText
+                diffMode = saved.diffMode
+            }
+        } catch {
+            // Malformed data or denied storage access leaves the sample defaults intact.
+        }
+        restored = true
+    })
+
+    $effect(() => {
+        if (!restored) return
+        const snapshot = { originalText, modifiedText, diffMode }
+        if (originalText === initialOriginal && modifiedText === initialModified && diffMode === 'character') {
+            removeSavedDemo()
+        } else {
+            try {
+                localStorage.setItem(demoStorageKey, JSON.stringify(snapshot))
+            } catch {
+                // Blocked storage or a full quota must not interrupt editing.
+            }
+        }
+    })
 
     const onProcessing = (nextTiming: SvelteDiffTiming, diffs: SvelteDiffTuple[]) => {
         timing = nextTiming
@@ -58,6 +103,7 @@ Owner: Developer Experience`
         diffMode = 'character'
         originalText = initialOriginal
         modifiedText = initialModified
+        removeSavedDemo()
     }
 
     const copyInstall = async () => {
@@ -665,10 +711,10 @@ Owner: Developer Experience`
     }
 
     .mode-control { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; min-width: 0; max-width: 100%; }
-    .mode-options { display: flex; min-width: 0; max-width: 100%; }
+    .mode-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); min-width: 0; max-width: 100%; }
     .mode-options label { position: relative; min-width: 0; cursor: pointer; }
     .mode-options input { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
-    .mode-options span { display: block; border: 1px solid var(--brut-rule); background: var(--brut-bg); padding: 5px 8px; color: var(--brut-ink-2); }
+    .mode-options span { display: block; box-sizing: border-box; height: 100%; text-align: center; overflow-wrap: anywhere; border: 1px solid var(--brut-rule); background: var(--brut-bg); padding: 5px 8px; color: var(--brut-ink-2); }
     .mode-options label + label span { border-left: 0; }
     .mode-options label:hover span { color: var(--brut-accent); }
     .mode-options input:checked + span { background: var(--brut-accent); color: var(--brut-bg); }
