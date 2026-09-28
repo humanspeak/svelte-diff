@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { examples } from '$lib/examplesIndex'
     import { BrutIndexV2 } from '@humanspeak/docs-kit'
     import { getSeoContext } from '$lib/components/contexts/Seo/Seo.context'
     import rootPkg from '../../../../package.json'
@@ -13,47 +14,6 @@
         seo.ogFeatures = ['Live Editor', 'Expected Patterns', 'Custom Snippets', 'Timing']
         seo.ogSlug = 'examples'
     }
-
-    const examples = [
-        { slug: 'word-diff', title: 'Word Diff', tag: 'GRANULARITY', description: 'Compare whole words with raw character edits using editable prose.' },
-        { slug: 'line-diff', title: 'Line Diff', tag: 'GRANULARITY', description: 'Compare complete configuration lines, preserving blank lines and endings.' },
-        {
-            slug: 'basic-diff',
-            title: 'Basic Diff',
-            tag: 'START',
-            description: 'The smallest useful setup: two strings, semantic cleanup, and class-based styling.'
-        },
-        {
-            slug: 'live-editor',
-            title: 'Live Editor',
-            tag: 'REACTIVE',
-            description: 'Edit both strings and watch Svelte recompute a readable diff immediately.'
-        },
-        {
-            slug: 'expected-patterns',
-            title: 'Expected Patterns',
-            tag: 'PATTERNS',
-            description: 'Match versions, dates, and names as intentional variation and inspect captures.'
-        },
-        {
-            slug: 'custom-snippets',
-            title: 'Custom Snippets',
-            tag: 'RENDERING',
-            description: 'Replace default spans with semantic del/ins markup and your own visual language.'
-        },
-        {
-            slug: 'cleanup-modes',
-            title: 'Cleanup Modes',
-            tag: 'READABILITY',
-            description: 'Compare raw, efficiency-cleaned, and semantically-cleaned output side by side.'
-        },
-        {
-            slug: 'timing',
-            title: 'Timing',
-            tag: 'PERFORMANCE',
-            description: 'Scale the input and watch core, cleanup, total, and segment metrics update.'
-        }
-    ]
 
     const items = examples.map((example, index) => ({
         href: `/examples/${example.slug}`,

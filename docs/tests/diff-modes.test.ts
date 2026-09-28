@@ -119,7 +119,7 @@ for (const mode of modes) {
         await expect(page.locator('pre').filter({ hasText: `diffMode="${mode}"` }).first()).toBeVisible()
         await expect(page.locator('pre').filter({ hasText: "from '@humanspeak/svelte-diff'" }).first()).toBeVisible()
         const other = mode === 'word' ? 'line' : 'word'
-        await page.locator(`a[href="/examples/${other}-diff"]`).last().click()
+        await page.getByRole('navigation', { name: 'Related reading' }).getByRole('link', { name: `${titleCase(other)} example`, exact: true }).click()
         await expect(page).toHaveURL(new RegExp(`/examples/${other}-diff$`))
         expect(errors).toEqual([])
     })

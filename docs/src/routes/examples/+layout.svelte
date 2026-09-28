@@ -1,5 +1,6 @@
 <script lang="ts">
-    import { ExampleLayoutV2, enhanceCodeBlocks } from '@humanspeak/docs-kit'
+    import { ExampleLayoutV2, PagerV2, enhanceCodeBlocks } from '@humanspeak/docs-kit'
+    import { examples } from '$lib/examplesIndex'
     import favicon from '$lib/assets/logo.svg'
     import { docsConfig } from '$lib/docs-config'
     import { buildBreadcrumbs, headerNav } from '$lib/docsNav'
@@ -8,6 +9,7 @@
     import '@fontsource-variable/jetbrains-mono/index.css'
 
     const { children } = $props()
+    const pagerItems = examples.map(({ slug }) => ({ href: `/examples/${slug}`, label: `${slug}.` }))
 </script>
 
 <ExampleLayoutV2
@@ -19,6 +21,7 @@
 >
     <div class="flex flex-1 flex-col" use:enhanceCodeBlocks>
         {@render children?.()}
+        <PagerV2 items={pagerItems} ariaLabel="Example pagination" />
     </div>
 </ExampleLayoutV2>
 

@@ -1,6 +1,7 @@
 <script lang="ts">
     import { CodeReferenceV2, ExampleV2, formatSheetLabel, type ExampleSection } from '@humanspeak/docs-kit'
     import { ListTree, WandSparkles } from '@lucide/svelte'
+    import RelatedReading from '$lib/components/RelatedReading.svelte'
     import { getSeoContext } from '$lib/components/contexts/Seo/Seo.context'
     import { demoCodeSample } from '$lib/demo-loaders'
     import WordDiff from '$lib/examples/word-diff/demos/WordDiff.svelte'
@@ -52,6 +53,7 @@
             </span>
         </li>
     </ul>
+    <RelatedReading siblingHref="/examples/line-diff" siblingLabel="Line example" />
 {/snippet}
 
 {#each sections as section, index (section.figId)}
@@ -71,5 +73,3 @@
         {@render section.snippet()}
     </ExampleV2>
 {/each}
-
-<p><a href="/docs/guides/diff-modes">Diff modes guide</a> · <a href="/docs/api/svelte-diff">API</a> · <a href="/examples/line-diff">Line example</a> · <a href="/docs/guides/expected-patterns">Expected patterns</a></p>
