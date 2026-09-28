@@ -11,7 +11,7 @@ const shared = {
     prosUs: [
         'Ready-to-use Svelte 5 component — pass two strings, get a rendered diff',
         'Svelte 5 runes-native — reactive to prop changes, no manual recompute',
-        'Semantic and efficiency cleanup built in (readable diffs, not character noise)',
+        'Character-mode semantic and efficiency cleanup, plus whole-word and whole-line modes',
         'Expected patterns — mark dynamic regions (dates, names, versions) as "expected" with named regex capture groups instead of showing them as diffs',
         'Full rendering control via Svelte snippets (remove / insert / equal / expected / lineBreak) or plain CSS classes',
         'TypeScript-first with typed props, timing stats, and diff results',
@@ -19,7 +19,7 @@ const shared = {
     ],
     consUs: [
         'Smaller community (newer project)',
-        'Character-level diffing with cleanup — no word / line / sentence granularity modes',
+        'Character, word, and line modes; no sentence or structural JSON comparison',
         'A Svelte component — not for diffing data in Node scripts or CLIs'
     ]
 }
@@ -57,10 +57,16 @@ export const competitors: Competitor[] = [
                 note: 'jsdiff returns minimal diffs with no human-readability cleanup pass'
             },
             {
-                name: 'Word / line / sentence modes',
+                name: 'Word / line modes',
+                us: true,
+                them: true,
+                note: 'Both support word and line comparison; tokenization contracts differ'
+            },
+            {
+                name: 'Sentence / structural JSON modes',
                 us: false,
                 them: true,
-                note: 'jsdiff ships diffWords, diffLines, diffSentences, diffJson'
+                note: 'jsdiff provides diffSentences and diffJson; our JSON inputs remain plain text'
             },
             {
                 name: 'Expected patterns (ignore dynamic regions)',

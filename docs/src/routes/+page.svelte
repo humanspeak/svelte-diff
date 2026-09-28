@@ -6,6 +6,7 @@
         getSeoContext
     } from '@humanspeak/docs-kit'
     import SvelteDiff, {
+        type SvelteDiffMode,
         type SvelteDiffTiming,
         type SvelteDiffTuple
     } from '@humanspeak/svelte-diff'
@@ -41,6 +42,7 @@ Owner: Product Engineering`
 The documentation will ship with the launch.
 Owner: Developer Experience`
 
+    let diffMode = $state<SvelteDiffMode>('character')
     let originalText = $state(initialOriginal)
     let modifiedText = $state(initialModified)
     let timing = $state<SvelteDiffTiming>({ main: 0, cleanup: 0, total: 0 })
@@ -53,6 +55,7 @@ Owner: Developer Experience`
     }
 
     const resetDemo = () => {
+        diffMode = 'character'
         originalText = initialOriginal
         modifiedText = initialModified
     }
@@ -191,7 +194,7 @@ Owner: Developer Experience`
                     Use this Svelte diff viewer to highlight insertions and deletions inline.
                     Pass your before and after strings as <code>originalText</code> and
                     <code>modifiedText</code>; the diff updates whenever either value changes.
-                    Edit the text below to try semantic cleanup on real changes.
+                    Choose character, word, or line comparison. Character uses semantic cleanup.
                 </p>
                 <p>
                     Comparing timestamps, versions, or generated IDs? Use
@@ -199,7 +202,9 @@ Owner: Developer Experience`
                     to keep intentional changes visible without treating them as ordinary edits.
                 </p>
                 <a href="/docs/getting-started#compare-two-strings-in-svelte">build your own Svelte diff viewer ↗</a>
-                <a href="/examples/live-editor">open full example ↗</a>
+                <a href="/docs/guides/diff-modes">choose a diff mode ↗</a>
+                <a href="/examples/word-diff">word example ↗</a>
+                <a href="/examples/line-diff">line example ↗</a>
             </div>
 
             <div class="demo-panel">
@@ -209,6 +214,13 @@ Owner: Developer Experience`
                     <span><i>cleanup</i> <b>{timing.cleanup.toFixed(2)}ms</b></span>
                     <span><i>segments</i> <b>{segmentCount}</b></span>
                     <span class="live">● LIVE</span>
+                    <label class="mode-control">Diff mode
+                        <select bind:value={diffMode}>
+                            <option value="character">Character</option>
+                            <option value="word">Word</option>
+                            <option value="line">Line</option>
+                        </select>
+                    </label>
                     <button type="button" onclick={resetDemo}>↻ reset</button>
                 </div>
 
@@ -225,9 +237,10 @@ Owner: Developer Experience`
 
                 <div class="output">
                     <div class="output-label">
-                        <span>OUT / SEMANTIC DIFF</span>
+                        <span>OUT / {diffMode.toUpperCase()} DIFF · {diffMode === 'character' ? 'semantic cleanup' : 'cleanup skipped'}</span>
                         <span>total · {timing.total.toFixed(2)}ms</span>
                     </div>
+                    <!-- svelte-ignore a11y_no_noninteractive_tabindex (Scrollable results must be keyboard focusable.) -->
                     <div
                         class="diff-output rendered-diff"
                         role="region"
@@ -237,7 +250,8 @@ Owner: Developer Experience`
                         <SvelteDiff
                             {originalText}
                             {modifiedText}
-                            cleanupSemantic
+                            {diffMode}
+                            cleanupSemantic={diffMode === 'character'}
                             {onProcessing}
                             rendererClasses={{
                                 remove: 'diff-remove',
@@ -250,7 +264,8 @@ Owner: Developer Experience`
 
                 <div class="panel-footer">
                     <span>algorithm · <b>diff-match-patch</b></span>
-                    <span>cleanup · <b>semantic</b></span>
+                    <span>mode · <b>{diffMode}</b></span>
+                    <span>cleanup · <b>{diffMode === 'character' ? 'semantic' : 'skipped'}</b></span>
                     <span>render · <b>svelte spans</b></span>
                     <span>thread · <b>main</b></span>
                 </div>
@@ -343,7 +358,7 @@ Owner: Developer Experience`
                             Every guide mirrored as clean Markdown, plus runnable Svelte source under
                             <code>/examples/&lt;slug&gt;.md</code> for agents that need implementation detail.
                         </p>
-                        <div class="foot">15 mirrors · open ↗</div>
+                        <div class="foot">Markdown mirrors · open ↗</div>
                     </a>
                 </div>
                 <div class="prompt-example">
@@ -639,6 +654,8 @@ Owner: Developer Experience`
         font-size: 10.5px;
     }
 
+    .mode-control { display: flex; align-items: center; gap: 0.5rem; }
+    .mode-control select { max-width: 100%; background: var(--brut-bg); color: var(--brut-ink); border: 1px solid var(--brut-rule); padding: 4px; }
     .panel-bar i { color: var(--brut-ink-3); font-style: normal; }
     .panel-bar b, .panel-footer b { color: var(--brut-ink); font-weight: 500; }
     .panel-bar .live { margin-left: auto; color: var(--brut-accent); }

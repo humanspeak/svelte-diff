@@ -93,11 +93,11 @@ export type RendererClasses = {
  * Passed as the first argument to the {@link SvelteDiffProps.onProcessing | onProcessing} callback.
  */
 export type SvelteDiffTiming = {
-    /** Time spent in the core `diff_main` algorithm (ms). */
+    /** Time spent in `diff_main`, including token preparation/encoding/decoding for word/line (ms). */
     main: number
-    /** Time spent in semantic or efficiency cleanup (ms). */
+    /** Time spent in character semantic or efficiency cleanup (ms); exactly zero for word/line. */
     cleanup: number
-    /** Total wall-clock time for the entire diff operation (ms). */
+    /** Timed diff computation (ms), excluding expected-pattern preprocessing and DOM rendering. */
     total: number
 }
 /**
@@ -118,7 +118,22 @@ export type SvelteDiffTuple = Diff
  * kept from before the component was renamed.
  */
 export type SvelteDiffMatchPatchDiff = SvelteDiffTuple
+/** Comparison granularity. Character is the default; sentence and JSON are unsupported. */
+export type SvelteDiffMode = 'character' | 'word' | 'line'
+
 export interface SvelteDiffProps {
+    /**
+     * Comparison unit. Default: `character` (existing algorithm and cleanup).
+     * Word uses Unicode letter/mark/number/underscore runs, horizontal whitespace,
+     * CRLF/lone newlines, and separate punctuation/symbol code points. It is
+     * case-sensitive, lossless, and not locale-aware; CJK runs stay whole and
+     * emoji grapheme clusters may split. Apostrophes and hyphens separate words.
+     * Line preserves complete lines and their LF/CRLF/CR endings, including blank
+     * lines and an unterminated final line. JSON remains plain text.
+     * Word/line skip both cleanup passes. Capture tags and newline renderers may
+     * split displayed tokens; whole-token boundaries apply to raw callback tuples.
+     */
+    diffMode?: SvelteDiffMode
     /**
      * The original (left-side) string to compare.
      *
@@ -142,7 +157,9 @@ export interface SvelteDiffProps {
      */
     modifiedText: string
     /**
-     * Maximum time in seconds to spend computing the diff.
+     * Best-effort algorithm deadline in seconds. Token preparation shares the deadline;
+     * expiry or more than 65,535 distinct tokens can produce a complete replacement.
+     * Regex extraction, indivisible allocations, and DOM rendering are not bounded.
      *
      * Set to `0` for unlimited computation time. Default: `1`.
      *
@@ -155,7 +172,7 @@ export interface SvelteDiffProps {
      */
     timeout?: number
     /**
-     * If `true`, applies semantic cleanup to the diff for human readability.
+     * If `true`, applies semantic cleanup in character mode only; ignored in word/line.
      *
      * This makes the diff output easier to read by factoring out commonalities that are likely to be coincidental.
      * Default: `false`.
@@ -167,7 +184,7 @@ export interface SvelteDiffProps {
      */
     cleanupSemantic?: boolean
     /**
-     * Edit cost for efficiency cleanup.
+     * Edit cost for character-mode efficiency cleanup; ignored in word/line.
      *
      * Higher values make the diff more aggressive in factoring out trivial commonalities.
      * Default: `4`.
@@ -197,7 +214,8 @@ export interface SvelteDiffProps {
      * Callback invoked after diff computation with timing, diffs, and optional captures.
      *
      * @param timing - `{ main, cleanup, total }` in milliseconds.
-     * @param diffs - The raw diff tuples from diff-match-patch.
+     * @param diffs - Raw original-text tuples. With patterns, source reconstructs resolved/cleaned text.
+     *   Token boundaries apply to tuples; capture tagging and newline rendering can split displayed segments.
      * @param captures - When expected patterns match, a `Record<string, string>` mapping
      *   group names to their captured values (e.g., `{ year: "2024", holder: "Jason" }`).
      *

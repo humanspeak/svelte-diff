@@ -96,3 +96,19 @@ The pattern body is still compiled as JavaScript regular expression syntax. Trea
 - User names or environment-specific paths
 
 Expected patterns are not a general ignore system: successful values stay visible, receive their own styling, and remain available through `captures`.
+
+## Word and line modes
+
+All [diff modes](/docs/guides/diff-modes) retain extraction → resolved/cleaned source → diff → tagging. Tokenization operates on resolved text; mismatches use cleaned placeholders. Raw callback tuples reconstruct that source and the original modified text exactly. Expected annotations can split displayed words or lines, so whole-token guarantees apply to raw tuples, not snippet invocations. Newline rendering can also split tuples.
+
+```svelte
+<script lang="ts">
+    import SvelteDiff from '@humanspeak/svelte-diff'
+    const template = 'Release (?<version>v\\d+)'
+    const actual = 'Release v2 ready'
+</script>
+
+<SvelteDiff originalText={template} modifiedText={actual} diffMode="line" />
+```
+
+Resolved source is `Release v2`. Line mode returns `[[-1, "Release v2"], [1, "Release v2 ready"]]`. The deletion includes the captured value `v2`, while the target annotates `v2` as expected with group name `version`. Removals remain removals and are never hidden to avoid this duplication. Word/line skip both cleanup options.

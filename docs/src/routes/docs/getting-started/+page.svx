@@ -123,3 +123,19 @@ Use child snippets when you need different elements, attributes, icons, or anima
 - [Cleanup Modes](/docs/guides/cleanup) — choose semantic, efficiency, or raw output
 - [Interactive Examples](/examples) — edit values and inspect real output
 - [Comparisons](/compare) — decide between this component and lower-level diff tools
+
+## Choose a comparison unit
+
+Character is the default and retains the existing cleanup behavior. Use `diffMode="word"` for complete changed words or `diffMode="line"` for complete changed lines. Both token modes skip cleanup.
+
+```svelte
+<script lang="ts">
+    import SvelteDiff from '@humanspeak/svelte-diff'
+    const before = 'The cat sleeps.'
+    const after = 'The car sleeps.'
+</script>
+
+<SvelteDiff originalText={before} modifiedText={after} diffMode="word" />
+```
+
+Read the [mode guide](/docs/guides/diff-modes), edit the [word example](/examples/word-diff), or try the [line example](/examples/line-diff). JSON input remains plain text; sentence and structural JSON modes are unsupported.

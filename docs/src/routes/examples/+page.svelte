@@ -15,6 +15,8 @@
     }
 
     const examples = [
+        { slug: 'word-diff', title: 'Word Diff', tag: 'GRANULARITY', description: 'Compare whole words with raw character edits using editable prose.' },
+        { slug: 'line-diff', title: 'Line Diff', tag: 'GRANULARITY', description: 'Compare complete configuration lines, preserving blank lines and endings.' },
         {
             slug: 'basic-diff',
             title: 'Basic Diff',

@@ -19,6 +19,8 @@ description: Choose semantic cleanup, efficiency cleanup, or raw diff output for
 
 # Cleanup Modes
 
+Cleanup options apply only to the default `diffMode="character"`. Word and line modes skip both passes and report zero cleanup time. Granularity chooses comparison units; cleanup reorganizes character edits. See [Diff Modes](/docs/guides/diff-modes).
+
 The core algorithm finds a valid sequence of edits. Cleanup passes reorganize that sequence without changing the final text.
 
 ## Semantic cleanup
@@ -58,7 +60,7 @@ Disable both cleanup paths when exact algorithm output matters:
 />
 ```
 
-## Precedence
+## Character-mode precedence
 
 Semantic cleanup wins when enabled. The component does not run semantic and efficiency cleanup in sequence.
 
@@ -68,7 +70,7 @@ Semantic cleanup wins when enabled. The component does not run semantic and effi
 | `cleanupSemantic={false}`, `cleanupEfficiency={4}` | efficiency |
 | `cleanupSemantic={false}`, `cleanupEfficiency={0}` | none |
 
-## Choosing a mode
+## Choosing character-mode cleanup
 
 - Use **semantic** for prose and human review.
 - Use **efficiency** for compact technical diffs and a balanced default.

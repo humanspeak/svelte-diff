@@ -34,9 +34,10 @@ The package exports the component as both the default export and a named export.
 |---|---|---:|---|
 | `originalText` | `string` | required | The before/source text |
 | `modifiedText` | `string` | required | The after/target text |
+| `diffMode` | `SvelteDiffMode` | `'character'` | `'character'`, `'word'`, or `'line'`; word/line skip cleanup |
 | `timeout` | `number` | `1` | Maximum diff computation time in seconds; `0` is unlimited |
-| `cleanupSemantic` | `boolean` | `false` | Optimize edit boundaries for human readability |
-| `cleanupEfficiency` | `number` | `4` | Edit cost used by efficiency cleanup; `0` disables it |
+| `cleanupSemantic` | `boolean` | `false` | Character only: optimize edit boundaries for human readability |
+| `cleanupEfficiency` | `number` | `4` | Character-only edit cost for efficiency cleanup; `0` disables it |
 | `compact` | `boolean` | `true` | Render unstyled equal text without wrapper spans; `false` restores legacy equal spans |
 | `onProcessing` | `function` | — | Receive timing, raw tuples, and optional captures |
 | `rendererClasses` | `RendererClasses` | `{}` | Classes for built-in segment spans |
@@ -49,7 +50,7 @@ The package exports the component as both the default export and a named export.
 
 ## Cleanup precedence
 
-The component computes a raw diff, then runs at most one cleanup pass:
+In character mode, the component computes a raw diff, then runs at most one cleanup pass:
 
 1. If `cleanupSemantic` is `true`, semantic cleanup runs.
 2. Otherwise, if `cleanupEfficiency > 0`, efficiency cleanup runs with that value as the edit cost.
@@ -119,3 +120,11 @@ The group name is passed to the expected snippet and its matched value appears i
 ## Deprecated aliases
 
 `SvelteDiffMatchPatch` and the `SvelteDiffMatchPatch*` type names remain available for compatibility. New code should use `SvelteDiff` and the shorter `SvelteDiff*` types.
+
+## Mode and capture semantics
+
+`diffMode` defaults to `character`; `word` and `line` skip both cleanup passes regardless of their props. `timing.cleanup` is exactly zero in token modes. See [Diff Modes](/docs/guides/diff-modes) for token rules, Unicode limitations, and complete examples.
+
+Capture extraction still precedes tokenization. Raw callback tuples reconstruct the resolved source (or cleaned placeholders on mismatch), and the exact modified text. Capture tagging may split displayed tokens, and newline rendering may split a tuple across snippet calls. For `Release (?<version>v\\d+)` and `Release v2 ready`, line mode removes `Release v2`, inserts the full actual line, and annotates `v2` on the target side. The deleted captured value remains visible.
+
+Mode changes recompute immediately; callback-only changes reuse the tuple array. Computation runs during SSR and callback delivery runs on the client. The token deadline includes preparation and decoding; timeout or more than 65,535 distinct tokens can return a full replacement. See [performance](/docs/guides/performance).

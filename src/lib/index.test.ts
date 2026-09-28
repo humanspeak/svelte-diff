@@ -10,6 +10,7 @@ import SvelteDiffDefault, {
     type PatternMatchResult,
     type RendererClasses,
     type Renderers,
+    type SvelteDiffMode,
     type SvelteDiffProps,
     type SvelteDiffTiming,
     type SvelteDiffTuple
@@ -61,7 +62,8 @@ describe('index exports', () => {
     it('should keep deprecated SvelteDiffMatchPatch* type aliases assignable', () => {
         const props: import('./index.js').SvelteDiffMatchPatchProps = {
             originalText: '',
-            modifiedText: ''
+            modifiedText: '',
+            diffMode: 'line'
         }
 
         const timing: import('./index.js').SvelteDiffMatchPatchTiming = {
@@ -129,4 +131,15 @@ describe('index exports', () => {
         }
         expect(result).toBeDefined()
     })
+})
+
+it('exports exactly the supported mode literals', () => {
+    const modes: SvelteDiffMode[] = ['character', 'word', 'line']
+    // @ts-expect-error Sentence mode is deferred.
+    const sentence: SvelteDiffMode = 'sentence'
+    // @ts-expect-error Structural JSON mode is deferred.
+    const json: SvelteDiffMode = 'json'
+    expect(modes).toHaveLength(3)
+    expect(sentence).toBe('sentence')
+    expect(json).toBe('json')
 })

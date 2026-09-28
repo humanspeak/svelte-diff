@@ -1,0 +1,103 @@
+---
+title: Diff Modes
+description: Choose character, word, or line comparison while preserving exact text, expected captures, and reactive Svelte rendering.
+---
+
+<script>
+    import { getSeoContext } from '$lib/components/contexts/Seo/Seo.context'
+
+    const seo = getSeoContext()
+    if (seo) {
+        seo.title = 'Diff Modes | Svelte Diff'
+        seo.description = 'Choose character, word, or line comparison while preserving exact text, expected captures, and reactive Svelte rendering.'
+        seo.ogTitle = 'Diff Modes'
+        seo.ogTagline = 'Characters, words, or complete lines.'
+        seo.ogFeatures = ['Character Default', 'Whole Words', 'Complete Lines', 'Lossless Text']
+        seo.ogSlug = 'docs-guides-diff-modes'
+    }
+</script>
+
+# Diff Modes
+
+`diffMode` chooses the comparison unit. The exported `SvelteDiffMode` type is `'character' | 'word' | 'line'`. Character remains the default.
+
+| Mode | Use case | Behavior |
+| --- | --- | --- |
+| `character` (default) | Fine-grained edits | Existing diff-match-patch algorithm and cleanup defaults |
+| `word` | Prose and identifiers | Whole word runs, separate whitespace and punctuation tokens |
+| `line` | Logs, configuration, source snapshots | Complete lines with their original terminators; no character refinement |
+
+## Word comparison
+
+```svelte
+<script lang="ts">
+    import SvelteDiff from '@humanspeak/svelte-diff'
+    const before = 'The cat sleeps.'
+    const after = 'The car sleeps.'
+</script>
+
+<SvelteDiff originalText={before} modifiedText={after} diffMode="word" />
+```
+
+Raw tuples are `[[0, "The "], [-1, "cat"], [1, "car"], [0, " sleeps."]]`. Unlike raw character output, the changed word is removed and inserted whole.
+
+Word tokens are Unicode letter/mark/number/underscore runs, horizontal whitespace runs, CRLF pairs, lone CR or LF, and individual remaining punctuation/symbol code points. Spaces, tabs, NBSP, case, combining marks, and normalization form are preserved exactly. Apostrophes and hyphens separate runs. Comparison is case-sensitive and deterministic on the server and client; it does not use locale-aware segmentation. A continuous CJK letter run is one token. Emoji grapheme clusters are not guaranteed atomic. Lone surrogate code units are preserved.
+
+Try the editable [word example](/examples/word-diff).
+
+## Line comparison
+
+```svelte
+<script lang="ts">
+    import SvelteDiff from '@humanspeak/svelte-diff'
+    const before = 'count=10\nkeep=true\n'
+    const after = 'count=20\nkeep=true\n'
+</script>
+
+<SvelteDiff originalText={before} modifiedText={after} diffMode="line" />
+```
+
+Raw tuples are `[[-1, "count=10\n"], [1, "count=20\n"], [0, "keep=true\n"]]`.
+
+A line includes its LF, CRLF, or lone-CR terminator. Mixed endings, indentation, blank lines, and an unterminated final line are preserved. Adding or removing a final newline changes the affected line token. No secondary character refinement runs. JSON is plain source text: no parsing, key sorting, or canonicalization occurs. Sentence and structural JSON modes are deferred and unsupported.
+
+Try the [line example](/examples/line-diff), including its blank-line/final-newline preset. Line mode is a comparison unit, not a file/hunk or side-by-side renderer.
+
+## Cleanup matrix
+
+| Mode | Cleanup behavior |
+| --- | --- |
+| Character with `cleanupSemantic={true}` | Semantic cleanup wins |
+| Character with semantic off and `cleanupEfficiency > 0` | Efficiency cleanup (default edit cost: 4) |
+| Character with semantic off and efficiency 0 | No cleanup |
+| Word or line, with any cleanup props | Both passes skipped; `timing.cleanup` is exactly 0 |
+
+Granularity and [cleanup](/docs/guides/cleanup) are separate choices. Semantic cleanup can make character output more readable, but does not promise whole-token boundaries. The public comparison panes disable character cleanup to show this difference clearly.
+
+## Expected patterns and renderers
+
+The pipeline remains extraction → resolved/cleaned source → diff → capture tagging. Tokenization sees the resolved source, not regex syntax. On mismatch, it sees the cleaned placeholders. Raw callback tuples reconstruct that source when inserts are omitted, and reconstruct the exact modified string when removals are omitted.
+
+```svelte
+<script lang="ts">
+    import SvelteDiff from '@humanspeak/svelte-diff'
+    const template = 'Release (?<version>v\\d+)'
+    const actual = 'Release v2 ready'
+</script>
+
+<SvelteDiff originalText={template} modifiedText={actual} diffMode="line" />
+```
+
+Here the resolved source is `Release v2`. Raw tuples are `[[-1, "Release v2"], [1, "Release v2 ready"]]`, and captures contain `version: 'v2'`. The removed line still contains `v2`; its replacement also displays `v2` as expected. Removals are never silently suppressed.
+
+Whole-token guarantees apply to raw tuple boundaries. Expected annotations may split a displayed word or line at capture boundaries. The existing newline renderer can split multiline tuples into multiple snippet calls. Child snippets still override renderer-map entries, which override built-in rendering. Compact rendering and custom line breaks work in every mode. See [expected patterns](/docs/guides/expected-patterns) and the [component API](/docs/api/svelte-diff).
+
+## Reactivity, SSR, timing, and limits
+
+Changing either text, `diffMode`, timeout, or cleanup options recomputes the diff. Changing only the callback reuses the same tuple array. Initial diff markup is computed during SSR; callback delivery happens on the client after computation.
+
+For token modes, `timing.main` includes tokenization, shared-dictionary encoding, diffing, and decoding; `cleanup` is zero and `total` covers the timed computation. Expected-pattern preprocessing and DOM rendering are outside these measurements.
+
+`timeout` is in seconds (default 1; 0 means unlimited). Token preparation, the engine, and decoding share one absolute deadline. Expiry can return a coarse full delete/insert, preserving both complete strings. The shared dictionary supports at most 65,535 distinct tokens across both inputs; exceeding this also returns a complete replacement. Equality and one-sided empty inputs keep their simple fast-path results. Fallback never switches to character granularity or truncates input.
+
+This is a best-effort algorithm deadline, not a hard cap on a large token allocation, regex extraction, or rendering. Work remains synchronous: token modes do not virtualize output, offload to workers, or debounce input. Read the [performance guide](/docs/guides/performance) before comparing large documents.

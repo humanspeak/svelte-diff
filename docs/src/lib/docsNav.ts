@@ -47,6 +47,7 @@ export const docsSections: NavSection[] = [
         items: [
             { title: 'Custom Rendering', href: '/docs/guides/custom-rendering', icon: Paintbrush },
             { title: 'Expected Patterns', href: '/docs/guides/expected-patterns', icon: Regex },
+            { title: 'Diff Modes', href: '/docs/guides/diff-modes', icon: Type },
             { title: 'Cleanup Modes', href: '/docs/guides/cleanup', icon: Sparkles },
             { title: 'Timing & Performance', href: '/docs/guides/performance', icon: Gauge }
         ]
@@ -57,6 +58,8 @@ export const docsSections: NavSection[] = [
         items: [
             { title: 'All Examples', href: '/examples', icon: Play, exact: true },
             { title: 'Basic Diff', href: '/examples/basic-diff', icon: GitCompareArrows },
+            { title: 'Word Diff', href: '/examples/word-diff', icon: Type },
+            { title: 'Line Diff', href: '/examples/line-diff', icon: Type },
             { title: 'Live Editor', href: '/examples/live-editor', icon: Activity },
             { title: 'Expected Patterns', href: '/examples/expected-patterns', icon: Regex },
             { title: 'Custom Snippets', href: '/examples/custom-snippets', icon: Braces },

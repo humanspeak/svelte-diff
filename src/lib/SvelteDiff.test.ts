@@ -436,3 +436,199 @@ describe('SvelteDiff compact rendering', () => {
         expect(container.querySelectorAll('span')).toHaveLength(0)
     })
 })
+
+describe('diff modes', () => {
+    it('replaces whole words', () => {
+        const props = {
+            originalText: 'cat',
+            modifiedText: 'car',
+            diffMode: 'word' as const,
+            cleanupEfficiency: 0,
+            rendererClasses: { remove: 'removed', insert: 'inserted' }
+        }
+        const { container } = render(SvelteDiff, props)
+        expect(container.querySelector('.removed')?.textContent).toBe('cat')
+        expect(container.querySelector('.inserted')?.textContent).toBe('car')
+    })
+
+    it('replaces whole lines in raw tuples', async () => {
+        const onProcessing = vi.fn()
+        const props = {
+            originalText: 'count=10\nkeep=true\n',
+            modifiedText: 'count=20\nkeep=true\n',
+            diffMode: 'line' as const,
+            cleanupEfficiency: 0,
+            onProcessing
+        }
+        render(SvelteDiff, props)
+        await waitFor(() => expect(onProcessing).toHaveBeenCalled())
+        expect(onProcessing.mock.calls[0][1]).toEqual([
+            [-1, 'count=10\n'],
+            [1, 'count=20\n'],
+            [0, 'keep=true\n']
+        ])
+    })
+})
+
+describe('diff mode integration', () => {
+    it('keeps omitted and explicit character output identical', async () => {
+        const callback = vi.fn()
+        const props = { originalText: 'cat', modifiedText: 'car', onProcessing: callback }
+        const { container, rerender } = render(SvelteDiff, props)
+        await waitFor(() => expect(callback).toHaveBeenCalled())
+        const html = container.innerHTML
+        const tuples = callback.mock.calls[0][1]
+        await rerender({ ...props, diffMode: 'character' })
+        expect(container.innerHTML).toBe(html)
+        expect(callback.mock.lastCall?.[1]).toBe(tuples)
+    })
+    it.each(['word', 'line'] as const)(
+        'recomputes %s edits but reuses callback-only tuples',
+        async (diffMode) => {
+            const callback = vi.fn()
+            const next = vi.fn()
+            const props = {
+                originalText: 'cat',
+                modifiedText: 'car',
+                diffMode,
+                cleanupSemantic: true,
+                cleanupEfficiency: 8
+            }
+            const { rerender } = render(SvelteDiff, { ...props, onProcessing: callback })
+            await waitFor(() => expect(callback).toHaveBeenCalled())
+            const tuples = callback.mock.calls[0][1]
+            expect(tuples).toEqual([
+                [-1, 'cat'],
+                [1, 'car']
+            ])
+            expect(callback.mock.calls[0][0].cleanup).toBe(0)
+            await rerender({ ...props, onProcessing: next })
+            await waitFor(() => expect(next).toHaveBeenCalled())
+            expect(next.mock.calls[0][1]).toBe(tuples)
+            await rerender({ ...props, modifiedText: 'dog', onProcessing: next })
+            expect(next.mock.lastCall?.[1]).not.toBe(tuples)
+            expect(next.mock.lastCall?.[1]).toEqual([
+                [-1, 'cat'],
+                [1, 'dog']
+            ])
+            await rerender({ ...props, diffMode: 'character', onProcessing: next })
+            expect(next.mock.lastCall?.[1]).not.toEqual(tuples)
+        }
+    )
+    it.each(['word', 'line'] as const)(
+        'tags captures after resolving %s source',
+        async (diffMode) => {
+            const onProcessing = vi.fn()
+            const { container } = render(SvelteDiff, {
+                originalText: 'Release (?<version>v\\d+)',
+                modifiedText: 'Release v2 ready',
+                diffMode,
+                onProcessing,
+                rendererClasses: { remove: 'removed', expected: 'expected' }
+            })
+            await waitFor(() => expect(onProcessing).toHaveBeenCalled())
+            const [, tuples, captures] = onProcessing.mock.calls[0]
+            expect(
+                tuples
+                    .filter(([op]: [number, string]) => op !== 1)
+                    .map(([, text]: [number, string]) => text)
+                    .join('')
+            ).toBe('Release v2')
+            expect(captures).toEqual({ version: 'v2' })
+            expect(container.querySelector('.expected')?.textContent).toBe('v2')
+            if (diffMode === 'line')
+                expect(container.querySelector('.removed')?.textContent).toBe('Release v2')
+        }
+    )
+    it.each(['word', 'line'] as const)(
+        'preserves %s mismatch placeholders and renderer precedence',
+        async (diffMode) => {
+            const callback = vi.fn()
+            const { container } = render(SvelteDiff, {
+                originalText: 'Year (?<year>\\d{4})\n',
+                modifiedText: 'Year unknown\n',
+                diffMode,
+                onProcessing: callback,
+                remove: textSnippet('child'),
+                renderers: { remove: textSnippet('loser'), insert: textSnippet('insert') },
+                compact: false
+            })
+            await waitFor(() => expect(callback).toHaveBeenCalled())
+            expect(
+                callback.mock.calls[0][1]
+                    .filter(([op]: [number, string]) => op !== 1)
+                    .map(([, text]: [number, string]) => text)
+                    .join('')
+            ).toBe('Year <year>\n')
+            expect(container.querySelector('.child')).toBeTruthy()
+            expect(container.querySelector('.loser')).toBeNull()
+            expect(container.querySelector('.insert')).toBeTruthy()
+            expect(container.querySelector('br')).toBeTruthy()
+        }
+    )
+})
+
+describe('token mode display contracts', () => {
+    it.each(['word', 'line'] as const)(
+        'renders %s captures spanning words and lines through custom snippets',
+        async (diffMode) => {
+            const onProcessing = vi.fn()
+            const expected = createRawSnippet<[string, string]>((text, group) => ({
+                render: () => `<mark title="${group()}">${text()}</mark>`
+            }))
+            const lineBreak = createRawSnippet<[]>(() => ({
+                render: () => '<br class="custom-break" />'
+            }))
+            const { container } = render(SvelteDiff, {
+                originalText: 'Value: (?<value>[\\s\\S]+)',
+                modifiedText: 'Value: alpha beta\ngamma',
+                diffMode,
+                onProcessing,
+                expected,
+                lineBreak,
+                renderers: {
+                    expected: createRawSnippet<[string, string]>(() => ({
+                        render: () => '<i>loser</i>'
+                    }))
+                }
+            })
+            await waitFor(() => expect(onProcessing).toHaveBeenCalled())
+            expect(onProcessing.mock.calls[0][1]).toEqual([[0, 'Value: alpha beta\ngamma']])
+            expect(onProcessing.mock.calls[0][2]).toEqual({ value: 'alpha beta\ngamma' })
+            expect([...container.querySelectorAll('mark')].map((node) => node.textContent)).toEqual(
+                ['alpha beta', 'gamma']
+            )
+            expect(
+                [...container.querySelectorAll('mark')].every((node) => node.title === 'value')
+            ).toBe(true)
+            expect(container.querySelector('i')).toBeNull()
+            expect(container.querySelectorAll('.custom-break')).toHaveLength(1)
+        }
+    )
+    it.each(['word', 'line'] as const)(
+        'preserves %s compact and equal renderer behavior',
+        async (diffMode) => {
+            const props = { originalText: 'same\ntext', modifiedText: 'same\ntext', diffMode }
+            const { container, rerender } = render(SvelteDiff, props)
+            expect(container.querySelector('span')).toBeNull()
+            expect(container.querySelectorAll('br')).toHaveLength(1)
+            await rerender({ ...props, compact: false })
+            expect(container.querySelectorAll('span')).toHaveLength(2)
+            await rerender({
+                ...props,
+                compact: true,
+                equal: textSnippet('equal-child'),
+                renderers: { equal: textSnippet('equal-map') }
+            })
+            expect(container.querySelectorAll('.equal-child')).toHaveLength(2)
+            expect(container.querySelector('.equal-map')).toBeNull()
+            await rerender({
+                ...props,
+                compact: true,
+                equal: undefined,
+                renderers: { equal: textSnippet('equal-map') }
+            })
+            expect(container.querySelectorAll('.equal-map')).toHaveLength(2)
+        }
+    )
+})

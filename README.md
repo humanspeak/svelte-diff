@@ -20,7 +20,7 @@ A powerful, customizable diff-match-patch component for Svelte with TypeScript s
 - 💪 Complete TypeScript support with strict typing
 - 🎨 Customizable diff rendering with CSS classes OR svelte snippets
 - 🔒 Safe and efficient text comparison
-- 🎯 Configurable cleanup algorithms (semantic and efficiency)
+- 🎯 Character (default), word, and line diff modes; character-only semantic and efficiency cleanup
 - 🧪 Comprehensive test coverage (vitest and playwright)
 - 🔄 Svelte 5 runes compatibility
 - ⚡ Configurable timeout for large text comparisons
@@ -94,27 +94,33 @@ From wicked puns and stupid jokes to anvils that drop on your head.`)
 The package is written in TypeScript and includes full type definitions:
 
 ```typescript
-import type { SvelteDiffTiming, SvelteDiffTuple, SvelteDiffProps } from '@humanspeak/svelte-diff'
+import type {
+    SvelteDiffMode,
+    SvelteDiffTiming,
+    SvelteDiffTuple,
+    SvelteDiffProps
+} from '@humanspeak/svelte-diff'
 ```
 
 ## Props
 
-| Prop                | Type                        | Default    | Description                                                                           |
-| ------------------- | --------------------------- | ---------- | ------------------------------------------------------------------------------------- |
-| `originalText`      | `string`                    | _required_ | The original (before/source) text to compare                                          |
-| `modifiedText`      | `string`                    | _required_ | The modified (after/target) text to compare                                           |
-| `timeout`           | `number`                    | `1`        | Max diff computation time in seconds; `0` is unlimited                                |
-| `cleanupSemantic`   | `boolean`                   | `false`    | Optimize edit boundaries for human readability                                        |
-| `cleanupEfficiency` | `number`                    | `4`        | Edit cost used by efficiency cleanup; `0` disables it                                 |
-| `compact`           | `boolean`                   | `true`     | Render unstyled equal text without wrapper spans; `false` restores legacy equal spans |
-| `onProcessing`      | `function`                  | —          | Receives `(timing, diffs, captures?)` after each computation                          |
-| `rendererClasses`   | `RendererClasses`           | `{}`       | CSS classes for the built-in `remove`/`insert`/`equal`/`expected` spans               |
-| `renderers`         | `Partial<Renderers>`        | `{}`       | Snippet map for individual segment types                                              |
-| `remove`            | `Snippet<[string]>`         | —          | Child snippet for removed text (wins over `renderers.remove`)                         |
-| `insert`            | `Snippet<[string]>`         | —          | Child snippet for inserted text (wins over `renderers.insert`)                        |
-| `equal`             | `Snippet<[string]>`         | —          | Child snippet for unchanged text (wins over `renderers.equal`)                        |
-| `expected`          | `Snippet<[string, string]>` | —          | Child snippet for expected values, receiving `(text, groupName)`                      |
-| `lineBreak`         | `Snippet<[]>`               | —          | Child snippet rendered between lines                                                  |
+| Prop                | Type                        | Default       | Description                                                                           |
+| ------------------- | --------------------------- | ------------- | ------------------------------------------------------------------------------------- |
+| `originalText`      | `string`                    | _required_    | The original (before/source) text to compare                                          |
+| `modifiedText`      | `string`                    | _required_    | The modified (after/target) text to compare                                           |
+| `diffMode`          | `SvelteDiffMode`            | `'character'` | `'character'`, `'word'`, or `'line'`; word/line skip both cleanup passes              |
+| `timeout`           | `number`                    | `1`           | Max diff computation time in seconds; `0` is unlimited                                |
+| `cleanupSemantic`   | `boolean`                   | `false`       | Character only: optimize edit boundaries for human readability                        |
+| `cleanupEfficiency` | `number`                    | `4`           | Character only: edit cost for efficiency cleanup; `0` disables it                     |
+| `compact`           | `boolean`                   | `true`        | Render unstyled equal text without wrapper spans; `false` restores legacy equal spans |
+| `onProcessing`      | `function`                  | —             | Receives `(timing, diffs, captures?)` after each computation                          |
+| `rendererClasses`   | `RendererClasses`           | `{}`          | CSS classes for the built-in `remove`/`insert`/`equal`/`expected` spans               |
+| `renderers`         | `Partial<Renderers>`        | `{}`          | Snippet map for individual segment types                                              |
+| `remove`            | `Snippet<[string]>`         | —             | Child snippet for removed text (wins over `renderers.remove`)                         |
+| `insert`            | `Snippet<[string]>`         | —             | Child snippet for inserted text (wins over `renderers.insert`)                        |
+| `equal`             | `Snippet<[string]>`         | —             | Child snippet for unchanged text (wins over `renderers.equal`)                        |
+| `expected`          | `Snippet<[string, string]>` | —             | Child snippet for expected values, receiving `(text, groupName)`                      |
+| `lineBreak`         | `Snippet<[]>`               | —             | Child snippet rendered between lines                                                  |
 
 ## Custom Rendering with Snippets
 
@@ -305,7 +311,7 @@ The component emits a `processing` event with timing and diff information:
 
 ### Semantic Cleanup
 
-When `cleanupSemantic` is enabled, the diff algorithm will:
+In character mode, when `cleanupSemantic` is enabled, the diff algorithm will:
 
 - Factor out commonalities that are likely to be coincidental
 - Improve human readability of the diff
@@ -313,7 +319,7 @@ When `cleanupSemantic` is enabled, the diff algorithm will:
 
 ### Efficiency Cleanup
 
-The `cleanupEfficiency` edit cost (default `4`) controls how aggressively the algorithm:
+In character mode, the `cleanupEfficiency` edit cost (default `4`) controls how aggressively the algorithm:
 
 - Factors out short commonalities
 - Reduces computational overhead
@@ -322,8 +328,8 @@ The `cleanupEfficiency` edit cost (default `4`) controls how aggressively the al
 ## Performance Considerations
 
 - For large texts, consider increasing the `timeout` value
-- Use `cleanupSemantic` for better readability in small to medium texts
-- Use `cleanupEfficiency` for better performance in large texts
+- In character mode, use `cleanupSemantic` for better readability in small to medium texts
+- In character mode, use `cleanupEfficiency` for better performance in large texts
 - Unstyled built-in equal text renders without wrapper spans by default. Set `compact={false}` only when you need the legacy equal-span DOM:
 
     ```svelte
@@ -367,3 +373,42 @@ MIT © [Humanspeak, Inc.](LICENSE)
 Made with ❤️ by [Humanspeak](https://humanspeak.com)
 
 <!-- docs-kit:ecosystem end -->
+
+## Word and line comparison
+
+```svelte
+<script lang="ts">
+    import SvelteDiff from '@humanspeak/svelte-diff'
+    const proseBefore = 'The cat sleeps.'
+    const proseAfter = 'The car sleeps.'
+    const configBefore = 'count=10\nkeep=true\n'
+    const configAfter = 'count=20\nkeep=true\n'
+</script>
+
+<SvelteDiff originalText={proseBefore} modifiedText={proseAfter} diffMode="word" />
+<SvelteDiff originalText={configBefore} modifiedText={configAfter} diffMode="line" />
+```
+
+Character remains the default. Word mode compares Unicode letter/mark/number/underscore
+runs, whitespace runs, and separate punctuation; apostrophes/hyphens separate words.
+It is case-sensitive and not locale-aware: continuous CJK runs are single tokens,
+and emoji grapheme clusters are not guaranteed atomic. Line mode preserves whole
+lines including LF, CRLF, lone CR, blank lines, and an unterminated final line.
+Neither mode normalizes text or runs semantic/efficiency cleanup. JSON remains
+plain text; sentence and structural JSON modes are unsupported.
+
+Raw callback tuples contain original text, using resolved/cleaned source with expected
+patterns. Capture annotations and newline renderers can split displayed tokens;
+a replaced line retains its captured value in the deletion as well as annotating
+it in the replacement. Changing mode recomputes; callback-only changes reuse tuples.
+SSR computes the initial diff, with callback delivery on the client.
+
+Token-mode `main` includes preparation, encoding, diffing, and decoding; `cleanup`
+is zero. Timings exclude pattern extraction and DOM rendering. One best-effort
+seconds-based deadline covers token work (`timeout={0}` is unlimited). Expiry or
+more than 65,535 distinct tokens across the inputs can produce a full replacement,
+never truncated text. Work is synchronous without virtualization or workers.
+
+Read the [diff modes guide](https://diff.svelte.page/docs/guides/diff-modes),
+[editable word example](https://diff.svelte.page/examples/word-diff), and
+[editable line example](https://diff.svelte.page/examples/line-diff).
