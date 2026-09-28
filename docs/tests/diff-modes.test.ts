@@ -53,17 +53,20 @@ for (const route of routes) {
             const scripts = await page.locator('script[type="application/ld+json"]').allTextContents()
             const breadcrumb = scripts.map((text) => JSON.parse(text)).find((data) => data['@type'] === 'BreadcrumbList')
             expect(breadcrumb).toBeDefined()
-            expect(breadcrumb.itemListElement).toEqual(expect.arrayContaining([
-                expect.objectContaining({
-                    name: route.startsWith('/examples/') ? 'Examples' : 'Guides'
-                }),
-                expect.objectContaining({ name: route.endsWith('word-diff') ? 'Word Diff' : route.endsWith('line-diff') ? 'Line Diff' : 'Diff Modes' }),
-                expect.objectContaining({ name: 'Home', item: 'https://diff.svelte.page/' }),
-                expect.objectContaining({
-                    name: route.startsWith('/examples/') ? 'Examples' : 'Docs',
-                    item: `https://diff.svelte.page${route.startsWith('/examples/') ? '/examples' : '/docs/getting-started'}`
-                })
-            ]))
+            const expectedBreadcrumbs = route === '/docs/guides/diff-modes' ? [
+                { '@type': 'ListItem', name: 'Home', position: 1, item: 'https://diff.svelte.page/' },
+                { '@type': 'ListItem', name: 'Docs', position: 2, item: 'https://diff.svelte.page/docs/getting-started' },
+                { '@type': 'ListItem', name: 'Diff Modes', position: 3 }
+            ] : route === '/examples/word-diff' ? [
+                { '@type': 'ListItem', name: 'Home', position: 1, item: 'https://diff.svelte.page/' },
+                { '@type': 'ListItem', name: 'Examples', position: 2, item: 'https://diff.svelte.page/examples' },
+                { '@type': 'ListItem', name: 'Word Diff', position: 3 }
+            ] : [
+                { '@type': 'ListItem', name: 'Home', position: 1, item: 'https://diff.svelte.page/' },
+                { '@type': 'ListItem', name: 'Examples', position: 2, item: 'https://diff.svelte.page/examples' },
+                { '@type': 'ListItem', name: 'Line Diff', position: 3 }
+            ]
+            expect(breadcrumb.itemListElement).toEqual(expectedBreadcrumbs)
         }).toPass({ timeout: 5000 })
         const imageUrl = await page.locator('meta[property="og:image"]').getAttribute('content')
         expect(imageUrl).toBeTruthy()
@@ -156,10 +159,12 @@ test('homepage mode control preserves edits, labels, reset and scrolling', async
         expect(footerOffset).toBeLessThanOrEqual(2)
     }
     await selector.focus()
-    await selector.press('Home')
-    await selector.press('ArrowDown')
+    await selector.press('w')
     await selector.press('Enter')
     await expect(selector).toHaveValue('word')
+    await expect(region.locator('.diff-remove')).toHaveText('cat')
+    await expect(demo.locator('.output-label')).toContainText('WORD')
+    await expect(demo.locator('.panel-footer')).toContainText('mode · word')
     await assertWidth(page)
     const controlBox = await selector.boundingBox()
     expect(controlBox!.x).toBeGreaterThanOrEqual(0)
