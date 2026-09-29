@@ -351,8 +351,7 @@ test('index cards, sitemap, Markdown mirrors and LLM references include modes', 
     expect(sitemap.status()).toBe(200)
     for (const route of routes) expect(await sitemap.text()).toContain(`https://diff.svelte.page${route}`)
     for (const route of routes) {
-        const mirrorPath = route === '/docs/guides/diff-modes' ? '/docs/guides-diff-modes.md' : `${route}.md`
-        const mirror = await request.get(mirrorPath)
+        const mirror = await request.get(`${route}.md`)
         expect(mirror.status()).toBe(200)
         expect(await mirror.text()).toContain('diffMode')
         if (route.startsWith('/examples/')) expect(await mirror.text()).toContain('@humanspeak/svelte-diff')
