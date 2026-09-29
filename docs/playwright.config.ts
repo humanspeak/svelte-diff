@@ -19,6 +19,10 @@ export default defineConfig({
         command: 'pnpm --filter docs run preview --host 127.0.0.1 --port 8524 --strictPort',
         url: 'http://127.0.0.1:8524',
         timeout: 120000,
+        // pnpm 12 runs scripts in their own process group, so Playwright's default
+        // SIGKILL of the server's group orphans vite and the run never exits.
+        // SIGTERM is forwarded by pnpm to the script.
+        gracefulShutdown: { signal: 'SIGTERM', timeout: 5000 },
         reuseExistingServer: !process.env.CI
     }
 })
