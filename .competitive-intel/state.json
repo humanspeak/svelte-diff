@@ -86,10 +86,15 @@
     "open_gaps": [
         {
             "id": "granularity-modes",
-            "gap": "Sentence / JSON diff granularity (jsdiff has it, we don't) \u2014 word + line merged in #209 (2026-09-28), unreleased; npm still 0.4.1",
+            "gap": "Sentence / JSON-aware diff granularity remains unsupported \u2014 word + line merged in #209 (2026-09-28), unreleased; npm still 0.4.1",
             "source": "diff (jsdiff) 9.0.0",
-            "why_it_matters": "Character-level diffs read badly for prose and config files; the only jsdiff capability that is not a declared non-goal.",
-            "worth_doing": "word/line: release pending (close on npm publish). sentence/JSON: low \u2014 consider declaring non-goal",
+            "why_it_matters": "Word and line modes cover common prose and configuration reviews. Sentence and JSON-aware comparison may still help users who need whole-sentence highlighting or comparisons based on data rather than its text formatting.",
+            "worth_doing": "word/line: release pending (close on npm publish). sentence/JSON: low priority; keep open enhancements and evaluate concrete user use cases rather than declare non-goals",
+            "tracking_issues": {
+                "sentence": "https://github.com/humanspeak/svelte-diff/issues/213",
+                "structural_json": "https://github.com/humanspeak/svelte-diff/issues/214"
+            },
+            "decision_reason": "No immediate implementation is scheduled because word and line cover the common workflows. Open issues invite examples, expected output, and contributions so user needs can guide future scope and priority. For JSON, jsdiff's diffJson canonicalizes objects and compares formatted lines; property-path structural changes would require a separate design decision.",
             "opened": "2026-08-23"
         }
     ],
