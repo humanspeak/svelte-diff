@@ -327,6 +327,58 @@ describe('SvelteDiff expected patterns', () => {
 })
 
 describe('SvelteDiff compact rendering', () => {
+    it.each(['character', 'word', 'line'] as const)(
+        'reuses compact text and break nodes during %s updates',
+        async (diffMode) => {
+            const props = { originalText: 'alpha\nbeta\n', modifiedText: 'alpha\nbeta\n', diffMode }
+            const { container, rerender } = render(SvelteDiff, props)
+            const breaks = [...container.querySelectorAll('br')]
+            const firstText = [...container.childNodes].find(
+                (node) => node.nodeType === Node.TEXT_NODE && node.textContent === 'alpha'
+            )
+            expect(firstText).toBeDefined()
+
+            await rerender({
+                ...props,
+                originalText: 'gamma\ndelta\n',
+                modifiedText: 'gamma\ndelta\n'
+            })
+
+            expect(container.textContent).toBe('gammadelta')
+            expect(container.querySelector('span')).toBeNull()
+            const updatedBreaks = [...container.querySelectorAll('br')]
+            expect(updatedBreaks).toHaveLength(breaks.length)
+            updatedBreaks.forEach((node, index) => expect(node).toBe(breaks[index]))
+            expect(firstText?.isConnected).toBe(true)
+            expect(firstText?.textContent).toBe('gamma')
+
+            await rerender({ ...props, originalText: '\n\nomega\n', modifiedText: '\n\nomega\n' })
+            const readableOutput = container.cloneNode(true) as HTMLElement
+            readableOutput.querySelectorAll('br').forEach((node) => node.replaceWith('|'))
+            expect(readableOutput.textContent).toBe('||omega|')
+            expect(container.querySelector('span')).toBeNull()
+        }
+    )
+
+    it('switches between built-in compact lines and custom line-break markup', async () => {
+        const props = { originalText: 'alpha\nbeta\n', modifiedText: 'alpha\nbeta\n' }
+        const { container, rerender } = render(SvelteDiff, props)
+        const lineBreak = createRawSnippet<[]>(() => ({
+            render: () => '<hr class="custom-break">'
+        }))
+
+        await rerender({ ...props, renderers: { lineBreak } })
+        expect(container.textContent).toBe('alphabeta')
+        expect(container.querySelectorAll('.custom-break')).toHaveLength(2)
+        expect(container.querySelectorAll('br')).toHaveLength(0)
+
+        await rerender({ ...props, renderers: {} })
+        expect(container.textContent).toBe('alphabeta')
+        expect(container.querySelectorAll('.custom-break')).toHaveLength(0)
+        expect(container.querySelectorAll('br')).toHaveLength(2)
+        expect(container.querySelector('span')).toBeNull()
+    })
+
     it('renders multiline equal text without wrapper elements in compact mode', () => {
         const lines = Array.from({ length: 100 }, () => 'unchanged line')
         const text = lines.join('\n')

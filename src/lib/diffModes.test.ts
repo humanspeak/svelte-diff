@@ -1,8 +1,8 @@
-import { DiffMatchPatch, type Diff } from 'diff-match-patch-ts'
+import { DiffMatchPatch, DiffOp, type Diff } from 'diff-match-patch-ts'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { computeTokenDiff } from './diffModes.js'
 
-const project = (diffs: Diff[], excluded: number) =>
+const project = (diffs: Diff[], excluded: DiffOp) =>
     diffs
         .filter(([op]) => op !== excluded)
         .map(([, text]) => text)
@@ -19,14 +19,14 @@ const boundaries = (text: string, mode: 'word' | 'line') => {
 }
 const verify = (before: string, after: string, mode: 'word' | 'line') => {
     const diffs = computeTokenDiff(new DiffMatchPatch(), before, after, mode, 0)
-    expect(project(diffs, 1)).toBe(before)
-    expect(project(diffs, -1)).toBe(after)
+    expect(project(diffs, DiffOp.Insert)).toBe(before)
+    expect(project(diffs, DiffOp.Delete)).toBe(after)
     let source = 0
     let target = 0
     for (const [operation, text] of diffs) {
         expect(text.length).toBeGreaterThan(0)
-        if (operation !== 1) source += text.length
-        if (operation !== -1) target += text.length
+        if (operation !== DiffOp.Insert) source += text.length
+        if (operation !== DiffOp.Delete) target += text.length
         expect(boundaries(before, mode).has(source)).toBe(true)
         expect(boundaries(after, mode).has(target)).toBe(true)
     }

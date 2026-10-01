@@ -133,9 +133,7 @@ certain dynamic regions (dates, names, versions) are expected to differ.
         efficiencyCleanup: number,
         compiledPattern: ReturnType<typeof parseExpectedPatterns>
     ): DiffResult => {
-        // trunk-ignore(eslint/camelcase)
         dmp.Diff_Timeout = diffTimeout
-        // trunk-ignore(eslint/camelcase)
         dmp.Diff_EditCost = efficiencyCleanup
 
         let diffText1 = text1
@@ -268,7 +266,12 @@ certain dynamic regions (dates, names, versions) are expected to differ.
                     : operation === -1
                       ? displayRenderers.remove
                       : displayRenderers.insert}
-            {#if text.includes('\n')}
+            {#if text.includes('\n') && renderer === equalTextFallback && displayRenderers.lineBreak === lineBreakFallback}
+                <!-- Built-in compact lines need no dynamic snippet branches. -->
+                {#each text.split('\n') as line, lineIndex (lineIndex)}
+                    {#if lineIndex > 0}<br />{/if}{line}
+                {/each}
+            {:else if text.includes('\n')}
                 {#each text.split('\n') as line, lineIndex (lineIndex)}
                     {#if lineIndex > 0}{@render displayRenderers.lineBreak()}{/if}{#if line.length > 0}{@render renderer(
                             line
