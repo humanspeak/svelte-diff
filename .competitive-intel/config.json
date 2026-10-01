@@ -24,6 +24,20 @@
         "Standalone patch create / apply + fuzzy match utilities — that's the raw diff-match-patch library",
         "Framework-agnostic use — this is a Svelte component, not a generic JS lib"
     ],
+    "deferred_features": [
+        {
+            "feature": "Sentence diff granularity",
+            "issue": "https://github.com/humanspeak/svelte-diff/issues/213",
+            "status": "open enhancement; user use cases guide scope and priority",
+            "reason": "Word mode covers common prose reviews. Keep sentence comparison open for users who need whole-sentence highlighting, with examples and language requirements guiding the design rather than declaring it a non-goal."
+        },
+        {
+            "feature": "Structural JSON comparison",
+            "issue": "https://github.com/humanspeak/svelte-diff/issues/214",
+            "status": "open enhancement; user use cases guide scope and priority",
+            "reason": "Line mode covers common formatted configuration reviews. Keep JSON comparison open for users who need formatting-independent results, property-order handling, or nested change paths. User examples should determine whether canonicalized text comparison or a structural approach is warranted."
+        }
+    ],
     "competitors": [
         {
             "npm": "diff",

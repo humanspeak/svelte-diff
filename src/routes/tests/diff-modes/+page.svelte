@@ -50,6 +50,9 @@
         {#snippet equal(text)}<span data-equal>{text}</span>{/snippet}
     </SvelteDiff>
 </section>
+<section aria-label="Compact equal text">
+    <SvelteDiff originalText={modifiedText} {modifiedText} {diffMode} />
+</section>
 <section aria-label="Expected capture">
     <SvelteDiff
         originalText="Release (?<version>v\d+)"
