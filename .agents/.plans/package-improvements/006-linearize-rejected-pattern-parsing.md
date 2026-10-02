@@ -4,7 +4,9 @@
 >
 > Revision 2026-10-02: Plans 001–005 are DONE. Re-baseline to reviewed 42ff699; preserve 003 own capture properties and 004 invalid/duplicate rejection plus all predecessor tests. Scanner remains unchanged. Codex cannot run browsers: dispatch Step 1 tests/fixture only, then guard reproduces the fixed browser red gate before a separate production-edit dispatch. This changes execution ownership, not thresholds, semantics, scope, or done criteria.
 >
-> **Drift check (run first)**: `git diff --stat 42ff699..HEAD -- src/lib/expectedPatterns.ts src/lib/expectedPatterns.test.ts src/routes/tests/component-performance/006/+page.svelte tests/component-performance.test.ts`
+> Revision 2026-10-02 (Step 1 checkpoint): Guard reproduced the six traversal budget excesses and all 13 primitive compatibility passes with production unchanged at 9bdf527. Original anchored browser grep matched no tests because Playwright tests full titles including file/project prefixes. Replace it with the unique unanchored diagnostic title. This selects the intended unchanged test; workload, samples, ceilings, assertions and STOP policy are unchanged. Re-baseline to the committed test/fixture snapshot before browser retry.
+>
+> **Drift check (run first)**: `git diff --stat 9bdf527..HEAD -- src/lib/expectedPatterns.ts src/lib/expectedPatterns.test.ts src/routes/tests/component-performance/006/+page.svelte tests/component-performance.test.ts`
 > Compare changes and the excerpts below before proceeding. Completed 003/004 changed capture storage and validation, but leave the scanner behavior and exemplar tests described here intact. Stop on an unexplained mismatch.
 
 ## Status
@@ -14,7 +16,7 @@
 - **Risk**: MED
 - **Depends on**: `004-handle-invalid-pattern-compilation.md`; retain its rejection contract and serialize shared parser/test edits before plan 007
 - **Category**: perf
-- **Planned at**: commit `42ff699`, 2026-10-02
+- **Planned at**: commit `9bdf527`, 2026-10-02
 
 ## Why this matters
 
@@ -79,8 +81,8 @@ Run from the repository root, using the installed pnpm 12 toolchain. Do not inst
 | --- | --- | --- |
 | Targeted units | `pnpm test:only src/lib/expectedPatterns.test.ts` | All target tests pass after Step 2 |
 | Red/green complexity test | `pnpm test:only src/lib/expectedPatterns.test.ts -t 'rejected candidates have bounded source traversal'` | Red in Step 1; green in Step 2 |
-| New browser regression | `pnpm exec playwright test tests/component-performance.test.ts --grep '^006 ' --project=chromium --workers=1` | Diagnostic pass, three samples each at most 2000 ms |
-| New browser matrix | `pnpm exec playwright test tests/component-performance.test.ts --grep '^006 ' --workers=1` | All five configured projects pass |
+| New browser regression | `pnpm exec playwright test tests/component-performance.test.ts --grep '006 rejects repeated malformed patterns within the discovery ceiling' --project=chromium --workers=1` | Diagnostic pass, three samples each at most 2000 ms |
+| New browser matrix | `pnpm exec playwright test tests/component-performance.test.ts --grep '006 rejects repeated malformed patterns within the discovery ceiling' --workers=1` | All five configured projects pass |
 | Existing browser diagnostics | `pnpm exec playwright test tests/component-performance.test.ts --workers=2` | All existing and new diagnostics pass, original ceilings intact |
 | Typecheck | `pnpm check` | Exit 0, zero errors/warnings in the root check |
 | Complete units | `pnpm test:only` | Exit 0; baseline 123 tests plus selected-plan regressions |
@@ -126,7 +128,7 @@ Create the standalone 006 fixture. After painting `running`, call `parseExpected
 
 **Browser ownership**: Codex Step 1 stops after adding tests/fixture and supported unit evidence, before editing production. Guard snapshots the additions, runs the unchanged-scanner browser red command, and records raw samples. If that gate passes, the named STOP still applies. Only a confirmed red authorizes the second executor dispatch for Steps 2–3.
 
-**Verify**: `pnpm test:only src/lib/expectedPatterns.test.ts -t 'rejected candidates have bounded source traversal'` → FAIL on the source-traversal budget, not on a facade exception or missing method. `pnpm exec playwright test tests/component-performance.test.ts --grep '^006 ' --project=chromium --workers=1` → FAIL on the 2000-ms ceiling with output-null validation intact; retain raw samples. If the old implementation passes the real-string ceiling, STOP and report the measured result rather than tightening the ceiling ad hoc. Run `pnpm test:only src/lib/expectedPatterns.test.ts -t 'scanner compatibility'` → all new primitive compatibility cases PASS before editing production code; use this describe title for the new semantic group.
+**Verify**: `pnpm test:only src/lib/expectedPatterns.test.ts -t 'rejected candidates have bounded source traversal'` → FAIL on the source-traversal budget, not on a facade exception or missing method. `pnpm exec playwright test tests/component-performance.test.ts --grep '006 rejects repeated malformed patterns within the discovery ceiling' --project=chromium --workers=1` → FAIL on the 2000-ms ceiling with output-null validation intact; retain raw samples. If the old implementation passes the real-string ceiling, STOP and report the measured result rather than tightening the ceiling ad hoc. Run `pnpm test:only src/lib/expectedPatterns.test.ts -t 'scanner compatibility'` → all new primitive compatibility cases PASS before editing production code; use this describe title for the new semantic group.
 
 ### Step 2: Eliminate repeated suffix scans while preserving candidate-local boundaries
 
@@ -134,13 +136,13 @@ Replace the rejected-candidate rescan behavior in private `findNamedGroups`. Use
 
 Preserve candidate-local escape/class interpretation and rejected-outer/valid-inner behavior: globally skipping an invalid outer suffix, or merely advancing `i` to `j`, is not an acceptable fix because it drops supported inner matches. Do not silently make marker discovery outside candidates obey a new global regex lexer. If a single scanner cannot reproduce the primitive compatibility snapshots, stop instead of changing accepted syntax. Keep returned groups sorted in source order and non-overlapping as today; skip inner-looking markers inside an accepted group just as the current scanner does. Update the complexity comment to distinguish linear discovery from execution of user-supplied regex bodies.
 
-**Verify**: `pnpm test:only src/lib/expectedPatterns.test.ts` → all old tests and new deterministic/semantic tests PASS. `pnpm exec playwright test tests/component-performance.test.ts --grep '^006 ' --project=chromium --workers=1` → all three primitive samples and rerun pass the unchanged 2000-ms ceiling, correct output, and metadata assertions.
+**Verify**: `pnpm test:only src/lib/expectedPatterns.test.ts` → all old tests and new deterministic/semantic tests PASS. `pnpm exec playwright test tests/component-performance.test.ts --grep '006 rejects repeated malformed patterns within the discovery ceiling' --project=chromium --workers=1` → all three primitive samples and rerun pass the unchanged 2000-ms ceiling, correct output, and metadata assertions.
 
 ### Step 3: Run independent browser and complete repository gates
 
 Run the new regression in the five configured browser projects with one worker, then the complete component diagnostic suite with two workers. Review the production scanner for any repeated whole-suffix pass, ancestor-by-ancestor update loop, or allocation of discarded full matches. The facade and browser diagnostic complement this review; neither justifies leaving another quadratic path. Keep exact existing 001–005 ceilings and acceptance assertions unchanged.
 
-**Verify**: `pnpm exec playwright test tests/component-performance.test.ts --grep '^006 ' --workers=1` → five projects PASS. `pnpm exec playwright test tests/component-performance.test.ts --workers=2` → all diagnostics PASS. `pnpm check`, `pnpm test:only`, `pnpm run package`, `trunk fmt`, `trunk check`, and `git diff --check` → each exits 0. `git status --short` → only scoped files/status row, excluding unrelated changes already present at dispatch. Report build-created artifacts and restore only your incidental tracked generated changes without discarding other work.
+**Verify**: `pnpm exec playwright test tests/component-performance.test.ts --grep '006 rejects repeated malformed patterns within the discovery ceiling' --workers=1` → five projects PASS. `pnpm exec playwright test tests/component-performance.test.ts --workers=2` → all diagnostics PASS. `pnpm check`, `pnpm test:only`, `pnpm run package`, `trunk fmt`, `trunk check`, and `git diff --check` → each exits 0. `git status --short` → only scoped files/status row, excluding unrelated changes already present at dispatch. Report build-created artifacts and restore only your incidental tracked generated changes without discarding other work.
 
 ## Test plan
 
