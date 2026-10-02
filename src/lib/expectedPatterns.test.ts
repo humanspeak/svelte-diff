@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
     cleanTemplate,
     extractCaptures,
@@ -78,6 +78,60 @@ describe('parseExpectedPatterns', () => {
     )
 })
 
+describe('invalid expected templates', () => {
+    it('rethrows unexpected regex compilation errors', () => {
+        const nativeRegExp = globalThis.RegExp
+        const sentinel = new TypeError('Unexpected compilation failure')
+        const throwingRegExp = new Proxy(nativeRegExp, {
+            construct: () => {
+                throw sentinel
+            }
+        })
+        try {
+            globalThis.RegExp = throwingRegExp
+            let caught: unknown
+            try {
+                parseExpectedPatterns('(?<value>\\w+)')
+            } catch (error) {
+                caught = error
+            }
+            expect(caught).toBe(sentinel)
+        } finally {
+            globalThis.RegExp = nativeRegExp
+        }
+    })
+
+    const invalidBodies = ['(?<bad>*)', '(?<bad>[z-a])']
+    const duplicateNames = [
+        '(?<id>\\d+) (?<id>\\w+)',
+        'A: (?<id>\\w+)\nB: (?<id>\\w+)',
+        '(?<id>same) (?<id>same)'
+    ]
+    const mixedTemplate = 'Year: (?<year>\\d{4})\nBad: (?<bad>*)'
+
+    it.each(invalidBodies)('returns null for invalid balanced regex bodies: %s', (input) => {
+        expect(parseExpectedPatterns(input)).toBeNull()
+    })
+
+    it.each(duplicateNames)(
+        'rejects duplicate capture names across a whole template: %s',
+        (input) => {
+            expect(parseExpectedPatterns(input)).toBeNull()
+        }
+    )
+
+    it('rejects mixed valid and invalid source as a whole', () => {
+        expect(parseExpectedPatterns(mixedTemplate)).toBeNull()
+    })
+
+    it.each([...invalidBodies, ...duplicateNames, mixedTemplate])(
+        'leaves invalid expected templates literal in cleanTemplate: %s',
+        (input) => {
+            expect(cleanTemplate(input)).toBe(input)
+        }
+    )
+})
+
 describe('cleanTemplate', () => {
     it('replaces named groups with readable placeholders', () => {
         expect(cleanTemplate('Copyright (?<year>\\d{4}) (?<holder>.+)')).toBe(
@@ -146,6 +200,129 @@ describe('compiled expected-pattern metadata', () => {
 })
 
 describe('extractCaptures', () => {
+    it('matches repeated template context in source order', () => {
+        const source = 'Item: (?<first>\\w+)\nItem: (?<second>\\w+)'
+        const target = 'Item: Alpha\nItem: Beta'
+        const parsed = parseExpectedPatterns(source)!
+        const result = extractCaptures(source, target, parsed)!
+
+        expect(result.captures).toEqual({ first: 'Alpha', second: 'Beta' })
+        expect(result.resolvedText).toBe(target)
+        expect(result.captureRangesInText2).toEqual([
+            { name: 'first', start: 6, end: 11 },
+            { name: 'second', start: 18, end: 22 }
+        ])
+        for (const { name, start, end } of result.captureRangesInText2) {
+            expect(target.slice(start, end)).toBe(result.captures[name])
+        }
+    })
+
+    it.each(['Item: Alpha\r\nItem: Beta', 'Header 😀\r\nItem: Alpha\r\nItem: Beta'])(
+        'preserves absolute capture offsets after leading content and CRLF: %s',
+        (target) => {
+            const source = 'Item: (?<first>\\w+)\nItem: (?<second>\\w+)'
+            const result = extractCaptures(source, target, parseExpectedPatterns(source)!)!
+            expect(result.captures).toEqual({ first: 'Alpha', second: 'Beta' })
+            expect(result.captureRangesInText2).toEqual([
+                { name: 'first', start: target.indexOf('Alpha'), end: target.indexOf('Alpha') + 5 },
+                { name: 'second', start: target.indexOf('Beta'), end: target.indexOf('Beta') + 4 }
+            ])
+            for (const { name, start, end } of result.captureRangesInText2) {
+                expect(target.slice(start, end)).toBe(result.captures[name])
+            }
+        }
+    )
+
+    it('does not reuse an earlier occurrence when a later line is missing', () => {
+        const source = 'Item: (?<first>\\w+)\nItem: (?<second>\\w+)'
+        expect(extractCaptures(source, 'Item: Alpha', parseExpectedPatterns(source)!)).toBeNull()
+    })
+
+    it('rejects target occurrences that reverse source context order', () => {
+        const source = 'A: (?<first>\\w+)\nB: (?<second>\\w+)'
+        expect(
+            extractCaptures(source, 'B: Beta\nA: Alpha', parseExpectedPatterns(source)!)
+        ).toBeNull()
+    })
+
+    it('resets compiled regex search state after success and failure', () => {
+        const source = 'Item: (?<first>\\w+)\nItem: (?<second>\\w+)'
+        const parsed = parseExpectedPatterns(source)!
+        const regexes = parsed.linePatterns.map(({ regex }) => regex)
+        for (const values of [['Alpha', 'Beta'], ['Delta', 'Gamma'], null, ['Omega', 'Theta']]) {
+            const target = values ? `Item: ${values[0]}\nItem: ${values[1]}` : 'Item: Alpha'
+            const result = extractCaptures(source, target, parsed)
+            if (values) {
+                expect(result?.captures).toEqual({ first: values[0], second: values[1] })
+                expect(result?.resolvedText).toBe(target)
+                expect(result?.captureRangesInText2).toEqual([
+                    { name: 'first', start: 6, end: 6 + values[0].length },
+                    { name: 'second', start: 13 + values[0].length, end: target.length }
+                ])
+            } else {
+                expect(result).toBeNull()
+            }
+            parsed.linePatterns.forEach(({ regex }, index) => {
+                expect(regex).toBe(regexes[index])
+                expect(regex.lastIndex).toBe(0)
+            })
+        }
+    })
+
+    it('resets compiled regex search state when exec throws', () => {
+        const source = 'A: (?<first>Alpha)\nB: (?<second>Beta)'
+        const parsed = parseExpectedPatterns(source)!
+        const regex = parsed.linePatterns[1].regex
+        const error = new Error('unexpected extraction failure')
+        const exec = vi.spyOn(regex, 'exec').mockImplementation(() => {
+            expect(regex.lastIndex).toBe(8)
+            regex.lastIndex = 99
+            throw error
+        })
+        try {
+            expect(() => extractCaptures(source, 'A: Alpha\nB: Beta', parsed)).toThrow(error)
+            expect(parsed.linePatterns.every(({ regex }) => regex.lastIndex === 0)).toBe(true)
+        } finally {
+            exec.mockRestore()
+        }
+        expect(extractCaptures(source, 'A: Alpha\nB: Beta', parsed)?.captures).toEqual({
+            first: 'Alpha',
+            second: 'Beta'
+        })
+    })
+
+    it('keeps whole-target anchors and lookbehind semantics', () => {
+        const anchored = 'A: (?<first>Alpha)\n(?<second>^Beta)'
+        expect(
+            extractCaptures(anchored, 'A: AlphaBeta', parseExpectedPatterns(anchored)!)
+        ).toBeNull()
+        const source = '(?<first>Alpha)\n(?<second>(?<=Alpha)Beta)'
+        const result = extractCaptures(source, 'AlphaBeta', parseExpectedPatterns(source)!)!
+        expect(result.captures).toEqual({ first: 'Alpha', second: 'Beta' })
+        expect(result.captureRangesInText2).toEqual([
+            { name: 'first', start: 0, end: 5 },
+            { name: 'second', start: 5, end: 9 }
+        ])
+    })
+
+    it('allows empty captures at a shared boundary without skipping following content', () => {
+        const source = '(?<empty>)\n(?<content>Alpha)'
+        const parsed = parseExpectedPatterns(source)!
+        const regexes = parsed.linePatterns.map(({ regex }) => regex)
+        for (let invocation = 0; invocation < 2; invocation++) {
+            const result = extractCaptures(source, 'Alpha', parsed)!
+            expect(result.captures).toEqual({ empty: '', content: 'Alpha' })
+            expect(result.captureRangesInText2).toEqual([
+                { name: 'empty', start: 0, end: 0 },
+                { name: 'content', start: 0, end: 5 }
+            ])
+            parsed.linePatterns.forEach(({ regex }, index) => {
+                expect(regex).toBe(regexes[index])
+                expect(regex.lastIndex).toBe(0)
+            })
+        }
+    })
+
     it('returns null when capture patterns are genuinely absent', () => {
         const text = 'Copyright (?<year>\\d{4}) MIT'
         const parsed = parseExpectedPatterns(text)!
@@ -163,6 +340,73 @@ describe('extractCaptures', () => {
         expect(result!.captures.year).toBe('2024')
         expect(result!.captures.holder).toBe('Jason Kummerl')
         expect(result!.resolvedText).toBe('Copyright 2024 Jason Kummerl')
+    })
+
+    it('preserves __proto__ as an own enumerable capture property', () => {
+        const original = 'Value: (?<__proto__>\\w+)'
+        const modified = 'Value: Alpha'
+        const parsed = parseExpectedPatterns(original)!
+        const result = extractCaptures(original, modified, parsed)
+
+        expect(result).not.toBeNull()
+        expect.soft(result!.resolvedText).toBe('Value: Alpha')
+        expect(result!.captureRangesInText2).toEqual([{ name: '__proto__', start: 7, end: 12 }])
+        const { captures } = result!
+        expect.soft(Object.hasOwn(captures, '__proto__')).toBe(true)
+        expect.soft(captures['__proto__']).toBe('Alpha')
+        expect.soft(Object.keys(captures)).toEqual(['__proto__'])
+        expect.soft(JSON.parse(JSON.stringify(captures))['__proto__']).toBe('Alpha')
+        expect(Object.getPrototypeOf(captures)).toBe(Object.prototype)
+    })
+
+    it.each([
+        ['constructor', 'Constructor', 'Alpha'],
+        ['toString', 'String', 'Beta'],
+        ['hasOwnProperty', 'Property', 'Gamma']
+    ])('preserves %s as an own enumerable capture property', (name, label, value) => {
+        const original = `${label}: (?<${name}>\\w+)`
+        const modified = `${label}: ${value}`
+        const parsed = parseExpectedPatterns(original)!
+        const result = extractCaptures(original, modified, parsed)
+
+        expect(result).not.toBeNull()
+        expect(result!.resolvedText).toBe(modified)
+        const { captures } = result!
+        expect(Object.hasOwn(captures, name)).toBe(true)
+        expect(captures[name]).toBe(value)
+        expect(Object.getOwnPropertyDescriptor(captures, name)).toEqual({
+            value,
+            enumerable: true,
+            writable: true,
+            configurable: true
+        })
+        expect(Object.getPrototypeOf(captures)).toBe(Object.prototype)
+        expect(Object.entries(captures)).toEqual([[name, value]])
+        expect(JSON.parse(JSON.stringify(captures))).toEqual({ [name]: value })
+    })
+
+    it('preserves mixed __proto__ and constructor capture values', () => {
+        const original = 'Values: (?<__proto__>\\w+) and (?<constructor>\\w+)'
+        const modified = 'Values: Alpha and Beta'
+        const parsed = parseExpectedPatterns(original)!
+        const result = extractCaptures(original, modified, parsed)
+
+        expect(result).not.toBeNull()
+        expect(result!.resolvedText).toBe(modified)
+        const { captures } = result!
+        expect(Object.hasOwn(captures, '__proto__')).toBe(true)
+        expect(Object.hasOwn(captures, 'constructor')).toBe(true)
+        expect(captures['__proto__']).toBe('Alpha')
+        expect(captures['constructor']).toBe('Beta')
+        expect(Object.getPrototypeOf(captures)).toBe(Object.prototype)
+        expect(Object.entries(captures)).toEqual([
+            ['__proto__', 'Alpha'],
+            ['constructor', 'Beta']
+        ])
+        expect(JSON.parse(JSON.stringify(captures))).toEqual({
+            ['__proto__']: 'Alpha',
+            constructor: 'Beta'
+        })
     })
 
     it('computes correct capture ranges in text2', () => {
@@ -521,4 +765,195 @@ describe('findNamedGroups (via parseExpectedPatterns)', () => {
         expect(result!.groups[0].name).toBe('empty')
         expect(result!.groups[0].pattern).toBe('')
     })
+})
+
+/** Observes source access while forwarding boxed-string behavior to native strings. */
+const countSourceTraversal = (primitive: string) => {
+    let traversed = 0
+    const value = new Proxy(new String(primitive), {
+        get(target, property) {
+            if (typeof property === 'string' && /^(0|[1-9]\d*)$/.test(property)) {
+                if (Number(property) < primitive.length) traversed++
+                return Reflect.get(target, property)
+            }
+            if (property === Symbol.iterator) {
+                return function* () {
+                    for (const character of primitive) {
+                        traversed += character.length
+                        yield character
+                    }
+                }
+            }
+            if (property === Symbol.toPrimitive) {
+                return () => {
+                    traversed += primitive.length
+                    return primitive
+                }
+            }
+            const member: unknown = Reflect.get(target, property)
+            if (typeof member !== 'function') return member
+            return (...args: unknown[]) => {
+                const result: unknown = Reflect.apply(member, primitive, args)
+                if (property === 'charAt' || property === 'at') {
+                    traversed += typeof result === 'string' ? result.length : 0
+                } else if (property === 'charCodeAt' || property === 'codePointAt') {
+                    if (typeof result === 'number' && Number.isFinite(result)) {
+                        traversed += property === 'codePointAt' && result > 0xffff ? 2 : 1
+                    }
+                } else if (
+                    property === 'slice' ||
+                    property === 'substring' ||
+                    property === 'substr'
+                ) {
+                    traversed += typeof result === 'string' ? result.length : 0
+                } else {
+                    // Native conversion/search/transformation work can traverse the whole source.
+                    traversed += primitive.length
+                }
+                return result
+            }
+        }
+    })
+    return { value, reads: () => traversed }
+}
+
+it('rejected candidates have bounded source traversal', () => {
+    for (const markers of [64, 128, 256]) {
+        const primitiveInput = '(?<A>'.repeat(markers)
+        const budget = 64 * primitiveInput.length + 128
+        const parsedInput = countSourceTraversal(primitiveInput)
+        const parsed = parseExpectedPatterns(parsedInput.value as unknown as string)
+        expect(parsed).toBeNull()
+        expect
+            .soft(
+                parsedInput.reads(),
+                `parse: ${markers} markers, ${primitiveInput.length} chars, budget ${budget}`
+            )
+            .toBeLessThanOrEqual(budget)
+
+        const cleanedInput = countSourceTraversal(primitiveInput)
+        const cleaned = cleanTemplate(cleanedInput.value as unknown as string)
+        expect(String(cleaned)).toBe(primitiveInput)
+        expect
+            .soft(
+                cleanedInput.reads(),
+                `clean: ${markers} markers, ${primitiveInput.length} chars, budget ${budget}`
+            )
+            .toBeLessThanOrEqual(budget)
+    }
+})
+
+describe('scanner compatibility', () => {
+    const cases = [
+        {
+            title: 'closed rejected outer retains its valid inner',
+            text: '(?<outer>(?<inner>foo))',
+            groups: [{ name: 'inner', pattern: 'foo' }],
+            matches: [{ fullMatch: '(?<inner>foo)', name: 'inner', pattern: 'foo', index: 9 }],
+            parts: ['(?<outer>', '(?<inner>foo)', ')'],
+            cleaned: '(?<outer><inner>)'
+        },
+        {
+            title: 'several rejected ancestors retain their valid inner',
+            text: '(?<a>(?<b>(?<c>foo)))',
+            groups: [{ name: 'c', pattern: 'foo' }],
+            matches: [{ fullMatch: '(?<c>foo)', name: 'c', pattern: 'foo', index: 10 }],
+            parts: ['(?<a>(?<b>', '(?<c>foo)', '))'],
+            cleaned: '(?<a>(?<b><c>))'
+        },
+        {
+            title: 'unclosed outer retains its closed valid inner',
+            text: '(?<outer>before (?<inner>foo) tail',
+            groups: [{ name: 'inner', pattern: 'foo' }],
+            matches: [{ fullMatch: '(?<inner>foo)', name: 'inner', pattern: 'foo', index: 16 }],
+            parts: ['(?<outer>before ', '(?<inner>foo)', ' tail'],
+            cleaned: '(?<outer>before <inner> tail'
+        },
+        {
+            title: 'escaped parentheses and brackets preserve the boundary',
+            text: 'x (?<value>\\(a\\)\\[b\\]) y',
+            groups: [{ name: 'value', pattern: '\\(a\\)\\[b\\]' }],
+            matches: [
+                {
+                    fullMatch: '(?<value>\\(a\\)\\[b\\])',
+                    name: 'value',
+                    pattern: '\\(a\\)\\[b\\]',
+                    index: 2
+                }
+            ],
+            parts: ['x ', '(?<value>\\(a\\)\\[b\\])', ' y'],
+            cleaned: 'x <value> y'
+        },
+        {
+            title: 'parentheses and marker text inside a class stay in the accepted group',
+            text: '(?<value>[()(?<inner>]) tail',
+            groups: [{ name: 'value', pattern: '[()(?<inner>]' }],
+            matches: [
+                {
+                    fullMatch: '(?<value>[()(?<inner>])',
+                    name: 'value',
+                    pattern: '[()(?<inner>]',
+                    index: 0
+                }
+            ],
+            parts: ['', '(?<value>[()(?<inner>])', ' tail'],
+            cleaned: '<value> tail'
+        },
+        {
+            title: 'escaped closing parenthesis does not end a group',
+            text: '(?<value>a\\)b)',
+            groups: [{ name: 'value', pattern: 'a\\)b' }],
+            matches: [{ fullMatch: '(?<value>a\\)b)', name: 'value', pattern: 'a\\)b', index: 0 }],
+            parts: ['', '(?<value>a\\)b)', ''],
+            cleaned: '<value>'
+        },
+        {
+            title: 'valid group following malformed name syntax is retained',
+            text: '(?<1bad>oops) (?<ok>foo)',
+            groups: [{ name: 'ok', pattern: 'foo' }],
+            matches: [{ fullMatch: '(?<ok>foo)', name: 'ok', pattern: 'foo', index: 14 }],
+            parts: ['(?<1bad>oops) ', '(?<ok>foo)', ''],
+            cleaned: '(?<1bad>oops) <ok>'
+        },
+        {
+            title: 'adjacent valid groups retain empty literal parts',
+            text: '(?<a>x)(?<b>y)',
+            groups: [
+                { name: 'a', pattern: 'x' },
+                { name: 'b', pattern: 'y' }
+            ],
+            matches: [
+                { fullMatch: '(?<a>x)', name: 'a', pattern: 'x', index: 0 },
+                { fullMatch: '(?<b>y)', name: 'b', pattern: 'y', index: 7 }
+            ],
+            parts: ['', '(?<a>x)', '', '(?<b>y)', ''],
+            cleaned: '<a><b>'
+        },
+        {
+            title: 'multiline Unicode literals retain UTF-16 indices',
+            text: 'α😀\n(?<word>\\w+)\n終',
+            groups: [{ name: 'word', pattern: '\\w+' }],
+            matches: [{ fullMatch: '(?<word>\\w+)', name: 'word', pattern: '\\w+', index: 4 }],
+            parts: ['α😀\n', '(?<word>\\w+)', '\n終'],
+            cleaned: 'α😀\n<word>\n終'
+        }
+    ]
+
+    it.each(cases)('$title', ({ text, groups, matches, parts, cleaned }) => {
+        const result = parseExpectedPatterns(text)
+        if (result === null) throw new Error(`Expected primitive template to parse: ${text}`)
+        expect(result.groups).toEqual(groups)
+        expect(result.matches).toEqual(matches)
+        expect(result.parts).toEqual(parts)
+        expect(result.cleanedText).toBe(cleaned)
+        expect(cleanTemplate(text)).toBe(cleaned)
+    })
+
+    it.each(['(?<value>[abc)', '(?<1bad>foo)', '(?<ébad>foo)', '(?<-bad>foo)'])(
+        'retains rejected primitive input %s',
+        (text) => {
+            expect(parseExpectedPatterns(text)).toBeNull()
+            expect(cleanTemplate(text)).toBe(text)
+        }
+    )
 })

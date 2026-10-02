@@ -292,6 +292,8 @@ The `onProcessing` callback receives captured values as its third argument:
 
 ### Available Snippets for Expected Regions
 
+Built-in expected-region spans expose `data-capture-name` and `data-capture-value` alongside the hover `title`. Custom tooltip code can read `element.dataset.captureName` and `element.dataset.captureValue`. Each fragment of a multiline capture carries the full captured value. Custom snippets own their markup; the example below exposes their supplied text, while full capture values are available through `onProcessing`.
+
 | Snippet  | Parameters          | Description                                     |
 | -------- | ------------------- | ----------------------------------------------- |
 | expected | `text`, `groupName` | Renders matched capture regions with group name |
@@ -299,16 +301,27 @@ The `onProcessing` callback receives captured values as its third argument:
 ```svelte
 <SvelteDiff {originalText} {modifiedText}>
     {#snippet expected(text: string, groupName: string)}
-        <span class="expected" title={groupName}>{text}</span>
+        <span class="expected" data-capture-name={groupName} data-capture-value={text} title={groupName}>{text}</span>
     {/snippet}
 </SvelteDiff>
 ```
 
-If no capture groups are present in `originalText`, the component behaves exactly as before — no changes needed to existing code.
+Capture names must be globally unique across the entire template, including separate lines. Invalid recognized regex bodies or duplicate names cause ordinary literal comparison with `captures` undefined. If no supported named groups are present, the component also compares the original text literally.
+
+A valid template that does not match its target still replaces named groups with readable `<name>` placeholders before computing the normal diff, with `captures` undefined:
+
+```text
+Rejected template: (?<bad>*)
+Compared source:   (?<bad>*)
+
+Valid template:    Copyright (?<year>\d{4}) MIT
+Nonmatching target: different text
+Compared source:   Copyright <year> MIT
+```
 
 ## Programmatic API
 
-The expected-pattern engine is also exported as framework-agnostic functions, so you can compute matches and tag diffs without mounting the component:
+The expected-pattern helpers are exported for use within a Svelte-aware toolchain. You can call them without mounting the component; the package entry still requires Svelte-aware module resolution and compilation.
 
 ```typescript
 import {
@@ -319,12 +332,12 @@ import {
 } from '@humanspeak/svelte-diff'
 ```
 
-| Function                | Signature                                                            | Description                                                                                                               |
-| ----------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `parseExpectedPatterns` | `(text) => ParseResult \| null`                                      | Parse and compile `(?<name>pattern)` named groups from a template. Returns `null` when the text contains no named groups. |
-| `extractCaptures`       | `(originalText, modifiedText, parseResult) => ExtractResult \| null` | Extract captured values and their positions from the modified text. Returns `null` when the template does not match.      |
-| `tagExpectedRegions`    | `(diffs, captureRanges) => DisplayDiff[]`                            | Split raw diff tuples so regions overlapping a capture range are tagged as `expected`.                                    |
-| `cleanTemplate`         | `(text) => string`                                                   | Replace `(?<name>pattern)` syntax with readable `<name>` placeholders.                                                    |
+| Function                | Signature                                                            | Description                                                                                                                                                              |
+| ----------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `parseExpectedPatterns` | `(text) => ParseResult \| null`                                      | Parse and compile `(?<name>pattern)` named groups from a template. Returns `null` for no supported groups, invalid recognized regex bodies, or globally duplicate names. |
+| `extractCaptures`       | `(originalText, modifiedText, parseResult) => ExtractResult \| null` | Extract captured values and their positions from the modified text. Returns `null` when the template does not match.                                                     |
+| `tagExpectedRegions`    | `(diffs, captureRanges) => DisplayDiff[]`                            | Split raw diff tuples so regions overlapping a capture range are tagged as `expected`.                                                                                   |
+| `cleanTemplate`         | `(text) => string`                                                   | Replace accepted named groups with readable `<name>` placeholders; return unchanged literal input when parsing rejects it.                                               |
 
 These are the same functions the component uses internally; see [`src/lib/expectedPatterns.ts`](src/lib/expectedPatterns.ts) for full JSDoc.
 

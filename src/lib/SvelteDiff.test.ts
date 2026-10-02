@@ -1,8 +1,9 @@
 import { fireEvent, render, waitFor } from '@testing-library/svelte'
-import { createRawSnippet } from 'svelte'
+import { createRawSnippet, flushSync, tick } from 'svelte'
 import { describe, expect, it, vi } from 'vitest'
 import DiffModesFixture from '../routes/tests/diff-modes/+page.svelte'
 import SvelteDiff from './SvelteDiff.svelte'
+import ProcessingCallbackFixture from './test/ProcessingCallbackFixture.svelte'
 
 const textSnippet = (className: string) =>
     createRawSnippet<[string]>((text) => ({
@@ -51,6 +52,35 @@ describe('SvelteDiff component', () => {
         expect(typeof timing.main).toBe('number')
         expect(typeof timing.cleanup).toBe('number')
         expect(typeof timing.total).toBe('number')
+    })
+
+    it('does not subscribe to state read and written by onProcessing', async () => {
+        const observe = vi.fn()
+        const { getByTestId } = render(ProcessingCallbackFixture, { observe })
+
+        flushSync()
+        await tick()
+
+        expect(observe).toHaveBeenCalledTimes(1)
+        expect(getByTestId('counter').textContent).toBe('1')
+    })
+
+    it('does not notify when state only read by onProcessing changes', async () => {
+        const observe = vi.fn()
+        const { getByRole } = render(ProcessingCallbackFixture, {
+            observe,
+            incrementOnProcessing: false
+        })
+
+        flushSync()
+        await tick()
+        expect(observe).toHaveBeenCalledTimes(1)
+
+        await fireEvent.click(getByRole('button', { name: 'Increment counter' }))
+        flushSync()
+        await tick()
+
+        expect(observe).toHaveBeenCalledTimes(1)
     })
 
     it('reuses the computed diff when only onProcessing changes', async () => {
@@ -204,6 +234,118 @@ describe('SvelteDiff snippet precedence', () => {
 })
 
 describe('SvelteDiff expected patterns', () => {
+    it('compares invalid templates literally and recovers after valid edits', async () => {
+        const onProcessing = vi.fn()
+        const invalid = '(?<bad>*)'
+        const { container, rerender } = render(SvelteDiff, {
+            originalText: invalid,
+            modifiedText: invalid,
+            onProcessing,
+            rendererClasses: { expected: 'test-expected' }
+        })
+        const assertResult = async (
+            source: string,
+            target: string,
+            captures: Record<string, string> | undefined
+        ) => {
+            await waitFor(() => {
+                expect(onProcessing).toHaveBeenCalled()
+                const [, diffs, actualCaptures] = onProcessing.mock.lastCall!
+                expect(actualCaptures).toEqual(captures)
+                expect(
+                    diffs
+                        .filter(([op]: [number, string]) => op <= 0)
+                        .map(([, text]: [number, string]) => text)
+                        .join('')
+                ).toBe(source)
+                expect(
+                    diffs
+                        .filter(([op]: [number, string]) => op >= 0)
+                        .map(([, text]: [number, string]) => text)
+                        .join('')
+                ).toBe(target)
+            })
+            expect(container.querySelectorAll('.test-expected')).toHaveLength(captures ? 1 : 0)
+        }
+        await assertResult(invalid, invalid, undefined)
+
+        for (const duplicate of ['(?<id>\\d+) (?<id>\\w+)', 'A: (?<id>\\w+)\nB: (?<id>\\w+)']) {
+            onProcessing.mockClear()
+            await rerender({ originalText: duplicate, modifiedText: duplicate })
+            await assertResult(duplicate, duplicate, undefined)
+        }
+
+        const valid = 'Copyright (?<year>\\d{4}) MIT'
+        onProcessing.mockClear()
+        await rerender({ originalText: valid, modifiedText: 'different text' })
+        await assertResult('Copyright <year> MIT', 'different text', undefined)
+
+        onProcessing.mockClear()
+        await rerender({ originalText: valid, modifiedText: 'Copyright 2024 MIT' })
+        await assertResult('Copyright 2024 MIT', 'Copyright 2024 MIT', { year: '2024' })
+        expect(container.querySelector('span[title="year"]')?.textContent).toBe('2024')
+    })
+
+    it('renders distinct repeated-context captures and updates them independently', async () => {
+        const onProcessing = vi.fn()
+        const originalText = 'Item: (?<first>\\w+)\nItem: (?<second>\\w+)'
+        const props = {
+            originalText,
+            modifiedText: 'Item: Alpha\nItem: Beta',
+            onProcessing,
+            rendererClasses: { remove: 'removed', insert: 'inserted' }
+        }
+        const { container, rerender } = render(SvelteDiff, props)
+        const assertResult = async (second: string) => {
+            const target = `Item: Alpha\nItem: ${second}`
+            await waitFor(() => {
+                expect(container.querySelectorAll('span[title="first"]')).toHaveLength(1)
+                expect(container.querySelector('span[title="first"]')?.textContent).toBe('Alpha')
+                expect(container.querySelectorAll('span[title="second"]')).toHaveLength(1)
+                expect(container.querySelector('span[title="second"]')?.textContent).toBe(second)
+                expect(container.querySelectorAll('.removed, .inserted')).toHaveLength(0)
+                expect(onProcessing.mock.lastCall?.[2]).toEqual({ first: 'Alpha', second })
+            })
+            const tuples = onProcessing.mock.lastCall![1] as [number, string][]
+            for (const excluded of [-1, 1]) {
+                expect(
+                    tuples
+                        .filter(([op]) => op !== excluded)
+                        .map(([, text]) => text)
+                        .join('')
+                ).toBe(target)
+            }
+        }
+        await assertResult('Beta')
+        await rerender({ ...props, modifiedText: 'Item: Alpha\nItem: Gamma' })
+        await assertResult('Gamma')
+        expect(container.textContent).not.toContain('Beta')
+    })
+
+    it.each([
+        [
+            'Item: (?<first>\\w+)\nItem: (?<second>\\w+)',
+            'Item: Alpha',
+            'Item: <first>\nItem: <second>'
+        ],
+        ['A: (?<first>\\w+)\nB: (?<second>\\w+)', 'B: Beta\nA: Alpha', 'A: <first>\nB: <second>']
+    ])(
+        'keeps cleaned fallback for unmatched ordered template %s',
+        async (originalText, modifiedText, cleaned) => {
+            const onProcessing = vi.fn()
+            const { container } = render(SvelteDiff, { originalText, modifiedText, onProcessing })
+            await waitFor(() => expect(onProcessing).toHaveBeenCalled())
+            const tuples = onProcessing.mock.lastCall![1] as [number, string][]
+            expect(
+                tuples
+                    .filter(([op]) => op !== 1)
+                    .map(([, text]) => text)
+                    .join('')
+            ).toBe(cleaned)
+            expect(container.querySelectorAll('span[title]')).toHaveLength(0)
+        }
+    )
+
     it('reuses expected-pattern metadata when only modifiedText changes', async () => {
         const onProcessing = vi.fn()
         const originalText = 'Copyright (?<year>\\d{4}) MIT'
@@ -238,7 +380,7 @@ describe('SvelteDiff expected patterns', () => {
         })
     })
 
-    it('renders expected regions with default styling and title attribute', () => {
+    it('renders expected regions with default styling and capture metadata', () => {
         const { container } = render(SvelteDiff, {
             originalText: 'Copyright (?<year>\\d{4}) MIT',
             modifiedText: 'Copyright 2024 MIT'
@@ -246,6 +388,9 @@ describe('SvelteDiff expected patterns', () => {
         const expectedSpan = container.querySelector('span[title="year"]')
         expect(expectedSpan).toBeTruthy()
         expect(expectedSpan!.textContent).toBe('2024')
+        expect(expectedSpan!.getAttribute('data-capture-name')).toBe('year')
+        expect(expectedSpan!.getAttribute('data-capture-value')).toBe('2024')
+        expect(container.querySelectorAll('[data-capture-name]')).toHaveLength(1)
         expect(expectedSpan!.getAttribute('style')).toContain('background-color')
     })
 
@@ -257,7 +402,27 @@ describe('SvelteDiff expected patterns', () => {
 
         const expectedSpans = container.querySelectorAll('span[title="value"]')
         expect([...expectedSpans].map((span) => span.textContent)).toEqual(['alpha', 'beta'])
+        expect([...expectedSpans].map((span) => span.getAttribute('data-capture-name'))).toEqual([
+            'value',
+            'value'
+        ])
+        expect([...expectedSpans].map((span) => span.getAttribute('data-capture-value'))).toEqual([
+            'alpha\nbeta',
+            'alpha\nbeta'
+        ])
         expect(container.querySelectorAll('br')).toHaveLength(1)
+    })
+
+    it('preserves literal capture values in metadata without creating HTML', () => {
+        const value = '<img src="x" onerror="alert(1)"> & \'quoted\''
+        const { container } = render(SvelteDiff, {
+            originalText: 'Value: (?<value>.+)',
+            modifiedText: `Value: ${value}`
+        })
+        const capture = container.querySelector('[data-capture-name="value"]')
+        expect(capture?.getAttribute('data-capture-value')).toBe(value)
+        expect(capture?.textContent).toBe(value)
+        expect(container.querySelector('img')).toBeNull()
     })
 
     it('falls back to normal diff with cleaned template when regex does not match', () => {
@@ -303,7 +468,38 @@ describe('SvelteDiff expected patterns', () => {
         expect(captures.year).toBe('2024')
     })
 
-    it('applies rendererClasses.expected with title still present', () => {
+    it('renders and delivers own __proto__ capture values', async () => {
+        const onProcessing = vi.fn()
+        const { container } = render(SvelteDiff, {
+            originalText: 'Value: (?<__proto__>\\w+)',
+            modifiedText: 'Value: Alpha',
+            onProcessing
+        })
+        expect(container.querySelector('span[title="__proto__"]')?.textContent).toBe('Alpha')
+        await waitFor(() => expect(onProcessing).toHaveBeenCalled())
+
+        const captures = onProcessing.mock.calls[0][2]
+        expect(captures).toBeDefined()
+        expect(Object.hasOwn(captures, '__proto__')).toBe(true)
+        expect(captures['__proto__']).toBe('Alpha')
+        expect(Object.keys(captures)).toEqual(['__proto__'])
+        expect(Object.getPrototypeOf(captures)).toBe(Object.prototype)
+        const tuples: [number, string][] = onProcessing.mock.calls[0][1]
+        expect(
+            tuples
+                .filter(([op]) => op !== 1)
+                .map(([, text]) => text)
+                .join('')
+        ).toBe('Value: Alpha')
+        expect(
+            tuples
+                .filter(([op]) => op !== -1)
+                .map(([, text]) => text)
+                .join('')
+        ).toBe('Value: Alpha')
+    })
+
+    it('applies rendererClasses.expected with capture metadata still present', () => {
         const { container } = render(SvelteDiff, {
             originalText: 'Copyright (?<year>\\d{4}) MIT',
             modifiedText: 'Copyright 2024 MIT',
@@ -312,6 +508,8 @@ describe('SvelteDiff expected patterns', () => {
         const expectedSpan = container.querySelector('.test-expected')
         expect(expectedSpan).toBeTruthy()
         expect(expectedSpan!.getAttribute('title')).toBe('year')
+        expect(expectedSpan!.getAttribute('data-capture-name')).toBe('year')
+        expect(expectedSpan!.getAttribute('data-capture-value')).toBe('2024')
     })
 
     it('no change in behavior when no capture groups in originalText', () => {
@@ -323,6 +521,9 @@ describe('SvelteDiff expected patterns', () => {
         const titledSpans = container.querySelectorAll('span[title]')
         expect(titledSpans.length).toBe(0)
         expect(container.textContent).toContain('brave')
+        expect(
+            container.querySelectorAll('[data-capture-name], [data-capture-value]')
+        ).toHaveLength(0)
     })
 })
 
@@ -707,11 +908,21 @@ describe('display shape transitions', () => {
         expect(
             [...container.querySelectorAll('[title="value"]')].map((node) => node.textContent)
         ).toEqual(['beta', 'gamma'])
+        expect(
+            [...container.querySelectorAll('[data-capture-name="value"]')].map((node) =>
+                node.getAttribute('data-capture-value')
+            )
+        ).toEqual(['beta\ngamma', 'beta\ngamma'])
         expect(container.textContent).toBe('Value: betagamma')
         expect(container.querySelectorAll('br')).toHaveLength(1)
         await rerender(props)
         expect(container.textContent).toBe('Value: alpha')
         expect(container.querySelectorAll('[title="value"]')).toHaveLength(1)
+        expect(
+            container
+                .querySelector('[data-capture-name="value"]')
+                ?.getAttribute('data-capture-value')
+        ).toBe('alpha')
         expect(container.querySelectorAll('br')).toHaveLength(0)
     })
 

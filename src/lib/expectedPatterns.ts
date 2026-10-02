@@ -113,9 +113,9 @@ interface GroupMatch {
 }
 
 /**
- * Finds all `(?<name>pattern)` named capture groups using an iterative
- * parenthesis-counting parser. Runs in O(n) time with no backtracking,
- * eliminating ReDoS risk from nested quantifiers.
+ * Finds all `(?<name>pattern)` named capture groups with O(n) source discovery
+ * and O(n) boundary metadata. This does not bound compilation or execution of
+ * user-supplied regular expressions.
  *
  * Rejects nested named groups (`(?<` inside the pattern body) to match
  * the previous regex behavior.
@@ -125,6 +125,61 @@ interface GroupMatch {
  */
 const findNamedGroups = (text: string): GroupMatch[] => {
     const results: GroupMatch[] = []
+    const length = text.length
+    // Each suffix has two candidate-local entry states. A boundary is the first
+    // unmatched `)` reached from that state; -1 means the suffix never closes.
+    const outsideEnd = new Int32Array(length + 2).fill(-1)
+    const insideEnd = new Int32Array(length + 2).fill(-1)
+    const outsideNested = new Uint8Array(length + 2)
+    const insideNested = new Uint8Array(length + 2)
+
+    for (let position = length - 1; position >= 0; position--) {
+        const character = text[position]
+        const next = position + 1
+        if (character === '\\') {
+            // Escapes skip exactly one character in either entry state.
+            outsideEnd[position] = outsideEnd[position + 2]
+            insideEnd[position] = insideEnd[position + 2]
+            outsideNested[position] = outsideNested[position + 2]
+            insideNested[position] = insideNested[position + 2]
+            continue
+        }
+
+        if (character === ']') {
+            insideEnd[position] = outsideEnd[next]
+            insideNested[position] = outsideNested[next]
+        } else {
+            insideEnd[position] = insideEnd[next]
+            insideNested[position] = insideNested[next]
+        }
+
+        if (character === '[') {
+            outsideEnd[position] = insideEnd[next]
+            outsideNested[position] = insideNested[next]
+        } else if (character === ')') {
+            outsideEnd[position] = position
+        } else if (character === '(') {
+            const close = outsideEnd[next]
+            if (close !== -1) {
+                // Compose the balanced child and its following suffix once,
+                // rather than walking the child again for every ancestor.
+                outsideEnd[position] = outsideEnd[close + 1]
+                outsideNested[position] =
+                    outsideNested[next] |
+                    outsideNested[close + 1] |
+                    Number(
+                        text[next] === '?' &&
+                            text[position + 2] === '<' &&
+                            position + 3 < length &&
+                            /[a-zA-Z_]/.test(text[position + 3])
+                    )
+            }
+        } else {
+            outsideEnd[position] = outsideEnd[next]
+            outsideNested[position] = outsideNested[next]
+        }
+    }
+
     let i = 0
 
     while (i < text.length) {
@@ -150,44 +205,12 @@ const findNamedGroups = (text: string): GroupMatch[] => {
                 continue
             }
 
-            const name = text.slice(nameStart, nameEnd)
             const patternStart = nameEnd + 1
-
-            // Count parenthesis depth to find balanced closing `)`
-            // We start at depth 1 (for the opening `(` at startIndex)
-            let depth = 1
-            let j = patternStart
-            let hasNestedNamedGroup = false
-            let inCharacterClass = false
-
-            while (j < text.length && depth > 0) {
-                if (text[j] === '\\') {
-                    j += 2 // skip escaped character
-                    continue
-                }
-                if (text[j] === '[' && !inCharacterClass) {
-                    inCharacterClass = true
-                } else if (text[j] === ']' && inCharacterClass) {
-                    inCharacterClass = false
-                } else if (text[j] === '(' && !inCharacterClass) {
-                    // Check for nested named group
-                    if (
-                        text[j + 1] === '?' &&
-                        text[j + 2] === '<' &&
-                        j + 3 < text.length &&
-                        /[a-zA-Z_]/.test(text[j + 3])
-                    ) {
-                        hasNestedNamedGroup = true
-                    }
-                    depth++
-                } else if (text[j] === ')' && !inCharacterClass) {
-                    depth--
-                    if (depth === 0) break
-                }
-                j++
-            }
-
-            if (depth === 0 && !hasNestedNamedGroup) {
+            // Discovery stays literal even after rejection: an inner candidate
+            // starts outside a class regardless of the rejected outer's state.
+            const j = outsideEnd[patternStart]
+            if (j !== -1 && !outsideNested[patternStart]) {
+                const name = text.slice(nameStart, nameEnd)
                 const pattern = text.slice(patternStart, j)
                 const fullMatch = text.slice(startIndex, j + 1)
                 results.push({ fullMatch, name, pattern, index: startIndex })
@@ -234,7 +257,8 @@ const groupSyntaxLength = (group: LineGroup): number => {
  * - Preserves literal text between groups as escaped anchors.
  * - Keeps named groups as-is.
  * - Is unanchored (no `^`/`$`) so it can search anywhere in text2.
- * - Uses the `d` flag for `match.indices` (no `s` flag so `.` doesn't match `\n`).
+ * - Uses `dg` for absolute UTF-16 indices and whole-target search from a cursor.
+ *   Extraction resets each regex's lastIndex after use (no `s` flag).
  *
  * @param lineText - The template line text containing capture group syntax.
  * @param groups - The capture groups found on this line with their positions.
@@ -273,7 +297,7 @@ const buildLineRegex = (lineText: string, groups: LineGroup[]): RegExp => {
         pattern += `(?<${currGroup.name}>${currGroup.pattern})`
     }
 
-    return new RegExp(pattern, 'd')
+    return new RegExp(pattern, 'dg')
 }
 
 /**
@@ -330,12 +354,29 @@ const compileLinePatterns = (text: string, matches: GroupMatch[]): CompiledLineP
  * Extracts all named capture groups and retains the immutable metadata used by
  * repeated capture extraction, including cleaned fallback text and line regexes.
  *
+ * Names must be unique across the entire template.
+ *
  * @param text - The template text containing named capture group syntax.
- * @returns The compiled parse result, or null if no named groups are found.
+ * @returns The compiled parse result, or null if no supported named groups are
+ *     found, recognized groups fail regex compilation, or names are duplicated.
  */
 export const parseExpectedPatterns = (text: string): ParseResult | null => {
     const matches = findNamedGroups(text)
     if (matches.length === 0) return null
+
+    const names = new Set<string>()
+    for (const match of matches) {
+        if (names.has(match.name)) return null
+        names.add(match.name)
+    }
+
+    let linePatterns: CompiledLinePattern[]
+    try {
+        linePatterns = compileLinePatterns(text, matches)
+    } catch (error) {
+        if (error instanceof SyntaxError) return null
+        throw error
+    }
 
     const groups: ParsedGroup[] = []
     const parts: string[] = []
@@ -359,36 +400,29 @@ export const parseExpectedPatterns = (text: string): ParseResult | null => {
         parts,
         matches,
         cleanedText,
-        linePatterns: compileLinePatterns(text, matches)
+        linePatterns
     }
 }
 
 /**
  * Replaces named capture groups with readable placeholders.
  *
- * This standalone compatibility helper scans its input once. Component updates
- * use the precomputed `cleanedText` on {@link parseExpectedPatterns} instead.
+ * This standalone compatibility helper parses and validates its input once.
+ * Component updates use the precomputed `cleanedText` on
+ * {@link parseExpectedPatterns} instead.
  *
  * @param text - Template text that may contain named capture group syntax.
- * @returns The template with each valid group replaced by `<name>`.
+ * @returns The template with each group replaced by `<name>`, or the original
+ *     literal input if no supported groups are found, recognized groups fail
+ *     regex compilation, or names are duplicated anywhere in the template.
  * @example
  * ```ts
  * cleanTemplate('Copyright (?<year>\\d{4})') // 'Copyright <year>'
  * ```
  */
 export const cleanTemplate = (text: string): string => {
-    const matches = findNamedGroups(text)
-    if (matches.length === 0) return text
-
-    let cleanedText = ''
-    let lastIndex = 0
-
-    for (const match of matches) {
-        cleanedText += `${text.slice(lastIndex, match.index)}<${match.name}>`
-        lastIndex = match.index + match.fullMatch.length
-    }
-
-    return cleanedText + text.slice(lastIndex)
+    const parsed = parseExpectedPatterns(text)
+    return parsed?.cleanedText ?? text
 }
 
 /**
@@ -405,8 +439,11 @@ export interface ExtractResult {
 /**
  * Extracts captures from modifiedText using context-anchored, gap-flexible regexes.
  *
- * Reuses compiled per-line regexes to search text2 with the `d` flag for
- * `match.indices`, then builds resolvedText from the retained source matches.
+ * Reuses compiled per-line regexes to search the whole target in source order,
+ * starting after the previous full match. Indices remain absolute UTF-16 offsets.
+ * Each invocation owns its cursor and resets each used regex's lastIndex to zero
+ * immediately after exec, including on failure or throw. Zero-width matches allow
+ * the next finite source line to search from the same boundary.
  *
  * @param originalText - The template text containing named capture groups.
  * @param modifiedText - The actual text (text2) to extract captures from.
@@ -421,9 +458,16 @@ export const extractCaptures = (
 ): ExtractResult | null => {
     const allCaptures: Record<string, string> = {}
     const captureRangesInText2: CaptureRange[] = []
+    let cursor = 0
 
     for (const { groups, regex } of parseResult.linePatterns) {
-        const match = regex.exec(modifiedText)
+        let match: RegExpExecArray | null
+        regex.lastIndex = cursor
+        try {
+            match = regex.exec(modifiedText)
+        } finally {
+            regex.lastIndex = 0
+        }
 
         if (!match || !match.groups || !match.indices?.groups) {
             return null
@@ -433,7 +477,13 @@ export const extractCaptures = (
             const value = match.groups[group.name]
             if (value === undefined) return null
 
-            allCaptures[group.name] = value
+            // Preserve accepted names such as __proto__ without invoking inherited setters.
+            Object.defineProperty(allCaptures, group.name, {
+                value,
+                enumerable: true,
+                writable: true,
+                configurable: true
+            })
 
             const indices = match.indices.groups[group.name]
             if (!indices) return null
@@ -444,6 +494,8 @@ export const extractCaptures = (
                 end: indices[1]
             })
         }
+
+        cursor = match.index + match[0].length
     }
 
     const resolvedText = resolveTemplate(originalText, parseResult.matches, allCaptures)

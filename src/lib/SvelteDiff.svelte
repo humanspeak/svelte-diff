@@ -12,6 +12,10 @@ extracts matching values from `modifiedText` and renders them with distinct "exp
 styling instead of normal insert/remove colors. This is useful for templates where
 certain dynamic regions (dates, names, versions) are expected to differ.
 
+Names must be unique across the entire template. Invalid recognized regex bodies or
+duplicate names use the original literal source with undefined captures. A valid
+template that does not match uses readable `<name>` placeholders instead.
+
 @example Basic usage with CSS classes
 ```svelte
 <SvelteDiff
@@ -64,6 +68,7 @@ certain dynamic regions (dates, names, versions) are expected to differ.
 
 <script lang="ts">
     import { DiffMatchPatch } from 'diff-match-patch-ts'
+    import { untrack } from 'svelte'
     import { computeTokenDiff } from './diffModes.js'
     import type {
         SvelteDiffMode,
@@ -225,7 +230,10 @@ certain dynamic regions (dates, names, versions) are expected to differ.
 
     $effect(() => {
         const result = processingResult
-        onProcessing?.(result.timing, result.diffs, result.captures)
+        const callback = onProcessing
+        untrack(() => {
+            callback?.(result.timing, result.diffs, result.captures)
+        })
     })
 
     // Per segment type: child snippet > renderers entry > built-in fallback.
@@ -311,6 +319,8 @@ certain dynamic regions (dates, names, versions) are expected to differ.
         style={rendererClasses.expected
             ? ''
             : 'background-color: #dbeafe; border-bottom: 1px dashed #3b82f6;'}
+        data-capture-name={groupName}
+        data-capture-value={processingResult.captures?.[groupName] ?? text}
         title={groupName}>{text}</span
     >
 {/snippet}
