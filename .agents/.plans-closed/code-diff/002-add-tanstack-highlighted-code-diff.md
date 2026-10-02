@@ -4,7 +4,17 @@
 > gates, and update this batch's README status unless your reviewer owns it. This
 > plan does not authorize publishing, deploying, or replacing the docs highlighter.
 >
-> **Drift check**: `git diff --stat fa0cfc9..HEAD -- src/lib package.json pnpm-lock.yaml docs/package.json docs/src/lib docs/src/routes tests docs/tests .github/workflows/docs-diff-modes.yml`
+> **Revision 2026-10-02**: The operator explicitly approved a release-age exception only for `@tanstack/highlight@1.0.0`. Add that exact version selector to `minimumReleaseAgeExclude` in `pnpm-workspace.yaml` when implementing B. Keep `minimumReleaseAge: 2880` and all existing exclusions unchanged; no package-wide, wildcard, global, or transitive exception is authorized. Pin the docs dependency to 1.0.0 as well as the development dependency. A must pass before B is dispatched; re-baseline to A's reviewed snapshot then. This amendment records policy authorization only; no dependency has been installed.
+>
+> **Revision 2026-10-02**: A passed at reviewed snapshot `a4f19bc`: 186 library units, check 0/0, package/publint, docs before/build/after checks, 20 diff-mode / 40 performance / 35 capture browser cases. Re-baseline to that implementation. The normal docs generator uses nested guide mirror paths (`docs/static/docs/guides/code-diffs.md`), as A reproduced. Existing docs CI already runs all docs tests; preserve `.github/workflows/docs-diff-modes.yml` byte-for-byte. Dependency manifests/policy are dispatched first, normal lock generation happens in an isolated temporary workspace, an executor copies the generated lock, and guard runs a frozen install writing ignored artifacts only before steps 2–5. No other gates change.
+>
+> **Revision 2026-10-02**: Execution resumed after transient executor/DNS failures before any B source edits. Registry access is now available; TanStack 1.0.0 metadata was reproduced. Corrected the guide mirror path to the nested layout observed in the normal A build. Re-stamped the baseline to current HEAD, which adds only guard records to reviewed A.
+>
+> **Revision 2026-10-02**: macOS case-insensitive paths make codeDiff.test.ts and CodeDiff.test.ts collide. Use `codeDiff.model.test.ts` for the model suite and `CodeDiff.test.ts` for component tests, retaining every test contract and the existing Vitest discovery. This is a routine filesystem compatibility correction, not a dropped suite.
+>
+> **Revision 2026-10-02**: The operator rejected the bare fixture and mismatched public controls, explicitly requesting fun examples inspired by Svelte Motion and other sibling repositories. Refine both existing demo surfaces using Humanspeak's compact mono pane headers, hairline dividers, mint accents, and matching `--brut-*` documentation tokens. Add useful source presets and an opt-in edit replay with timer cleanup/reduced-motion handling; keep package component behavior, literal sources, existing initial/reset fixtures, browser assertions and stable theme DOM ownership intact. Clearly separate the root whitespace regression from its editable result. No new dependency, global design-system rewrite, or sibling-repository modification is authorized.
+>
+> **Drift check**: `git diff --stat 42f2c74..HEAD -- src/lib package.json pnpm-lock.yaml pnpm-workspace.yaml docs/package.json docs/src/lib docs/src/routes tests docs/tests .github/workflows/docs-diff-modes.yml`
 > Plan A and package improvements are expected drift. Verify their resulting
 > contracts explicitly; stop for conflicting changes rather than restoring the
 > baseline excerpts or silently changing the design.
@@ -16,7 +26,7 @@
 - **Risk**: MED
 - **Depends on**: `001-extract-shared-diff-core-and-literal-mode.md`
 - **Category**: direction / feature
-- **Planned at**: commit `fa0cfc9`, 2026-10-02
+- **Planned at**: commit `42f2c74`, 2026-10-02 (reviewed A and dependency bootstrap)
 
 ## Why this matters
 
@@ -86,8 +96,7 @@ switch to a different major or all-language root import if signatures drift.
     const highlighter = createHighlighter({ languages: [ts] })
 </script>
 
-<CodeDiff originalText={before} modifiedText={after}
-    language="typescript" {highlighter} />
+<CodeDiff originalText={before} modifiedText={after} language="typescript" {highlighter} />
 ```
 
 - Add `src/lib/code.ts`: default/named `CodeDiff`, public `CodeDiffProps` only.
@@ -157,18 +166,18 @@ and avoid shared mutable global request caches.
 
 ## Commands you will need
 
-| Purpose | Command | Expected on success |
-| --- | --- | --- |
-| Version/API preflight | `pnpm view @tanstack/highlight@1.0.0 version exports --json` | 1.0.0 with core/language/theme entry points |
-| New model units | `pnpm exec vitest run src/lib/codeDiff.test.ts` | all contract cases pass |
-| New component units | `pnpm exec vitest run src/lib/CodeDiff.test.ts` | escaping/semantics/cache tests pass |
-| Root gates | `pnpm run check`; `pnpm exec vitest run src/lib/`; `pnpm run package` | zero check errors, all units, publint pass |
-| Packaged Svelte consumer smoke | `node scripts/verify-code-diff-packaging.mjs` | text-only build has no TanStack module; selective code build has only registered languages |
-| Format / lint | `trunk fmt`; `trunk check` | no new failures |
-| Root browsers | `pnpm exec playwright test --config=playwright.config.ts tests/code-diff.test.ts tests/component-performance.test.ts` | all configured projects pass |
-| Docs packaging | `pnpm run package`; `pnpm --filter docs build` | exit 0; artifacts regenerated |
-| Docs source check | Python command below | zero errors/warnings; generated worker restored |
-| Docs browsers | `pnpm exec playwright test --config=docs/playwright.config.ts docs/tests/code-diff.test.ts docs/tests/example-navigation.test.ts` | desktop/mobile Chromium pass |
+| Purpose                        | Command                                                                                                                           | Expected on success                                                                        |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Version/API preflight          | `pnpm view @tanstack/highlight@1.0.0 version exports --json`                                                                      | 1.0.0 with core/language/theme entry points                                                |
+| New model units                | `pnpm exec vitest run src/lib/codeDiff.model.test.ts`                                                                             | all contract cases pass                                                                    |
+| New component units            | `pnpm exec vitest run src/lib/CodeDiff.test.ts`                                                                                   | escaping/semantics/cache tests pass                                                        |
+| Root gates                     | `pnpm run check`; `pnpm exec vitest run src/lib/`; `pnpm run package`                                                             | zero check errors, all units, publint pass                                                 |
+| Packaged Svelte consumer smoke | `node scripts/verify-code-diff-packaging.mjs`                                                                                     | text-only build has no TanStack module; selective code build has only registered languages |
+| Format / lint                  | `trunk fmt`; `trunk check`                                                                                                        | no new failures                                                                            |
+| Root browsers                  | `pnpm exec playwright test --config=playwright.config.ts tests/code-diff.test.ts tests/component-performance.test.ts`             | all configured projects pass                                                               |
+| Docs packaging                 | `pnpm run package`; `pnpm --filter docs build`                                                                                    | exit 0; artifacts regenerated                                                              |
+| Docs source check              | Python command below                                                                                                              | zero errors/warnings; generated worker restored                                            |
+| Docs browsers                  | `pnpm exec playwright test --config=docs/playwright.config.ts docs/tests/code-diff.test.ts docs/tests/example-navigation.test.ts` | desktop/mobile Chromium pass                                                               |
 
 Root baseline was 123 passing units and check 0/0. Full browser/build commands
 were not executed during planning. Docs check after build uses the existing
@@ -200,7 +209,7 @@ source regressions. The docs build's GitHub stats fetch can require network acce
 ## Scope
 
 **In scope**: create `src/lib/code.ts`, `src/lib/codeDiff.ts`,
-`src/lib/codeDiff.test.ts`, `src/lib/CodeDiff.svelte`, `src/lib/CodeDiff.test.ts`,
+`src/lib/codeDiff.model.test.ts`, `src/lib/CodeDiff.svelte`, `src/lib/CodeDiff.test.ts`,
 `src/routes/tests/code-diff/+page.svelte`, `tests/code-diff.test.ts`,
 `docs/src/lib/examples/code-diff/demos/CodeDiffDemo.svelte`,
 `docs/src/routes/examples/code-diff/+page.svelte`,
@@ -208,6 +217,7 @@ source regressions. The docs build's GitHub stats fetch can require network acce
 `docs/src/routes/docs/api/code-diff/+page.svx`, `docs/tests/code-diff.test.ts`,
 `scripts/verify-code-diff-packaging.mjs`;
 modify `package.json`, `pnpm-lock.yaml`, `docs/package.json`, `README.md`,
+`pnpm-workspace.yaml` (only the authorized exact-version release-age exclusion),
 `docs/src/lib/examplesIndex.ts`, `docs/src/lib/docsNav.ts`,
 `docs/tests/example-navigation.test.ts` (update its fixed example order, titles,
 and counters from eight to nine),
@@ -236,7 +246,8 @@ Use conventional commit subjects such as `feat: add highlighted code diffs`.
 
 Confirm A's literal helper and installed/planned TanStack 1.0.0 declarations.
 Add optional peer/dev/doc dependencies and `./code` export without changing root
-runtime imports. Use pnpm, retain minimumReleaseAge/workspace policy, and update
+runtime imports. Use pnpm, retain the 2880-minute minimumReleaseAge/workspace
+policy, add only the approved `@tanstack/highlight@1.0.0` exclusion, and update
 the lockfile normally; do not bypass release-age policy broadly. Create the
 component entry and explicit props. This is net-new behavior, so no preexisting
 runtime red test is required; write its contract tests alongside implementation.
@@ -293,7 +304,7 @@ now made obsolete by the optional feature, retaining the Svelte-only positioning
 
 **Verify**: root-browser command, docs packaging, docs source check with existing
 worker workaround, and docs-browser command -> pass. Check generated
-`docs/static/examples/code-diff.md` and `docs/static/docs/guides-code-diffs.md`
+`docs/static/examples/code-diff.md` and `docs/static/docs/guides/code-diffs.md`
 exist after the build and the example's show-code control exposes current source.
 
 ### Step 5: Verify package isolation and complete regression gates

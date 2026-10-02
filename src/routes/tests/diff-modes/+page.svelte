@@ -4,6 +4,9 @@
     const initialLineOriginalText = 'count=10\r\nkeep=true\n'
     const initialLineModifiedText = 'count=20\r\nkeep=true\n'
 
+    const literalSource = 'const pattern = /(?<year>\\d{4})/;'
+    let expectedPatterns = $state(false)
+
     let originalText = $state('The cat sleeps.')
     let modifiedText = $state('The car sleeps.')
     let diffMode = $state<SvelteDiffMode>('character')
@@ -62,5 +65,26 @@
         {#snippet remove(text)}<del>{text}</del>{/snippet}
         {#snippet insert(text)}<ins>{text}</ins>{/snippet}
         {#snippet expected(text, group)}<mark title={group}>{text}</mark>{/snippet}
+    </SvelteDiff>
+</section>
+
+<section aria-label="Literal code">
+    <SvelteDiff
+        originalText={literalSource}
+        modifiedText={literalSource}
+        expectedPatterns={false}
+        {diffMode}
+    />
+</section>
+<label><input type="checkbox" bind:checked={expectedPatterns} />Enable template patterns</label>
+<section aria-label="Template comparison">
+    <SvelteDiff
+        originalText={'Year (?<year>\\d{4})'}
+        modifiedText="Year 2026"
+        {expectedPatterns}
+        {diffMode}
+    >
+        {#snippet remove(text)}<del>{text}</del>{/snippet}
+        {#snippet insert(text)}<ins>{text}</ins>{/snippet}
     </SvelteDiff>
 </section>

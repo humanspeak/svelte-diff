@@ -1,9 +1,17 @@
 import { fireEvent, render, waitFor } from '@testing-library/svelte'
+import { DiffOp } from 'diff-match-patch-ts'
 import { createRawSnippet, flushSync, tick } from 'svelte'
 import { describe, expect, it, vi } from 'vitest'
 import DiffModesFixture from '../routes/tests/diff-modes/+page.svelte'
 import SvelteDiff from './SvelteDiff.svelte'
+import * as patterns from './expectedPatterns.js'
+import type { SvelteDiffProps, SvelteDiffTuple } from './index.js'
 import ProcessingCallbackFixture from './test/ProcessingCallbackFixture.svelte'
+
+vi.mock('./expectedPatterns.js', async (importOriginal) => {
+    const actual = await importOriginal<typeof patterns>()
+    return { ...actual, parseExpectedPatterns: vi.fn(actual.parseExpectedPatterns) }
+})
 
 const textSnippet = (className: string) =>
     createRawSnippet<[string]>((text) => ({
@@ -230,6 +238,59 @@ describe('SvelteDiff snippet precedence', () => {
         })
         expect(container.querySelector('.renderers-remove')).toBeTruthy()
         expect(container.querySelector('.class-insert')).toBeTruthy()
+    })
+})
+
+describe('SvelteDiff literal source', () => {
+    it('supports literal source without interpreting named groups', async () => {
+        const source = 'const pattern = /(?<year>\\d{4})/;'
+        const onProcessing = vi.fn()
+        const props: SvelteDiffProps = {
+            originalText: source,
+            modifiedText: source,
+            expectedPatterns: false,
+            onProcessing,
+            rendererClasses: { expected: 'test-expected' }
+        }
+        const { container } = render(SvelteDiff, props)
+
+        await waitFor(() => expect(onProcessing).toHaveBeenCalled())
+        const [, diffs, captures] = onProcessing.mock.lastCall!
+        expect(diffs).toEqual([[0, source]])
+        expect(captures).toBeUndefined()
+        expect(container.querySelectorAll('.test-expected, [data-capture-name]')).toHaveLength(0)
+        expect(container.textContent).toBe(source)
+    })
+
+    it('reconstructs both sides of changed literal source from raw tuples', async () => {
+        const originalText = 'const pattern = /(?<year>\\d{4})/;'
+        const modifiedText = 'const pattern = /(?<year>\\d{2})/g;'
+        const onProcessing = vi.fn()
+        const props: SvelteDiffProps = {
+            originalText,
+            modifiedText,
+            expectedPatterns: false,
+            onProcessing,
+            rendererClasses: { expected: 'test-expected' }
+        }
+        const { container } = render(SvelteDiff, props)
+
+        await waitFor(() => expect(onProcessing).toHaveBeenCalled())
+        const diffs = onProcessing.mock.lastCall![1] as SvelteDiffTuple[]
+        expect(
+            diffs
+                .filter(([op]) => op !== DiffOp.Insert)
+                .map(([, text]) => text)
+                .join('')
+        ).toBe(originalText)
+        expect(
+            diffs
+                .filter(([op]) => op !== DiffOp.Delete)
+                .map(([, text]) => text)
+                .join('')
+        ).toBe(modifiedText)
+        expect(onProcessing.mock.lastCall![2]).toBeUndefined()
+        expect(container.querySelectorAll('.test-expected, [data-capture-name]')).toHaveLength(0)
     })
 })
 
@@ -996,4 +1057,79 @@ describe('display shape transitions', () => {
             }
         }
     )
+})
+
+describe('pattern computation boundaries', () => {
+    it('caches parsing across target, mode, options and callback edits and bypasses literal parsing', async () => {
+        const parser = vi.mocked(patterns.parseExpectedPatterns)
+        parser.mockClear()
+        const callback = vi.fn()
+        const props: SvelteDiffProps = {
+            originalText: 'Year (?<year>\\d{4})',
+            modifiedText: 'Year 2026',
+            onProcessing: callback
+        }
+        const { container, rerender } = render(SvelteDiff, props)
+        await waitFor(() => expect(callback).toHaveBeenCalled())
+        expect(parser).toHaveBeenCalledTimes(1)
+        const initial = callback.mock.lastCall![1]
+        const html = container.innerHTML
+        await rerender({ ...props, expectedPatterns: true })
+        expect(callback.mock.lastCall![1]).toBe(initial)
+        expect(container.innerHTML).toBe(html)
+        const next = vi.fn()
+        await rerender({ ...props, onProcessing: next })
+        await waitFor(() => expect(next).toHaveBeenCalled())
+        expect(next.mock.lastCall![1]).toBe(initial)
+        for (const diffMode of ['word', 'line', 'character'] as const) {
+            const previous = next.mock.lastCall![1]
+            await rerender({ ...props, modifiedText: 'Year 2027', diffMode, onProcessing: next })
+            expect(next.mock.lastCall![1]).not.toBe(previous)
+            expect(next.mock.lastCall![2]).toEqual({ year: '2027' })
+        }
+        await rerender({ ...props, timeout: 0, cleanupEfficiency: 0, onProcessing: next })
+        expect(parser).toHaveBeenCalledTimes(1)
+        for (const expectedPatterns of [false, true, false]) {
+            const previous = next.mock.lastCall![1]
+            await rerender({ ...props, expectedPatterns, onProcessing: next })
+            expect(next.mock.lastCall![1]).not.toBe(previous)
+            const tuples = next.mock.lastCall![1] as SvelteDiffTuple[]
+            expect(
+                tuples
+                    .filter(([op]) => op !== DiffOp.Insert)
+                    .map(([, text]) => text)
+                    .join('')
+            ).toBe(expectedPatterns ? 'Year 2026' : props.originalText)
+            expect(next.mock.lastCall![2]).toEqual(expectedPatterns ? { year: '2026' } : undefined)
+            expect(container.querySelectorAll('[data-capture-name]')).toHaveLength(
+                expectedPatterns ? 1 : 0
+            )
+        }
+        expect(parser).toHaveBeenCalledTimes(1)
+        await rerender({
+            ...props,
+            originalText: '(?<bad>*)',
+            expectedPatterns: false,
+            onProcessing: next
+        })
+        expect(parser).toHaveBeenCalledTimes(1)
+        const literalTuples = next.mock.lastCall![1]
+        const literalCallback = vi.fn()
+        await rerender({
+            ...props,
+            originalText: '(?<bad>*)',
+            expectedPatterns: false,
+            onProcessing: literalCallback
+        })
+        await waitFor(() => expect(literalCallback).toHaveBeenCalled())
+        expect(literalCallback.mock.lastCall![1]).toBe(literalTuples)
+        await rerender({
+            ...props,
+            originalText: 'Year (?<value>\\d+)',
+            expectedPatterns: true,
+            onProcessing: next
+        })
+        expect(parser).toHaveBeenCalledTimes(2)
+        expect(next.mock.lastCall![2]).toEqual({ value: '2026' })
+    })
 })

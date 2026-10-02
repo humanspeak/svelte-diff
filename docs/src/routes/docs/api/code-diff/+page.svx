@@ -1,0 +1,83 @@
+---
+title: CodeDiff
+description: Props, semantics, themes, and optional imports for CodeDiff.
+---
+
+<script>
+    import { getSeoContext } from '$lib/components/contexts/Seo/Seo.context'
+    const seo = getSeoContext()
+    if (seo) {
+        seo.title = 'CodeDiff | Svelte Diff'
+        seo.description = 'Props, semantics, themes, and optional imports for CodeDiff.'
+        seo.ogTitle = 'CodeDiff'
+        seo.ogTagline = 'Syntax context inside literal source changes.'
+        seo.ogFeatures = ['Optional Entry', 'Selective Languages', 'Native Escaping', 'Syntax Context']
+        seo.ogSlug = 'docs-api-code-diff'
+    }
+</script>
+
+# CodeDiff
+
+The optional Svelte entry exports the same component as default and named
+`CodeDiff`, plus the public `CodeDiffProps` type:
+
+```typescript
+import CodeDiff, {
+    CodeDiff as NamedCodeDiff,
+    type CodeDiffProps
+} from '@humanspeak/svelte-diff/code'
+```
+
+Install `@tanstack/highlight@1.0.0` when using this entry. The ordinary package
+root does not re-export CodeDiff or load TanStack at runtime.
+
+| Prop                | Type                                   | Default              | Behavior                                        |
+| ------------------- | -------------------------------------- | -------------------- | ----------------------------------------------- |
+| `originalText`      | `string`                               | required             | Complete literal original source                |
+| `modifiedText`      | `string`                               | required             | Complete literal modified source                |
+| `highlighter`       | `Pick<Highlighter, 'tokenize'>`        | required             | Caller-created complete-source tokenizer        |
+| `language`          | `string`                               | `'plaintext'`        | Registered language name or alias               |
+| `diffMode`          | `'character' \| 'word' \| 'line'`      | `'word'`             | Raw comparison unit                             |
+| `timeout`           | `number`                               | `1`                  | Diff deadline in seconds; 0 unlimited           |
+| `cleanupSemantic`   | `boolean`                              | `false`              | Character-mode semantic cleanup                 |
+| `cleanupEfficiency` | `number`                               | `0`                  | Character-mode efficiency edit cost; 0 disables |
+| `class`             | `string`                               | `''`                 | Additional outer `pre` classes                  |
+| `ariaLabel`         | `string`                               | `'Code differences'` | Accessible overflow-region name                 |
+| `rendererClasses`   | `{ remove?: string; insert?: string }` | `{}`                 | Additional `del`/`ins` classes                  |
+
+```svelte
+<script lang="ts">
+    import CodeDiff from '@humanspeak/svelte-diff/code'
+    import { createHighlighter } from '@tanstack/highlight/core'
+    import { ts } from '@tanstack/highlight/languages/ts'
+    import { createThemeCss } from '@tanstack/highlight/theme'
+    import { githubLightTheme } from '@tanstack/highlight/themes/github-light'
+    import { githubDarkTheme } from '@tanstack/highlight/themes/github-dark'
+
+    const highlighter = createHighlighter({ languages: [ts] })
+    const themeCss = createThemeCss({ light: githubLightTheme, dark: githubDarkTheme })
+    const before = 'const count = 10;\n'
+    const after = 'const count = 20;\n'
+</script>
+
+<svelte:head><svelte:element this={"style"}>{themeCss}</svelte:element></svelte:head>
+<CodeDiff originalText={before} modifiedText={after} language="typescript" diffMode="line" {highlighter} />
+```
+
+`Highlighter` is imported as a type from `@tanstack/highlight/core`. Register
+individual languages yourself; no all-language root import is needed. Both
+complete sources are tokenized before diff composition. Removed runs use
+original tokens; equal and inserted runs use modified tokens.
+
+The single `pre.th-code.svelte-code-diff` contains `code`, operation wrappers
+with `data-diff="remove|insert|equal"`, and syntax spans with `th-*` classes.
+Text is natively escaped by Svelte. Change backgrounds default to translucent
+red/green through `--svelte-diff-remove-bg` / `--svelte-diff-insert-bg`. Syntax
+foreground belongs to caller theme CSS, and default changed text has no
+strike-through. The block uses `white-space: pre` and keyboard-accessible overflow.
+
+Expected patterns are always false and are not a prop. There are no callbacks,
+custom snippets, patch inputs, gutters, or headless API in this entry. Cleanup
+applies only to character mode. Work remains synchronous and preserves model
+source code units; browser SSR parsing can normalize CR/CRLF. See the
+[code diffs guide](/docs/guides/code-diffs) for caching, themes, and limits.

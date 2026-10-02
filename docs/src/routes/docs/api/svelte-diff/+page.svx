@@ -35,6 +35,7 @@ The package exports the component as both the default export and a named export.
 | `originalText` | `string` | required | The before/source text |
 | `modifiedText` | `string` | required | The after/target text |
 | `diffMode` | `SvelteDiffMode` | `'character'` | `'character'`, `'word'`, or `'line'`; word/line skip cleanup |
+| `expectedPatterns` | `boolean` | `true` | Enable named capture templates; `false` compares exact literal source without parsing |
 | `timeout` | `number` | `1` | Maximum diff computation time in seconds; `0` is unlimited |
 | `cleanupSemantic` | `boolean` | `false` | Character only: optimize edit boundaries for human readability |
 | `cleanupEfficiency` | `number` | `4` | Character-only edit cost for efficiency cleanup; `0` disables it |
@@ -103,6 +104,24 @@ The callback runs after computation and cleanup.
 ```
 
 Timing values are milliseconds measured with `performance.now()`.
+
+## Literal source
+
+`expectedPatterns` defaults to `true` on the component. Set it to `false` when
+comparing source containing named regex groups:
+
+```svelte
+<SvelteDiff originalText={before} modifiedText={after} expectedPatterns={false} />
+```
+
+Literal mode bypasses parsing, substitution, mismatch placeholders, and capture
+tagging. Raw tuples reconstruct both exact input strings. Changing this prop
+recomputes the comparison and clears stale capture metadata. Initial literal
+markup is rendered during SSR; callbacks remain client-only.
+
+The synchronous `computeDiff` helper defaults to `expectedPatterns: false`.
+Its other defaults match the component. See [Types and Exports](/docs/api/types)
+for its options and result within a Svelte-aware toolchain.
 
 ## Expected patterns
 

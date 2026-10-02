@@ -1,4 +1,4 @@
-import type { Competitor, ComparisonOurs } from '@humanspeak/docs-kit'
+import type { ComparisonOurs, Competitor } from '@humanspeak/docs-kit'
 
 export const ours: ComparisonOurs = {
     name: 'Svelte Diff',
@@ -15,6 +15,7 @@ const shared = {
         'Expected patterns — mark dynamic regions (dates, names, versions) as "expected" with named regex capture groups instead of showing them as diffs',
         'Full rendering control via Svelte snippets (remove / insert / equal / expected / lineBreak) or plain CSS classes',
         'TypeScript-first with typed props, timing stats, and diff results',
+        'Optional CodeDiff entry with full-source syntax highlighting and caller-selected TanStack languages',
         'Configurable timeout guard for large text comparisons'
     ],
     consUs: [
@@ -227,7 +228,7 @@ export const competitors: Competitor[] = [
             },
             {
                 name: 'Output',
-                us: 'Real DOM via Svelte',
+                us: 'Real DOM via Svelte; optional syntax-highlighted CodeDiff',
                 them: 'HTML string or imperative DOM injection + stylesheet'
             },
             {

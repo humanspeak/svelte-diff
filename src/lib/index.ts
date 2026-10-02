@@ -1,6 +1,9 @@
 import type { Diff } from 'diff-match-patch-ts'
 import type { Snippet } from 'svelte'
+import type { DisplayDiff } from './expectedPatterns.js'
 import SvelteDiff from './SvelteDiff.svelte'
+
+export { computeDiff } from './computeDiff.js'
 
 export default SvelteDiff
 /** The diff component, also available as a named export alongside the default. */
@@ -121,7 +124,33 @@ export type SvelteDiffMatchPatchDiff = SvelteDiffTuple
 /** Comparison granularity. Character is the default; sentence and JSON are unsupported. */
 export type SvelteDiffMode = 'character' | 'word' | 'line'
 
+/** Options for synchronous computation. Expected patterns default to false. */
+export interface SvelteDiffComputeOptions {
+    /** Comparison unit. Default: character. */
+    diffMode?: SvelteDiffMode
+    /** Best-effort algorithm deadline in seconds. Default: 1; 0 is unlimited. */
+    timeout?: number
+    /** Character semantic cleanup, taking priority over efficiency. Default: false. */
+    cleanupSemantic?: boolean
+    /** Character efficiency edit cost. Default: 4; 0 disables it. */
+    cleanupEfficiency?: number
+    /** Enable expected-template parsing and capture tagging. Default: false. */
+    expectedPatterns?: boolean
+}
+
+/** Computation output shared by the helper and component. */
+export interface SvelteDiffResult {
+    timing: SvelteDiffTiming
+    diffs: SvelteDiffTuple[]
+    displayDiffs: DisplayDiff[]
+    captures?: Record<string, string>
+}
+
 export interface SvelteDiffProps {
+    /** Enable named capture templates. Default: true. False bypasses parsing and
+     * preserves both input strings exactly in raw tuples, without capture tags.
+     */
+    expectedPatterns?: boolean
     /**
      * Comparison unit. Default: `character` (existing algorithm and cleanup).
      * Word uses Unicode letter/mark/number/underscore runs, horizontal whitespace,

@@ -1,0 +1,107 @@
+---
+title: Code Diffs
+description: Compare literal source with optional whole-source syntax highlighting.
+---
+
+<script>
+    import { getSeoContext } from '$lib/components/contexts/Seo/Seo.context'
+    const seo = getSeoContext()
+    if (seo) {
+        seo.title = 'Code Diffs | Svelte Diff'
+        seo.description = 'Compare literal source with optional whole-source syntax highlighting.'
+        seo.ogTitle = 'Code Diffs'
+        seo.ogTagline = 'Syntax context inside literal source changes.'
+        seo.ogFeatures = ['Optional Entry', 'Selective Languages', 'Native Escaping', 'Syntax Context']
+        seo.ogSlug = 'docs-guides-code-diffs'
+    }
+</script>
+
+# Code Diffs
+
+Install the optional syntax highlighter alongside the Svelte package:
+
+```sh
+pnpm add @humanspeak/svelte-diff @tanstack/highlight@1.0.0
+```
+
+Import `CodeDiff` from `@humanspeak/svelte-diff/code`. Ordinary text-diff consumers
+can keep importing the root without installing TanStack. Create your own
+highlighter using individual language entries; register only what you use.
+
+```svelte
+<script lang="ts">
+    import CodeDiff from '@humanspeak/svelte-diff/code'
+    import { createHighlighter } from '@tanstack/highlight/core'
+    import { ts } from '@tanstack/highlight/languages/ts'
+    import { createThemeCss } from '@tanstack/highlight/theme'
+    import { githubLightTheme } from '@tanstack/highlight/themes/github-light'
+    import { githubDarkTheme } from '@tanstack/highlight/themes/github-dark'
+
+    const highlighter = createHighlighter({ languages: [ts] })
+    const themeCss = createThemeCss({ light: githubLightTheme, dark: githubDarkTheme })
+    const before = 'const count = 10;\n'
+    const after = 'const count = 20;\n'
+</script>
+
+<svelte:head><svelte:element this={"style"}>{themeCss}</svelte:element></svelte:head>
+<CodeDiff originalText={before} modifiedText={after} language="typescript" diffMode="line" {highlighter} />
+```
+
+The theme helper supplies syntax colors. Its default dark selector is `.dark`;
+toggle that class on an ancestor. For multiple independently themed blocks,
+use scoped `lightSelector` / `darkSelector`, `includeBaseStyles: false`, and
+scope the `th-*` color rules as in the [editable example](/examples/code-diff).
+Theme generation belongs in the application, not the library component.
+
+## Whole-source context
+
+Both complete sources are tokenized independently before their raw diff runs
+are composed. Deletions use original syntax; unchanged and inserted text use
+modified syntax. Editing the interior of a multiline comment or string therefore
+retains its classification. Repeated text is located using cumulative UTF-16
+offsets, never substring searching.
+
+`CodeDiff` always compares literal source. Named regex groups such as
+`(?<year>\d{4})` remain code, and HTML-like input is rendered as escaped text.
+It has no expected-pattern prop or capture parsing. Unknown or unregistered
+languages fall back to plain text with TanStack's default highlighter settings.
+
+## Modes, styles, and access
+
+These examples explicitly use line mode to keep removed and inserted code lines
+together. The component default remains word; word and character modes are
+available for inline comparisons.
+
+Word mode is the default; character and line modes are also available. Character
+cleanup defaults to off, and word/line skip cleanup entirely. JSON is highlighted
+source, not parsed or compared structurally. Unicode offsets use UTF-16; emoji
+grapheme atomicity is not guaranteed. Read the [diff modes guide](/docs/guides/diff-modes)
+for comparison units and deadline fallbacks.
+
+The output is one focusable, named `pre`/`code` region with semantic `del` and `ins`
+wrappers. Native Svelte escaping preserves source text without HTML injection.
+Syntax spans use `th-*` classes. There is no default strike-through or library
+foreground color. Override `--svelte-diff-remove-bg` and `--svelte-diff-insert-bg`
+on the block or an ancestor for change backgrounds, or add `rendererClasses`.
+`ariaLabel` names the overflow region; operation attributes label changes without
+adding label text to the source body. Use keyboard arrow keys to scroll long lines.
+
+The model preserves tabs, CR, LF, CRLF, final newlines, and Unicode code units.
+The browser HTML parser may normalize CR/CRLF during SSR; DOM or clipboard
+round-tripping of raw line endings is not guaranteed. Inputs are never normalized
+before diffing or tokenization.
+
+## Reactivity and limits
+
+Changing only the modified source reuses original tokens. Changing language or
+highlighter identity invalidates both token stages. Mode, timeout, and cleanup
+options invalidate only diff computation. Theme, class, and operation-class
+changes reuse both tokenizations and diff results. Caches belong to each instance.
+
+Computation and tokenization are synchronous. `timeout` governs the diff algorithm,
+not highlighting or DOM rendering. This viewer has no patch format, hunks,
+gutters, line numbers, side-by-side layout, folding, virtualization, workers,
+editor parsing, callbacks, or headless entry.
+
+See the [CodeDiff API](/docs/api/code-diff), [types](/docs/api/types), and
+[editable code example](/examples/code-diff) with copyable complete source.

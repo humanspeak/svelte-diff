@@ -13,3 +13,4 @@ allowBuilds:
 minimumReleaseAge: 2880
 minimumReleaseAgeExclude:
     - '@humanspeak/*'
+    - '@tanstack/highlight@1.0.0'

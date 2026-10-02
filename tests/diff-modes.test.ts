@@ -64,6 +64,11 @@ test('renders word and line edits in initial HTML without JavaScript', async ({
     await expect(page.getByRole('region', { name: 'Initial line' }).locator('ins')).toHaveText(
         'count=20'
     )
+    await expect(page.getByRole('region', { name: 'Literal code' })).toHaveText(
+        'const pattern = /(?<year>\\d{4})/;'
+    )
+    const template = page.getByRole('region', { name: 'Template comparison' })
+    await expect(template.locator('[data-capture-name]')).toHaveCount(0)
     await context.close()
 })
 
@@ -113,5 +118,43 @@ test('hydrates, switches units, edits and preserves custom capture markup', asyn
     await expect(page.getByRole('region', { name: 'Default character' })).toHaveText(
         'The catr sleeps.'
     )
+    expect(errors).toEqual([])
+})
+
+test('hydrates literal source and switches pattern interpretation in every mode', async ({
+    page
+}) => {
+    const errors: string[] = []
+    page.on('pageerror', (error) => errors.push(error.message))
+    page.on('console', (message) => {
+        if (/hydration/i.test(message.text())) errors.push(message.text())
+    })
+    await page.goto('/tests/diff-modes')
+    const literal = page.getByRole('region', { name: 'Literal code' })
+    const template = page.getByRole('region', { name: 'Template comparison' })
+    const patterns = page.getByLabel('Enable template patterns')
+    for (const mode of ['character', 'word', 'line']) {
+        await page.getByLabel('Diff mode').selectOption(mode)
+        await expect(literal).toHaveText('const pattern = /(?<year>\\d{4})/;')
+        await expect(literal.locator('[data-capture-name]')).toHaveCount(0)
+        for (const enabled of [true, false, true, false]) {
+            await patterns.setChecked(enabled)
+            await expect(template.locator('[data-capture-name]')).toHaveCount(enabled ? 1 : 0)
+            const sides = await template.evaluate((element) => {
+                const before = element.cloneNode(true) as HTMLElement
+                const after = element.cloneNode(true) as HTMLElement
+                before.querySelectorAll('ins').forEach((node) => node.remove())
+                after.querySelectorAll('del').forEach((node) => node.remove())
+                return [before.textContent, after.textContent]
+            })
+            expect(sides).toEqual([enabled ? 'Year 2026' : 'Year (?<year>\\d{4})', 'Year 2026'])
+            if (enabled) {
+                await expect(template.locator('[data-capture-name]')).toHaveAttribute(
+                    'data-capture-value',
+                    '2026'
+                )
+            }
+        }
+    }
     expect(errors).toEqual([])
 })
