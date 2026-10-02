@@ -35,21 +35,22 @@ behavior. This does **not** establish a framework-agnostic or plain-Node package
 - `src/lib/SvelteDiff.svelte:123–159` owns an engine, unconditional template
   parsing, expected-pattern preprocessing, and character/token-mode diffing:
 
-  ```ts
-  const dmp = new DiffMatchPatch()
-  const parseResult = $derived(parseExpectedPatterns(originalText))
-  // Inside the local computeDiff:
-  if (compiledPattern) {
-      const extractResult = extractCaptures(text1, text2, compiledPattern)
-      diffText1 = extractResult ? extractResult.resolvedText : compiledPattern.cleanedText
-  }
-  const diffs = mode === 'character'
-      ? dmp.diff_main(diffText1, text2)
-      : computeTokenDiff(dmp, diffText1, text2, mode, diffTimeout)
-  ```
+    ```ts
+    const dmp = new DiffMatchPatch()
+    const parseResult = $derived(parseExpectedPatterns(originalText))
+    // Inside the local computeDiff:
+    if (compiledPattern) {
+        const extractResult = extractCaptures(text1, text2, compiledPattern)
+        diffText1 = extractResult ? extractResult.resolvedText : compiledPattern.cleanedText
+    }
+    const diffs =
+        mode === 'character'
+            ? dmp.diff_main(diffText1, text2)
+            : computeTokenDiff(dmp, diffText1, text2, mode, diffTimeout)
+    ```
 
 - `src/lib/SvelteDiff.svelte:99–104` returns `{ timing, diffs, captures,
-  displayDiffs }`. Its value-keyed cache at lines 191–223 retains tuple identity
+displayDiffs }`. Its value-keyed cache at lines 191–223 retains tuple identity
   when only callback/rendering inputs change; the cached parser depends only on
   original text. Preserve both behaviors after extraction.
 - `src/lib/diffModes.ts:13` exports the internal `computeTokenDiff` helper. Its
@@ -91,7 +92,9 @@ export const computeDiff = (
     originalText: string,
     modifiedText: string,
     options: SvelteDiffComputeOptions = {}
-): SvelteDiffResult => { /* shared computation */ }
+): SvelteDiffResult => {
+    /* shared computation */
+}
 ```
 
 - Public `computeDiff`: default `expectedPatterns=false`, character mode,
@@ -113,17 +116,17 @@ export const computeDiff = (
 
 ## Commands you will need
 
-| Purpose | Command | Expected on success |
-| --- | --- | --- |
-| Install if needed | `pnpm install --frozen-lockfile` | exit 0; no manifest changes |
-| Targeted red/green | `pnpm exec vitest run src/lib/SvelteDiff.test.ts -t 'literal source'` | red in step 1, green thereafter |
-| Core units | `pnpm exec vitest run src/lib/` | all tests pass; execution baseline is 172 |
-| Typecheck | `pnpm run check` | zero errors/warnings |
-| Format / lint | `trunk fmt` / `trunk check` | no new failures; Trunk is authority |
-| Package | `pnpm run package` | Svelte package and publint pass |
-| Browser regression | `pnpm exec playwright test --config=playwright.config.ts tests/diff-modes.test.ts tests/component-performance.test.ts` | every configured project passes |
-| Docs build | `pnpm run package`; `pnpm --filter docs build` | authored API/types/guide render; normal generators succeed |
-| Docs source check | Python wrapper below, before and after build | zero errors/warnings; generated worker restored |
+| Purpose            | Command                                                                                                                | Expected on success                                        |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| Install if needed  | `pnpm install --frozen-lockfile`                                                                                       | exit 0; no manifest changes                                |
+| Targeted red/green | `pnpm exec vitest run src/lib/SvelteDiff.test.ts -t 'literal source'`                                                  | red in step 1, green thereafter                            |
+| Core units         | `pnpm exec vitest run src/lib/`                                                                                        | all tests pass; execution baseline is 172                  |
+| Typecheck          | `pnpm run check`                                                                                                       | zero errors/warnings                                       |
+| Format / lint      | `trunk fmt` / `trunk check`                                                                                            | no new failures; Trunk is authority                        |
+| Package            | `pnpm run package`                                                                                                     | Svelte package and publint pass                            |
+| Browser regression | `pnpm exec playwright test --config=playwright.config.ts tests/diff-modes.test.ts tests/component-performance.test.ts` | every configured project passes                            |
+| Docs build         | `pnpm run package`; `pnpm --filter docs build`                                                                         | authored API/types/guide render; normal generators succeed |
+| Docs source check  | Python wrapper below, before and after build                                                                           | zero errors/warnings; generated worker restored            |
 
 The original audit used existing dependencies and got 123 passing units and root check
 0/0; completed package improvements now establish 172 passing units. Browser/package gates are required execution gates, not claims already

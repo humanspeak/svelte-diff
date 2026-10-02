@@ -1,5 +1,14 @@
 # Code-diff plans
 
+**CLOSED — 2026-10-02.** A PASS at `a4f19bc`; B PASS at `76d7459`.
+Delivered synchronous literal diff computation, an optional TanStack-highlighted
+Svelte `/code` component, public guide/API/discovery, and cohesive interactive
+playgrounds with presets and replay. Final verification includes 217 units,
+85 code/performance/docs browser cases, package isolation smokes and production
+build/type checks. Reports retain baseline lint/CSP limitations. Work is on
+`feat/highlighted-code-diff`; PR creation is the operator's next decision.
+No publishing or deployment performed.
+
 Execution started 2026-10-02 on `feat/highlighted-code-diff`, created from fresh
 main `068080b` after package improvements and capture DOM metadata merged in
 PR #216. Plan A is re-baselined to that reviewed state; plan B will be
@@ -7,16 +16,16 @@ reconciled again after A passes. Baseline: 172 library units.
 
 Written with the improve skill on 2026-10-02 against fresh `origin/main`
 `fa0cfc9`, on the planning branch `chore/package-improvements`. See the completed
-[package-improvements batch](../../.plans-closed/package-improvements/README.md) record. These are
+[package-improvements batch](../package-improvements/README.md) record. These are
 implementation handoffs for the maintainer-selected A–B feature, not source
 changes or permission to publish/deploy.
 
 ## Execution order and status
 
-| Plan | Audit option | Title | Priority | Effort | Risk | Depends on | Status |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| [001](001-extract-shared-diff-core-and-literal-mode.md) | A | Shared computation and literal source mode | P2 | M | MED | Package improvements complete | DONE — PASS at a4f19bc |
-| [002](002-add-tanstack-highlighted-code-diff.md) | B | Optional TanStack-highlighted CodeDiff | P2 | L | MED | 001 | DONE — PASS at 76d7459 |
+| Plan                                                    | Audit option | Title                                      | Priority | Effort | Risk | Depends on                    | Status                 |
+| ------------------------------------------------------- | ------------ | ------------------------------------------ | -------- | ------ | ---- | ----------------------------- | ---------------------- |
+| [001](001-extract-shared-diff-core-and-literal-mode.md) | A            | Shared computation and literal source mode | P2       | M      | MED  | Package improvements complete | DONE — PASS at a4f19bc |
+| [002](002-add-tanstack-highlighted-code-diff.md)        | B            | Optional TanStack-highlighted CodeDiff     | P2       | L      | MED  | 001                           | DONE — PASS at 76d7459 |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (reason) | REJECTED (reason).
 The operator/reviewer owns these rows unless they delegate updates. Executors

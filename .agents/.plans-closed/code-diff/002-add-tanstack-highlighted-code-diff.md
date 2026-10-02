@@ -96,8 +96,7 @@ switch to a different major or all-language root import if signatures drift.
     const highlighter = createHighlighter({ languages: [ts] })
 </script>
 
-<CodeDiff originalText={before} modifiedText={after}
-    language="typescript" {highlighter} />
+<CodeDiff originalText={before} modifiedText={after} language="typescript" {highlighter} />
 ```
 
 - Add `src/lib/code.ts`: default/named `CodeDiff`, public `CodeDiffProps` only.
@@ -167,18 +166,18 @@ and avoid shared mutable global request caches.
 
 ## Commands you will need
 
-| Purpose | Command | Expected on success |
-| --- | --- | --- |
-| Version/API preflight | `pnpm view @tanstack/highlight@1.0.0 version exports --json` | 1.0.0 with core/language/theme entry points |
-| New model units | `pnpm exec vitest run src/lib/codeDiff.model.test.ts` | all contract cases pass |
-| New component units | `pnpm exec vitest run src/lib/CodeDiff.test.ts` | escaping/semantics/cache tests pass |
-| Root gates | `pnpm run check`; `pnpm exec vitest run src/lib/`; `pnpm run package` | zero check errors, all units, publint pass |
-| Packaged Svelte consumer smoke | `node scripts/verify-code-diff-packaging.mjs` | text-only build has no TanStack module; selective code build has only registered languages |
-| Format / lint | `trunk fmt`; `trunk check` | no new failures |
-| Root browsers | `pnpm exec playwright test --config=playwright.config.ts tests/code-diff.test.ts tests/component-performance.test.ts` | all configured projects pass |
-| Docs packaging | `pnpm run package`; `pnpm --filter docs build` | exit 0; artifacts regenerated |
-| Docs source check | Python command below | zero errors/warnings; generated worker restored |
-| Docs browsers | `pnpm exec playwright test --config=docs/playwright.config.ts docs/tests/code-diff.test.ts docs/tests/example-navigation.test.ts` | desktop/mobile Chromium pass |
+| Purpose                        | Command                                                                                                                           | Expected on success                                                                        |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Version/API preflight          | `pnpm view @tanstack/highlight@1.0.0 version exports --json`                                                                      | 1.0.0 with core/language/theme entry points                                                |
+| New model units                | `pnpm exec vitest run src/lib/codeDiff.model.test.ts`                                                                             | all contract cases pass                                                                    |
+| New component units            | `pnpm exec vitest run src/lib/CodeDiff.test.ts`                                                                                   | escaping/semantics/cache tests pass                                                        |
+| Root gates                     | `pnpm run check`; `pnpm exec vitest run src/lib/`; `pnpm run package`                                                             | zero check errors, all units, publint pass                                                 |
+| Packaged Svelte consumer smoke | `node scripts/verify-code-diff-packaging.mjs`                                                                                     | text-only build has no TanStack module; selective code build has only registered languages |
+| Format / lint                  | `trunk fmt`; `trunk check`                                                                                                        | no new failures                                                                            |
+| Root browsers                  | `pnpm exec playwright test --config=playwright.config.ts tests/code-diff.test.ts tests/component-performance.test.ts`             | all configured projects pass                                                               |
+| Docs packaging                 | `pnpm run package`; `pnpm --filter docs build`                                                                                    | exit 0; artifacts regenerated                                                              |
+| Docs source check              | Python command below                                                                                                              | zero errors/warnings; generated worker restored                                            |
+| Docs browsers                  | `pnpm exec playwright test --config=docs/playwright.config.ts docs/tests/code-diff.test.ts docs/tests/example-navigation.test.ts` | desktop/mobile Chromium pass                                                               |
 
 Root baseline was 123 passing units and check 0/0. Full browser/build commands
 were not executed during planning. Docs check after build uses the existing
