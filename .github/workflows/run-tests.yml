@@ -28,6 +28,7 @@ on:
             - eslint.config.*
             - .npmrc
             - .github/scripts/**
+            - .github/release-workflows/**
             - .github/release-policy.json
             - .github/release-source.json
 
