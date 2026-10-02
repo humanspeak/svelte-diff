@@ -80,13 +80,13 @@ test('hydrated editing covers all modes, language fallback, literal source and r
         ['word', '10', '20'],
         ['line', 'const value = 10;\n', 'const value = 20;\n']
     ]) {
-        await page.getByLabel('Diff mode', { exact: true }).selectOption(mode)
+        await page.getByRole('combobox', { name: 'Diff mode', exact: true }).selectOption(mode)
         await expect.poll(() => region.locator('del').allTextContents()).toEqual([removed])
         await expect.poll(() => region.locator('ins').allTextContents()).toEqual([inserted])
         await verifySources(region, 'const value = 10;\n', 'const value = 20;\n')
     }
     for (const language of ['javascript', 'json', 'plaintext', 'unregistered', 'typescript']) {
-        await page.getByLabel('Language', { exact: true }).selectOption(language)
+        await page.getByRole('combobox', { name: 'Language', exact: true }).selectOption(language)
         await verifySources(region, 'const value = 10;\n', 'const value = 20;\n')
         if (language === 'plaintext' || language === 'unregistered')
             await expect(region.locator('[class^="th-"]')).toHaveCount(0)
@@ -97,7 +97,7 @@ test('hydrated editing covers all modes, language fallback, literal source and r
     expect(sourceBefore).toContain('(?<year>\\d{4})')
     expect(sourceAfter).toContain('<img onerror=alert(1)>')
     for (const mode of ['character', 'word', 'line']) {
-        await page.getByLabel('Diff mode', { exact: true }).selectOption(mode)
+        await page.getByRole('combobox', { name: 'Diff mode', exact: true }).selectOption(mode)
         await verifySources(region, sourceBefore, sourceAfter)
         await expect(region.locator('del .th-comment')).not.toHaveCount(0)
         await expect(region.locator('ins .th-string')).not.toHaveCount(0)
@@ -106,8 +106,10 @@ test('hydrated editing covers all modes, language fallback, literal source and r
     await page.getByRole('button', { name: 'Reset', exact: true }).click()
     await expect(before).toHaveValue(normalize(initialBefore))
     await expect(after).toHaveValue(normalize(initialAfter))
-    await expect(page.getByLabel('Diff mode', { exact: true })).toHaveValue('word')
-    await expect(page.getByLabel('Language', { exact: true })).toHaveValue('typescript')
+    await expect(page.getByRole('combobox', { name: 'Diff mode', exact: true })).toHaveValue('word')
+    await expect(page.getByRole('combobox', { name: 'Language', exact: true })).toHaveValue(
+        'typescript'
+    )
     await verifySources(region, initialBefore, initialAfter)
     expect(messages).toEqual([])
 })
@@ -116,18 +118,18 @@ test('theme changes preserve source and existing Svelte-owned nodes', async ({ p
     const messages = errors(page)
     await page.goto(route)
     const region = result(page)
-    await page.getByLabel('Theme', { exact: true }).selectOption('light')
+    await page.getByRole('combobox', { name: 'Theme', exact: true }).selectOption('light')
     const pre = await region.elementHandle()
     const token = region.locator('.th-keyword').first()
     const tokenNode = await token.elementHandle()
     const light = await token.evaluate((element) => getComputedStyle(element).color)
     const source = await region.textContent()
-    await page.getByLabel('Theme', { exact: true }).selectOption('dark')
+    await page.getByRole('combobox', { name: 'Theme', exact: true }).selectOption('dark')
     expect(await token.evaluate((element) => getComputedStyle(element).color)).not.toBe(light)
     expect(await region.textContent()).toBe(source)
     expect(await region.evaluate((element, previous) => element === previous, pre)).toBe(true)
     expect(await token.evaluate((element, previous) => element === previous, tokenNode)).toBe(true)
-    await page.getByLabel('Theme', { exact: true }).selectOption('light')
+    await page.getByRole('combobox', { name: 'Theme', exact: true }).selectOption('light')
     expect(await token.evaluate((element) => getComputedStyle(element).color)).toBe(light)
     expect(messages).toEqual([])
 })
@@ -173,7 +175,7 @@ test('mixed whitespace SSR and hydration preserve normalized projections without
     const messages = errors(page)
     await page.goto(route)
     // A client control change proves hydration completed; the whitespace block is unchanged.
-    await page.getByLabel('Diff mode', { exact: true }).selectOption('line')
+    await page.getByRole('combobox', { name: 'Diff mode', exact: true }).selectOption('line')
     await verifySources(
         page.getByRole('region', { name: 'Whitespace code differences', exact: true }),
         before,
