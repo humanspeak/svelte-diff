@@ -76,3 +76,13 @@ b02a979 · implementation snapshot and independent review corrections
 - Native preview confirmed replay completion and cancellation. After explicit host-unavailable response, temporary external Playwright checks completed both surfaces: exact target replay, manual/reset cancellation, reduced motion and mobile width 390/390. Screenshots saved outside the repo; no temporary test added to source.
 - Full-tree Trunk checks 216 files with only the two unchanged baseline complexity findings; final scoped format checks 24 modified files with no issues. Workflow/release/Shiki diffs empty; whitespace check passes. Separate executor restored unrelated stats to exact baseline blob 6269e3dd70f8f541f9ff318c0292abfa6065dddb; guard reproduced hash and clean working tree.
 - Action: B DONE/PASS, standalone report written; commit guard records separately, retire the A/B batch, and leave PR creation as the operator's next decision. No publish/deploy/PR performed.
+
+## Checkpoint 9 — 2026-10-02 16:16 — PASS
+
+971c25e · operator-requested Line settings and matching examples
+
+- User rejected scattered whole-document word alignment and explicitly requested the Line settings in the examples and matching public code/live preview. Separate serial executors changed seven example/docs/test files only; normal snapshot hooks pass. Package default/core/model remain unchanged.
+- Both examples initialize/reset to Line; copyable README/guide/API usage explicitly selects Line. Added an unchanged third source line so existing SSR changed/unchanged syntax assertions stay meaningful. Original count/label prefixes, tabs/CRLF and all mode/fallback/escaping/theme/mobile assertions remain. New regressions cover the screenshot's unrelated function-to-statement replacement as one complete deletion and insertion.
+- Guard reproduced root build/package/publint; docs before/build/after checks 0/0 with worker restored; root code browsers 30/30 across five projects; docs/navigation 22/22 on desktop/mobile Chromium; scoped format eight files clean. Library/package/workflow/dependency diff from prior close-out empty; prior units/consumer smokes/performance remain applicable.
+- Separate executor restored stats to baseline blob 6269e3dd70f8f541f9ff318c0292abfa6065dddb; guard verified hash, clean tree and whitespace. Native preview confirms identical Async refactor sources on root/public pages, Line selected, and updated public Show code source. Both production previews remain live.
+- Action: refresh current PASS report and closed-batch index, commit records separately, leave public preview up for the operator. No PR/publish/deploy.
