@@ -44,3 +44,24 @@ a4f19bc · A PASS and B pre-flight
 - Executor stopped on case-insensitive filesystem collision before overwriting model tests. Distinct model filename codeDiff.model.test.ts retains both suites and existing Vitest discovery.
 - No API, scope intent, assertions or gates are relaxed. macOS naming is a routine implementation constraint; user continued authorized execution.
 - Action: commit plan filename correction and resume separate executor with model rename and full implementation.
+
+## Checkpoint 6 — 2026-10-02 15:13 — DRIFTING
+
+b02a979 · implementation snapshot and independent review corrections
+
+- Clarification to checkpoint 5: companion marked the full implementation job completed at its filename question, but this session's executor path continued source writes until 14:58. Operator confirmed no other session works in this checkout. One-shot forwarder audit found no active jobs; settled source was captured at a86760b before judgment. Later surgical jobs explicitly prohibit delegation/background work and report only after tools finish. Guard did not author source.
+- Independent library run: 217 tests across seven files pass. Root build/package/publint and real packed-consumer smoke pass: absent optional peer/root declaration isolation, individual TS only in selective code bundle. Full-tree Trunk retains only the two unchanged complexity findings; checks discarded the two browser files that were being corrected, so those require focused rechecks after their snapshots.
+- Review found stale final pager indexes and an import/interface name collision in the types example. Separate executor corrected only those two files at f3c21d2. Original navigation assertions/coverage retained.
+- Root browser control lookup failed because nested select option text participates in getByLabel. Actual accessibility tree names the comboboxes correctly. Separate executor changed only exact-name combobox locators in both new suites at b02a979; all other tests/assertions unchanged.
+- Reproduced root code suite: 23/25 pass, with only WebKit/mobile Safari failing real ArrowRight horizontal scrolling. Production keyboard correction dispatched without changing assertions. Docs suite: 12/20 pass; eight failures contain only the pre-existing Ahrefs script-loading CSP diagnostic, with all feature assertions passing. Unchanged app.html/config and old Word Diff production HTML confirm baseline origin; a narrowly matched diagnostic exclusion retains every runtime/pageerror/hydration check.
+- Normal docs build regenerated demo-loader types, mirrors, discovery and social artifacts. Initial source check exposed stale generated demo-loader union; normal build resolved it, then source check found zero errors/warnings and restored its generated worker. Executor restored incidental GitHub stats to exact reviewed blob 6269e3dd70f8f541f9ff318c0292abfa6065dddb.
+- Action: snapshot separate corrections, rebuild the component, reproduce affected root/docs browser gates and unchanged performance ceilings, then close only on complete verification.
+
+## Checkpoint 7 — 2026-10-02 15:21 — PLAN AMENDED
+
+9aa1c93 · operator-directed presentation refinement
+
+- Safari keyboard correction at a3aa1fa passes unchanged all-five-project code suite: 25/25, including keyboard scrolling, no-JS syntax, exact normalized projections, hydration, native escaping and stable theme nodes. All 217 units still pass. Narrow docs diagnostic correction at 9aa1c93 retains all pageerror/runtime/hydration checks; only exact baseline Ahrefs script-loading CSP text is excluded. Normal source snapshot hooks pass.
+- Operator rejected screenshots of both bare root fixture and mismatched public controls, explicitly requesting fun, cohesive examples inspired by Svelte Motion and other sibling repositories. Guard inspected rendered Motion glow/drag stages and source in JSON View, Markdown and docs-kit; no sibling modifications.
+- Amendment adds compact Humanspeak controls/pane framing, useful presets, opt-in replay with cleanup and reduced-motion handling, clearer result legend and separate visible whitespace sample. Existing package contracts, fixtures, assertions, theme DOM ownership and dependency boundaries stay fixed. Existing three scoped example files suffice.
+- Action: commit amendment before separate serial presentation executor; then visually inspect both surfaces and reproduce affected gates before B PASS.

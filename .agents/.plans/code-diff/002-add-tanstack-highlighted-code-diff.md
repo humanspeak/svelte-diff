@@ -12,6 +12,8 @@
 >
 > **Revision 2026-10-02**: macOS case-insensitive paths make codeDiff.test.ts and CodeDiff.test.ts collide. Use `codeDiff.model.test.ts` for the model suite and `CodeDiff.test.ts` for component tests, retaining every test contract and the existing Vitest discovery. This is a routine filesystem compatibility correction, not a dropped suite.
 >
+> **Revision 2026-10-02**: The operator rejected the bare fixture and mismatched public controls, explicitly requesting fun examples inspired by Svelte Motion and other sibling repositories. Refine both existing demo surfaces using Humanspeak's compact mono pane headers, hairline dividers, mint accents, and matching `--brut-*` documentation tokens. Add useful source presets and an opt-in edit replay with timer cleanup/reduced-motion handling; keep package component behavior, literal sources, existing initial/reset fixtures, browser assertions and stable theme DOM ownership intact. Clearly separate the root whitespace regression from its editable result. No new dependency, global design-system rewrite, or sibling-repository modification is authorized.
+>
 > **Drift check**: `git diff --stat 42f2c74..HEAD -- src/lib package.json pnpm-lock.yaml pnpm-workspace.yaml docs/package.json docs/src/lib docs/src/routes tests docs/tests .github/workflows/docs-diff-modes.yml`
 > Plan A and package improvements are expected drift. Verify their resulting
 > contracts explicitly; stop for conflicting changes rather than restoring the
