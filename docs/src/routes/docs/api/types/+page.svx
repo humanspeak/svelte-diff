@@ -55,6 +55,12 @@ import CodeDiff, {
     CodeDiff as NamedCodeDiff,
     type CodeDiffProps
 } from '@humanspeak/svelte-diff/code'
+```
+
+The exported `CodeDiffProps` type has the following shape:
+
+```typescript
+import type { SvelteDiffMode } from '@humanspeak/svelte-diff'
 import type { Highlighter } from '@tanstack/highlight/core'
 
 interface CodeDiffProps {

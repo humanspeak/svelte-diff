@@ -119,10 +119,10 @@ test('next traverses every sheet reactively; previous wraps and supports keyboar
     await expect(previous).toBeFocused()
     await page.keyboard.press('Enter')
     await expect(page).toHaveURL(/\/examples\/timing$/)
-    await assertPager(page, 7)
+    await assertPager(page, 8)
     await pager(page).getByRole('link', { name: /prev/ }).click()
     await expect(page).toHaveURL(/\/examples\/cleanup-modes$/)
-    await assertPager(page, 6)
+    await assertPager(page, 7)
     expect(
         await page.evaluate(
             () => (window as Window & { pagerNavigationMarker?: boolean }).pagerNavigationMarker
