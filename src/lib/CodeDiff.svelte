@@ -73,6 +73,34 @@
         diffCache(originalText, modifiedText, diffMode, timeout, cleanupSemantic, cleanupEfficiency)
     )
     const runs = $derived(composeCodeDiff(comparison.diffs, originalTokens, modifiedTokens))
+
+    // Keep keyboard overflow scrolling consistent across browsers.
+    const handleKeydown = (event: KeyboardEvent & { currentTarget: HTMLPreElement }) => {
+        if (
+            event.defaultPrevented ||
+            event.altKey ||
+            event.ctrlKey ||
+            event.metaKey ||
+            event.shiftKey
+        )
+            return
+        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return
+
+        const region = event.currentTarget
+        const maxScrollLeft = region.scrollWidth - region.clientWidth
+        if (maxScrollLeft <= 0) return
+        if (
+            (event.key === 'ArrowLeft' && region.scrollLeft <= 0) ||
+            (event.key === 'ArrowRight' && region.scrollLeft >= maxScrollLeft)
+        )
+            return
+
+        region.scrollLeft = Math.max(
+            0,
+            Math.min(maxScrollLeft, region.scrollLeft + (event.key === 'ArrowRight' ? 40 : -40))
+        )
+        event.preventDefault()
+    }
 </script>
 
 {#snippet syntax(
@@ -81,11 +109,12 @@
                 >{piece.value}</span
             >{:else}{piece.value}{/if}{/each}{/snippet}
 
-<!-- svelte-ignore a11y_no_noninteractive_tabindex (Named overflow region must support keyboard scrolling.) -->
+<!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions (Named overflow region must support keyboard scrolling.) -->
 <pre
     class={`th-code svelte-code-diff ${className}`}
     role="region"
     aria-label={ariaLabel}
+    onkeydown={handleKeydown}
     tabindex="0"><code
         >{#each runs as run, index (index)}{#if run.operation === DiffOp.Delete}<del
                     data-diff="remove"
