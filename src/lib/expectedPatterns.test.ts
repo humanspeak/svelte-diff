@@ -78,6 +78,60 @@ describe('parseExpectedPatterns', () => {
     )
 })
 
+describe('invalid expected templates', () => {
+    it('rethrows unexpected regex compilation errors', () => {
+        const nativeRegExp = globalThis.RegExp
+        const sentinel = new TypeError('Unexpected compilation failure')
+        const throwingRegExp = new Proxy(nativeRegExp, {
+            construct: () => {
+                throw sentinel
+            }
+        })
+        try {
+            globalThis.RegExp = throwingRegExp
+            let caught: unknown
+            try {
+                parseExpectedPatterns('(?<value>\\w+)')
+            } catch (error) {
+                caught = error
+            }
+            expect(caught).toBe(sentinel)
+        } finally {
+            globalThis.RegExp = nativeRegExp
+        }
+    })
+
+    const invalidBodies = ['(?<bad>*)', '(?<bad>[z-a])']
+    const duplicateNames = [
+        '(?<id>\\d+) (?<id>\\w+)',
+        'A: (?<id>\\w+)\nB: (?<id>\\w+)',
+        '(?<id>same) (?<id>same)'
+    ]
+    const mixedTemplate = 'Year: (?<year>\\d{4})\nBad: (?<bad>*)'
+
+    it.each(invalidBodies)('returns null for invalid balanced regex bodies: %s', (input) => {
+        expect(parseExpectedPatterns(input)).toBeNull()
+    })
+
+    it.each(duplicateNames)(
+        'rejects duplicate capture names across a whole template: %s',
+        (input) => {
+            expect(parseExpectedPatterns(input)).toBeNull()
+        }
+    )
+
+    it('rejects mixed valid and invalid source as a whole', () => {
+        expect(parseExpectedPatterns(mixedTemplate)).toBeNull()
+    })
+
+    it.each([...invalidBodies, ...duplicateNames, mixedTemplate])(
+        'leaves invalid expected templates literal in cleanTemplate: %s',
+        (input) => {
+            expect(cleanTemplate(input)).toBe(input)
+        }
+    )
+})
+
 describe('cleanTemplate', () => {
     it('replaces named groups with readable placeholders', () => {
         expect(cleanTemplate('Copyright (?<year>\\d{4}) (?<holder>.+)')).toBe(

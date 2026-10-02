@@ -330,12 +330,29 @@ const compileLinePatterns = (text: string, matches: GroupMatch[]): CompiledLineP
  * Extracts all named capture groups and retains the immutable metadata used by
  * repeated capture extraction, including cleaned fallback text and line regexes.
  *
+ * Names must be unique across the entire template.
+ *
  * @param text - The template text containing named capture group syntax.
- * @returns The compiled parse result, or null if no named groups are found.
+ * @returns The compiled parse result, or null if no supported named groups are
+ *     found, recognized groups fail regex compilation, or names are duplicated.
  */
 export const parseExpectedPatterns = (text: string): ParseResult | null => {
     const matches = findNamedGroups(text)
     if (matches.length === 0) return null
+
+    const names = new Set<string>()
+    for (const match of matches) {
+        if (names.has(match.name)) return null
+        names.add(match.name)
+    }
+
+    let linePatterns: CompiledLinePattern[]
+    try {
+        linePatterns = compileLinePatterns(text, matches)
+    } catch (error) {
+        if (error instanceof SyntaxError) return null
+        throw error
+    }
 
     const groups: ParsedGroup[] = []
     const parts: string[] = []
@@ -359,36 +376,29 @@ export const parseExpectedPatterns = (text: string): ParseResult | null => {
         parts,
         matches,
         cleanedText,
-        linePatterns: compileLinePatterns(text, matches)
+        linePatterns
     }
 }
 
 /**
  * Replaces named capture groups with readable placeholders.
  *
- * This standalone compatibility helper scans its input once. Component updates
- * use the precomputed `cleanedText` on {@link parseExpectedPatterns} instead.
+ * This standalone compatibility helper parses and validates its input once.
+ * Component updates use the precomputed `cleanedText` on
+ * {@link parseExpectedPatterns} instead.
  *
  * @param text - Template text that may contain named capture group syntax.
- * @returns The template with each valid group replaced by `<name>`.
+ * @returns The template with each group replaced by `<name>`, or the original
+ *     literal input if no supported groups are found, recognized groups fail
+ *     regex compilation, or names are duplicated anywhere in the template.
  * @example
  * ```ts
  * cleanTemplate('Copyright (?<year>\\d{4})') // 'Copyright <year>'
  * ```
  */
 export const cleanTemplate = (text: string): string => {
-    const matches = findNamedGroups(text)
-    if (matches.length === 0) return text
-
-    let cleanedText = ''
-    let lastIndex = 0
-
-    for (const match of matches) {
-        cleanedText += `${text.slice(lastIndex, match.index)}<${match.name}>`
-        lastIndex = match.index + match.fullMatch.length
-    }
-
-    return cleanedText + text.slice(lastIndex)
+    const parsed = parseExpectedPatterns(text)
+    return parsed?.cleanedText ?? text
 }
 
 /**

@@ -32,7 +32,7 @@ Put JavaScript-style named capture groups directly in `originalText`:
 />
 ```
 
-The version and date render as `expected`. Their names and values are also available to rendering and callback code.
+The version and date render as `expected`. Their names and values are also available to rendering and callback code. Capture names must be globally unique across the entire template, including separate lines; duplicate names are rejected even when their values would be equal.
 
 ## Access captured values
 
@@ -77,7 +77,9 @@ Actual:   Copyright (c) 2026 Humanspeak, Inc.
 
 ## Failure behavior
 
-If the capture groups do not match, SvelteDiff cleans the template before computing the normal diff. Instead of exposing regex syntax to readers, it replaces each named group with a readable placeholder such as `<version>`.
+Invalid recognized regex bodies or duplicate capture names reject the whole template. SvelteDiff compares the original source literally, and `captures` is undefined. For example, `(?<bad>*)` stays `(?<bad>*)` in the compared source.
+
+If a valid parsed template does not match its target, SvelteDiff cleans it before computing the normal diff, and `captures` is undefined. Each named group becomes a readable placeholder: `Copyright (?<year>\d{4}) MIT` compared with `different text` uses `Copyright <year> MIT` as its source.
 
 If `originalText` contains no named groups, the component follows the ordinary diff path with no extra matching work.
 
@@ -85,7 +87,7 @@ If `originalText` contains no named groups, the component follows the ordinary d
 
 Named groups are discovered with an iterative parenthesis-counting parser rather than a backtracking regex. Escaped parentheses and nested non-named groups are supported. Nested named groups are rejected to keep group ownership unambiguous.
 
-The pattern body is still compiled as JavaScript regular expression syntax. Treat patterns as trusted configuration, not untrusted user input.
+The pattern body is still compiled as JavaScript regular expression syntax. Treat patterns as trusted configuration, not untrusted user input. The algorithm timeout does not bound regex extraction.
 
 ## Good uses
 
@@ -99,7 +101,7 @@ Expected patterns are not a general ignore system: successful values stay visibl
 
 ## Word and line modes
 
-All [diff modes](/docs/guides/diff-modes) retain extraction → resolved/cleaned source → diff → tagging. Tokenization operates on resolved text; mismatches use cleaned placeholders. Raw callback tuples reconstruct that source and the original modified text exactly. Expected annotations can split displayed words or lines, so whole-token guarantees apply to raw tuples, not snippet invocations. Newline rendering can also split tuples.
+All [diff modes](/docs/guides/diff-modes) retain extraction → resolved/cleaned source → diff → tagging. Tokenization operates on resolved text for matched templates; valid unmatched templates use cleaned placeholders, while invalid or duplicate templates retain the original literal source. Raw callback tuples reconstruct that source and the original modified text exactly. Expected annotations can split displayed words or lines, so whole-token guarantees apply to raw tuples, not snippet invocations. Newline rendering can also split tuples.
 
 ```svelte
 <script lang="ts">

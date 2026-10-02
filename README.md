@@ -304,7 +304,18 @@ The `onProcessing` callback receives captured values as its third argument:
 </SvelteDiff>
 ```
 
-If no capture groups are present in `originalText`, the component behaves exactly as before — no changes needed to existing code.
+Capture names must be globally unique across the entire template, including separate lines. Invalid recognized regex bodies or duplicate names cause ordinary literal comparison with `captures` undefined. If no supported named groups are present, the component also compares the original text literally.
+
+A valid template that does not match its target still replaces named groups with readable `<name>` placeholders before computing the normal diff, with `captures` undefined:
+
+```text
+Rejected template: (?<bad>*)
+Compared source:   (?<bad>*)
+
+Valid template:    Copyright (?<year>\d{4}) MIT
+Nonmatching target: different text
+Compared source:   Copyright <year> MIT
+```
 
 ## Programmatic API
 
@@ -319,12 +330,12 @@ import {
 } from '@humanspeak/svelte-diff'
 ```
 
-| Function                | Signature                                                            | Description                                                                                                               |
-| ----------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `parseExpectedPatterns` | `(text) => ParseResult \| null`                                      | Parse and compile `(?<name>pattern)` named groups from a template. Returns `null` when the text contains no named groups. |
-| `extractCaptures`       | `(originalText, modifiedText, parseResult) => ExtractResult \| null` | Extract captured values and their positions from the modified text. Returns `null` when the template does not match.      |
-| `tagExpectedRegions`    | `(diffs, captureRanges) => DisplayDiff[]`                            | Split raw diff tuples so regions overlapping a capture range are tagged as `expected`.                                    |
-| `cleanTemplate`         | `(text) => string`                                                   | Replace `(?<name>pattern)` syntax with readable `<name>` placeholders.                                                    |
+| Function                | Signature                                                            | Description                                                                                                                                                              |
+| ----------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `parseExpectedPatterns` | `(text) => ParseResult \| null`                                      | Parse and compile `(?<name>pattern)` named groups from a template. Returns `null` for no supported groups, invalid recognized regex bodies, or globally duplicate names. |
+| `extractCaptures`       | `(originalText, modifiedText, parseResult) => ExtractResult \| null` | Extract captured values and their positions from the modified text. Returns `null` when the template does not match.                                                     |
+| `tagExpectedRegions`    | `(diffs, captureRanges) => DisplayDiff[]`                            | Split raw diff tuples so regions overlapping a capture range are tagged as `expected`.                                                                                   |
+| `cleanTemplate`         | `(text) => string`                                                   | Replace accepted named groups with readable `<name>` placeholders; return unchanged literal input when parsing rejects it.                                               |
 
 These are the same functions the component uses internally; see [`src/lib/expectedPatterns.ts`](src/lib/expectedPatterns.ts) for full JSDoc.
 

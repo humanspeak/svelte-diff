@@ -234,6 +234,58 @@ describe('SvelteDiff snippet precedence', () => {
 })
 
 describe('SvelteDiff expected patterns', () => {
+    it('compares invalid templates literally and recovers after valid edits', async () => {
+        const onProcessing = vi.fn()
+        const invalid = '(?<bad>*)'
+        const { container, rerender } = render(SvelteDiff, {
+            originalText: invalid,
+            modifiedText: invalid,
+            onProcessing,
+            rendererClasses: { expected: 'test-expected' }
+        })
+        const assertResult = async (
+            source: string,
+            target: string,
+            captures: Record<string, string> | undefined
+        ) => {
+            await waitFor(() => {
+                expect(onProcessing).toHaveBeenCalled()
+                const [, diffs, actualCaptures] = onProcessing.mock.lastCall!
+                expect(actualCaptures).toEqual(captures)
+                expect(
+                    diffs
+                        .filter(([op]: [number, string]) => op <= 0)
+                        .map(([, text]: [number, string]) => text)
+                        .join('')
+                ).toBe(source)
+                expect(
+                    diffs
+                        .filter(([op]: [number, string]) => op >= 0)
+                        .map(([, text]: [number, string]) => text)
+                        .join('')
+                ).toBe(target)
+            })
+            expect(container.querySelectorAll('.test-expected')).toHaveLength(captures ? 1 : 0)
+        }
+        await assertResult(invalid, invalid, undefined)
+
+        for (const duplicate of ['(?<id>\\d+) (?<id>\\w+)', 'A: (?<id>\\w+)\nB: (?<id>\\w+)']) {
+            onProcessing.mockClear()
+            await rerender({ originalText: duplicate, modifiedText: duplicate })
+            await assertResult(duplicate, duplicate, undefined)
+        }
+
+        const valid = 'Copyright (?<year>\\d{4}) MIT'
+        onProcessing.mockClear()
+        await rerender({ originalText: valid, modifiedText: 'different text' })
+        await assertResult('Copyright <year> MIT', 'different text', undefined)
+
+        onProcessing.mockClear()
+        await rerender({ originalText: valid, modifiedText: 'Copyright 2024 MIT' })
+        await assertResult('Copyright 2024 MIT', 'Copyright 2024 MIT', { year: '2024' })
+        expect(container.querySelector('span[title="year"]')?.textContent).toBe('2024')
+    })
+
     it('reuses expected-pattern metadata when only modifiedText changes', async () => {
         const onProcessing = vi.fn()
         const originalText = 'Copyright (?<year>\\d{4}) MIT'

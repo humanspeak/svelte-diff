@@ -12,6 +12,10 @@ extracts matching values from `modifiedText` and renders them with distinct "exp
 styling instead of normal insert/remove colors. This is useful for templates where
 certain dynamic regions (dates, names, versions) are expected to differ.
 
+Names must be unique across the entire template. Invalid recognized regex bodies or
+duplicate names use the original literal source with undefined captures. A valid
+template that does not match uses readable `<name>` placeholders instead.
+
 @example Basic usage with CSS classes
 ```svelte
 <SvelteDiff

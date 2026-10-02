@@ -138,6 +138,9 @@ export interface SvelteDiffProps {
      * The original (left-side) string to compare.
      *
      * This is typically the **"before"** or **"source"** text in a diff operation.
+     * Supported named capture groups must have globally unique names and valid
+     * regex bodies. Rejected templates compare literally with undefined captures;
+     * valid templates that do not match use readable `<name>` placeholders.
      *
      * ## Example
      * ```svelte
