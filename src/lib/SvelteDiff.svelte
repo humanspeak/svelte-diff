@@ -52,6 +52,7 @@ template that does not match uses readable `<name>` placeholders instead.
 @property {string} originalText - The original (left-side) string to compare (the "before" or source text). May contain `(?<name>pattern)` capture groups for expected-pattern matching.
 @property {string} modifiedText - The modified (right-side) string to compare (the "after" or target text)
 @property {'character'|'word'|'line'} [diffMode='character'] - Comparison granularity; word/line skip both cleanup passes
+@property {boolean} [expectedPatterns=true] - Enable named capture templates; false compares exact literal source without parsing
 @property {number} [timeout=1] - Maximum time in seconds to spend computing the diff (0 for unlimited)
 @property {boolean} [cleanupSemantic=false] - If true, applies character-mode semantic cleanup; ignored for word/line
 @property {number} [cleanupEfficiency=4] - Character-mode efficiency edit cost; ignored for word/line
@@ -69,19 +70,9 @@ template that does not match uses readable `<name>` placeholders instead.
 <script lang="ts">
     import { DiffMatchPatch } from 'diff-match-patch-ts'
     import { untrack } from 'svelte'
-    import { computeTokenDiff } from './diffModes.js'
-    import type {
-        SvelteDiffMode,
-        SvelteDiffProps,
-        SvelteDiffTiming,
-        SvelteDiffTuple
-    } from './index.js'
-    import {
-        type DisplayDiff,
-        parseExpectedPatterns,
-        extractCaptures,
-        tagExpectedRegions
-    } from './expectedPatterns.js'
+    import { computeDiffWithEngine } from './computeDiff.js'
+    import type { SvelteDiffMode, SvelteDiffProps, SvelteDiffResult } from './index.js'
+    import { parseExpectedPatterns } from './expectedPatterns.js'
 
     const {
         originalText,
@@ -90,6 +81,7 @@ template that does not match uses readable `<name>` placeholders instead.
         diffMode = 'character',
         cleanupSemantic = false,
         cleanupEfficiency = 4,
+        expectedPatterns = true,
         compact = true,
         onProcessing,
         remove,
@@ -101,13 +93,6 @@ template that does not match uses readable `<name>` placeholders instead.
         rendererClasses = {}
     }: SvelteDiffProps = $props()
 
-    interface DiffResult {
-        timing: SvelteDiffTiming
-        diffs: SvelteDiffTuple[]
-        captures?: Record<string, string>
-        displayDiffs: DisplayDiff[]
-    }
-
     interface ComputationInput {
         originalText: string
         modifiedText: string
@@ -115,80 +100,32 @@ template that does not match uses readable `<name>` placeholders instead.
         timeout: number
         cleanupSemantic: boolean
         cleanupEfficiency: number
+        expectedPatterns: boolean
         compiledPattern: ReturnType<typeof parseExpectedPatterns>
     }
 
     interface ComputationCache {
         input: ComputationInput
-        result: DiffResult
+        result: SvelteDiffResult
     }
 
     // Plain (non-reactive) scratch instance: only configured and called inside
-    // computeDiff, never read reactively, so it needs no $state wrapper.
+    // computeDiffWithEngine, never read reactively, so it needs no $state wrapper.
     const dmp = new DiffMatchPatch()
     let computationCache: ComputationCache | undefined
-    const parseResult = $derived(parseExpectedPatterns(originalText))
-
-    const computeDiff = (
-        text1: string,
-        text2: string,
-        diffTimeout: number,
-        mode: SvelteDiffMode,
-        semanticCleanup: boolean,
-        efficiencyCleanup: number,
-        compiledPattern: ReturnType<typeof parseExpectedPatterns>
-    ): DiffResult => {
-        dmp.Diff_Timeout = diffTimeout
-        dmp.Diff_EditCost = efficiencyCleanup
-
-        let diffText1 = text1
-        let captures: Record<string, string> | undefined
-        let captureRanges: import('./expectedPatterns.js').CaptureRange[] = []
-
-        if (compiledPattern) {
-            const extractResult = extractCaptures(text1, text2, compiledPattern)
-            if (extractResult) {
-                diffText1 = extractResult.resolvedText
-                captures = extractResult.captures
-                captureRanges = extractResult.captureRangesInText2
-            } else {
-                // Regex didn't match — clean template so users see <name> not (?<name>...)
-                diffText1 = compiledPattern.cleanedText
-            }
-        }
-
-        const startTotal = performance.now()
-        const diffs =
-            mode === 'character'
-                ? dmp.diff_main(diffText1, text2)
-                : computeTokenDiff(dmp, diffText1, text2, mode, diffTimeout)
-        const endMain = performance.now()
-
-        const startCleanup = performance.now()
-        if (mode === 'character' && semanticCleanup) {
-            dmp.diff_cleanupSemantic(diffs)
-        } else if (mode === 'character' && efficiencyCleanup > 0) {
-            dmp.diff_cleanupEfficiency(diffs)
-        }
-        const endTotal = performance.now()
-
-        const timing = {
-            main: endMain - startTotal,
-            cleanup: mode === 'character' ? endTotal - startCleanup : 0,
-            total: endTotal - startTotal
-        }
-        const displayDiffs =
-            captureRanges.length > 0
-                ? tagExpectedRegions(diffs as [number, string][], captureRanges)
-                : diffs.map(([operation, text]) => ({ operation, text }))
-
-        return {
-            timing,
-            diffs,
-            captures,
-            displayDiffs
-        }
-    }
+    let parserCache:
+        | {
+              originalText: string
+              result: ReturnType<typeof parseExpectedPatterns>
+          }
+        | undefined
+    const parseResult = $derived.by(() => {
+        if (!expectedPatterns) return null
+        if (parserCache?.originalText === originalText) return parserCache.result
+        const result = parseExpectedPatterns(originalText)
+        parserCache = { originalText, result }
+        return result
+    })
 
     // Reactive props re-fire on rerender even when their values are unchanged,
     // so compare inputs by value and reuse the cached result to keep diff
@@ -201,6 +138,7 @@ template that does not match uses readable `<name>` placeholders instead.
             diffMode,
             cleanupSemantic,
             cleanupEfficiency,
+            expectedPatterns,
             compiledPattern: parseResult
         }
         if (
@@ -210,18 +148,17 @@ template that does not match uses readable `<name>` placeholders instead.
             computationCache.input.diffMode === input.diffMode &&
             computationCache.input.cleanupSemantic === input.cleanupSemantic &&
             computationCache.input.cleanupEfficiency === input.cleanupEfficiency &&
+            computationCache.input.expectedPatterns === input.expectedPatterns &&
             computationCache.input.compiledPattern === input.compiledPattern
         ) {
             return computationCache.result
         }
 
-        const result = computeDiff(
+        const result = computeDiffWithEngine(
+            dmp,
             input.originalText,
             input.modifiedText,
-            input.timeout,
-            input.diffMode,
-            input.cleanupSemantic,
-            input.cleanupEfficiency,
+            input,
             input.compiledPattern
         )
         computationCache = { input, result }

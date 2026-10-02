@@ -109,6 +109,7 @@ import type {
 | `originalText`      | `string`                    | _required_    | The original (before/source) text to compare                                          |
 | `modifiedText`      | `string`                    | _required_    | The modified (after/target) text to compare                                           |
 | `diffMode`          | `SvelteDiffMode`            | `'character'` | `'character'`, `'word'`, or `'line'`; word/line skip both cleanup passes              |
+| `expectedPatterns`  | `boolean`                   | `true`        | Enable named capture templates; `false` compares exact literal source without parsing |
 | `timeout`           | `number`                    | `1`           | Max diff computation time in seconds; `0` is unlimited                                |
 | `cleanupSemantic`   | `boolean`                   | `false`       | Character only: optimize edit boundaries for human readability                        |
 | `cleanupEfficiency` | `number`                    | `4`           | Character only: edit cost for efficiency cleanup; `0` disables it                     |
@@ -224,6 +225,36 @@ You can use these snippets to:
 - Add tooltips or other interactive elements
 
 If you don't provide snippets, the component will use the default rendering with the `rendererClasses` prop.
+
+## Literal source and synchronous computation
+
+The component defaults to `expectedPatterns={true}`. For source code containing
+named regex groups, set `expectedPatterns={false}` to bypass template parsing,
+substitution, placeholders, and capture tagging. Raw tuples then reconstruct the
+exact before and after strings in every diff mode.
+
+```svelte
+<script lang="ts">
+    import SvelteDiff, { computeDiff } from '@humanspeak/svelte-diff'
+    const before = 'const re = /(?<year>\\d{4})/;'
+    const after = 'const re = /(?<year>\\d{2})/g;'
+    const result = computeDiff(before, after, { diffMode: 'line' })
+</script>
+
+<SvelteDiff originalText={before} modifiedText={after} expectedPatterns={false} />
+```
+
+`computeDiff` is synchronous and defaults to `expectedPatterns: false`, unlike
+the component. Set it to `true` to enable the same template pipeline. Other
+helper defaults match the component: character mode, timeout 1 second, semantic
+cleanup false, and efficiency edit cost 4. It returns `{ timing, diffs,
+displayDiffs, captures }` and owns a fresh engine per call. Timing is in
+milliseconds and excludes pattern preprocessing and rendering. Word and line
+modes skip cleanup; semantic cleanup takes priority in character mode.
+
+This helper is available through the existing Svelte-aware package root. Use it
+within a Svelte toolchain without mounting the component; the entry still
+requires Svelte-aware module resolution and compilation.
 
 ## Expected Patterns
 

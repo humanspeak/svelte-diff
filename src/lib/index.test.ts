@@ -1,5 +1,6 @@
 import SvelteDiffDefault, {
     cleanTemplate,
+    computeDiff,
     extractCaptures,
     parseExpectedPatterns,
     SvelteDiff,
@@ -10,8 +11,10 @@ import SvelteDiffDefault, {
     type PatternMatchResult,
     type RendererClasses,
     type Renderers,
+    type SvelteDiffComputeOptions,
     type SvelteDiffMode,
     type SvelteDiffProps,
+    type SvelteDiffResult,
     type SvelteDiffTiming,
     type SvelteDiffTuple
 } from './index.js'
@@ -142,4 +145,13 @@ it('exports exactly the supported mode literals', () => {
     expect(modes).toHaveLength(3)
     expect(sentence).toBe('sentence')
     expect(json).toBe('json')
+})
+
+it('exports synchronous computation and its public types through the Svelte root', () => {
+    const options: SvelteDiffComputeOptions = { expectedPatterns: false, diffMode: 'line' }
+    const result: SvelteDiffResult = computeDiff('/(?<name>.+)/', '/(?<name>.+)/', options)
+    expect(result.diffs).toEqual([[0, '/(?<name>.+)/']])
+    expect(result.captures).toBeUndefined()
+    const props: SvelteDiffProps = { originalText: '', modifiedText: '', expectedPatterns: false }
+    expect(props.expectedPatterns).toBe(false)
 })

@@ -74,9 +74,36 @@ Try the [line example](/examples/line-diff), including its blank-line/final-newl
 
 Granularity and [cleanup](/docs/guides/cleanup) are separate choices. Semantic cleanup can make character output more readable, but does not promise whole-token boundaries. The public comparison panes disable character cleanup to show this difference clearly.
 
+## Literal source and computation
+
+For source code, use `expectedPatterns={false}`. The component defaults to true;
+literal mode bypasses the parser and all template substitution and tagging.
+
+```svelte
+<script lang="ts">
+    import SvelteDiff, { computeDiff } from '@humanspeak/svelte-diff'
+    const before = 'const re = /(?<year>\\d{4})/;'
+    const after = 'const re = /(?<year>\\d{2})/g;'
+    const result = computeDiff(before, after, { diffMode: 'line' })
+</script>
+
+<SvelteDiff originalText={before} modifiedText={after} diffMode="line" expectedPatterns={false} />
+```
+
+`computeDiff` defaults to expectedPatterns false and returns synchronously with
+raw `diffs`, tagged `displayDiffs`, optional `captures`, and millisecond `timing`.
+It uses the same modes, timeout, and cleanup defaults as the component and owns
+an engine per call. Use it within a Svelte-aware toolchain: the package root
+requires Svelte-aware module resolution and compilation. Set expectedPatterns
+true explicitly when computing templates.
+
+In literal mode, omit inserts to reconstruct the exact original input and omit
+removals to reconstruct the exact modified input, including all line endings,
+tabs, and Unicode code units.
+
 ## Expected patterns and renderers
 
-The pipeline remains extraction → resolved/cleaned source → diff → capture tagging. Tokenization sees the resolved source, not regex syntax. On mismatch, it sees the cleaned placeholders. Raw callback tuples reconstruct that source when inserts are omitted, and reconstruct the exact modified string when removals are omitted.
+With expectedPatterns enabled, the pipeline remains extraction → resolved/cleaned source → diff → capture tagging. Tokenization sees the resolved source, not regex syntax. On mismatch, it sees the cleaned placeholders. Raw callback tuples reconstruct that source when inserts are omitted, and reconstruct the exact modified string when removals are omitted.
 
 ```svelte
 <script lang="ts">
@@ -94,7 +121,7 @@ Whole-token guarantees apply to raw tuple boundaries. Expected annotations may s
 
 ## Reactivity, SSR, timing, and limits
 
-Changing either text, `diffMode`, timeout, or cleanup options recomputes the diff. Changing only the callback reuses the same tuple array. Initial diff markup is computed during SSR; callback delivery happens on the client after computation.
+Changing either text, `diffMode`, `expectedPatterns`, timeout, or cleanup options recomputes the diff. Changing only the callback reuses the same tuple array. Initial diff markup is computed during SSR; callback delivery happens on the client after computation.
 
 For token modes, `timing.main` includes tokenization, shared-dictionary encoding, diffing, and decoding; `cleanup` is zero and `total` covers the timed computation. Expected-pattern preprocessing and DOM rendering are outside these measurements.
 

@@ -24,6 +24,9 @@ Everything public is exported from the package root.
 ```typescript
 import SvelteDiff, {
     SvelteDiff as NamedSvelteDiff,
+    computeDiff,
+    type SvelteDiffComputeOptions,
+    type SvelteDiffResult,
     type SvelteDiffProps,
     type SvelteDiffMode,
     type SvelteDiffTiming,
@@ -51,6 +54,40 @@ type SvelteDiffMode = 'character' | 'word' | 'line'
 ```
 
 `SvelteDiffProps.diffMode` is optional and defaults to `character`. Deprecated prop aliases inherit it. Sentence and JSON are not accepted. See [Diff Modes](/docs/guides/diff-modes).
+
+## `computeDiff`, `SvelteDiffComputeOptions`, and `SvelteDiffResult`
+
+Use the helper through the Svelte-aware package root within a Svelte toolchain;
+the entry requires Svelte-aware module resolution and compilation. Each call owns
+its engine and returns synchronously without mounting a component.
+
+```typescript
+interface SvelteDiffComputeOptions {
+    diffMode?: SvelteDiffMode
+    timeout?: number
+    cleanupSemantic?: boolean
+    cleanupEfficiency?: number
+    expectedPatterns?: boolean
+}
+
+interface SvelteDiffResult {
+    timing: SvelteDiffTiming
+    diffs: SvelteDiffTuple[]
+    displayDiffs: DisplayDiff[]
+    captures?: Record<string, string>
+}
+
+const result: SvelteDiffResult = computeDiff(before, after, { diffMode: 'line' })
+```
+
+Helper defaults are character mode, timeout 1 second, semantic cleanup false,
+efficiency edit cost 4, and **expectedPatterns false**. The component defaults
+expectedPatterns to **true**. Explicit true uses the same template resolution,
+mismatch placeholders, and capture tagging as the component. False bypasses
+parsing entirely: omitting inserts reconstructs the exact original input;
+omitting removals reconstructs the exact modified input. Captures are undefined
+and display segments have no expected tags. Semantic cleanup takes priority over
+efficiency in character mode; word/line skip both.
 
 ## `SvelteDiffTiming`
 
