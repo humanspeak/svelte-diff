@@ -2,8 +2,10 @@
 
 > **Executor instructions**: Follow each step and verify its expected output. Stop and report on the STOP conditions. Update your sibling README row only if the reviewer delegates index maintenance. This plan authorizes implementation and offline tests, not a live release, remote mutation, dependency installation, workflow dispatch, credential access, commit, push, or PR.
 >
-> **Drift check (run first)**: `git diff --stat fa0cfc9..HEAD -- .github/workflows/npm-publish.yml .github/scripts/release-publication.mjs .github/scripts/release-publication.test.mjs`
-> Plans 001 and 005 intentionally change this workflow. Confirm their pin and verification gates are present and retain them. Compare all remaining relevant behavior with the excerpts below; stop on unexplained differences.
+> Revision 2026-10-02: Plans 001–007 are DONE. Re-baseline to reviewed 1c8e197; completed 001 updater isolation and 005 blocking typecheck are mandatory preservation constraints. Both existing/new native release suites run in the publish build verification matrix. Current official concurrency docs specify FIFO by wait-start time with default pending replacement, so document that original trigger execution order/every-event execution are not guaranteed; retain default pending policy and fixed non-cancelling group. No scope, tested-SHA, ownership, cleanup or publication-barrier weakening.
+>
+> **Drift check (run first)**: `git diff --stat 1c8e197..HEAD -- .github/workflows/npm-publish.yml .github/scripts/release-publication.mjs .github/scripts/release-publication.test.mjs`
+> Completed plans 001 and 005 are already in this baseline. Confirm their pin and verification gates are present and retain them. Compare all remaining relevant behavior with the excerpts below; stop on unexplained differences.
 
 ## Status
 
@@ -12,7 +14,7 @@
 - **Risk**: MED
 - **Depends on**: `001-pin-release-updater.md`, then `005-enforce-library-ci-gates.md`; execute 008 after both are DONE
 - **Category**: bug
-- **Planned at**: commit `fa0cfc9`, 2026-10-02
+- **Planned at**: commit `1c8e197`, 2026-10-02
 
 ## Why this matters
 
@@ -23,8 +25,8 @@ Two release runs can derive the same version from their event checkouts. The los
 - `.github/workflows/npm-publish.yml` runs for relevant pushes to main and manual dispatch. It recovers merged-PR labels/title/URL using `context.sha`, excludes direct pushes from automatic publication, honors `skip-publish`, and selects major/minor/patch labels for version bumping.
 - `check-if-merged` supplies `should_run`, label flags, and PR metadata. Build, Playwright, coverage, and publication jobs use separate default event checkouts; there is no release concurrency group.
 - Publication uses environment `production`, imports a signing key, refreshes the README, updates the canonical and shim version manifests, pushes a version commit/tag, creates a release, then publishes through pnpm/OIDC.
-- `001-pin-release-updater.md` creates `.github/scripts/refresh-release-readme.sh` and its native Node regression. Its integration contract retains the unique `Bump version` and following `Create Release` step names, with exactly one `bash .github/scripts/refresh-release-readme.sh` invocation after `pnpm version` and before token-bearing remote configuration. Preserve those names and the in-step order; do not move that helper to an opaque command that breaks its offline integration test.
-- `005-enforce-library-ci-gates.md` adds one unconditional `Check library types` / `run: pnpm run check` step before build/unit tests in the publish `build` matrix, retaining publication's build/Playwright/coverage dependencies. Do not regress these gates while moving checkout/version handling. Plan 005 changes both workflows, but this plan modifies only npm-publish.yml.
+- `001-pin-release-updater.md` created `.github/scripts/refresh-release-readme.sh` and its native Node regression. Its integration contract retains the unique `Bump version` and following `Create Release` step names, with exactly one `bash .github/scripts/refresh-release-readme.sh` invocation after `pnpm version` and before token-bearing remote configuration. Preserve those names and the in-step order; do not move that helper to an opaque command that breaks its offline integration test.
+- `005-enforce-library-ci-gates.md` added one unconditional `Check library types` / `run: pnpm run check` step before build/unit tests in the publish `build` matrix, retaining publication's build/Playwright/coverage dependencies. Do not regress these gates while moving checkout/version handling. Plan 005 changes both workflows, but this plan modifies only npm-publish.yml.
 - `.github/workflows/trunk-check.yml:3` demonstrates repository concurrency syntax, but its `cancel-in-progress: true` is inappropriate for a publishing workflow: release mutations must not be cancelled by a newer event.
 - Root unit discovery (`vite.config.ts:16`) includes only `src/lib/**/*.test.ts`. Use native Node tests for the new `.mjs` release helper; do not put release tooling in the published library or change the test inclusion pattern/dependencies.
 
@@ -121,7 +123,7 @@ Initially the tests exercise the unmodified shell block; do not import a nonexis
 
 ### Step 2: Pin one tested baseline under a non-cancelling workflow concurrency group
 
-Add **workflow-level** concurrency before jobs, using a fixed repository-wide release group that includes both main-push and manual release events, with `cancel-in-progress: false`. The lock must cover preparation, every checkout/test gate, and mutation; a publish-job-only lock leaves tested baselines stale. Do not include event SHA/run ID in the group, because that would give each run an independent lock. Do not assume the `production` environment queues safely. Document that GitHub concurrency is not a FIFO guarantee: pending runs may be superseded; correctness must rely on stale-baseline checks, not every trigger receiving a turn.
+Add **workflow-level** concurrency before jobs, using a fixed repository-wide release group that includes both main-push and manual release events, with `cancel-in-progress: false`. The lock must cover preparation, every checkout/test gate, and mutation; a publish-job-only lock leaves tested baselines stale. Do not include event SHA/run ID in the group, because that would give each run an independent lock. Do not assume the `production` environment queues safely. Document that original trigger execution order is not guaranteed: ordering is by wait-start time, and default pending runs may be superseded. Correctness must rely on stale-baseline checks, not every trigger receiving a turn. Keep the default pending policy; do not add queue: max as an unrelated scheduling change.
 
 Add a read-only prepare job, conditioned on the existing merged-PR/manual `should_run` policy. Fetch current main and output a validated immutable `checkout_sha` plus `ready`/`stale` outcome. Retain PR lookup and labels from the **original triggering commit**, never look up labels from a later version commit. Apply the following exact policy in `release-publication.mjs`, with injectable array-argument subprocess transport:
 
@@ -168,7 +170,7 @@ Add cases where run A created an artifact but run B now owns the same tag name, 
 
 ### Step 5: Wire offline tests into the release gate and run complete checks
 
-Run `node --test .github/scripts/release-publication.test.mjs` in the existing `build` verification matrix alongside the blocking `Check library types` step added by plan 005, before publication can become eligible. Keep every existing required gate in its dependency list. Tests must use fixtures and mock transports only; a gate must never dispatch a workflow, push GitHub refs, or query a real registry as a test side effect. Review job-level output propagation, failed-step outputs, OIDC permissions, and all `if` branches for ready/stale/skipped/published outcomes. A failed version step's early `new_version` output must no longer be sufficient to trigger deletion.
+Run both `node --test .github/scripts/refresh-release-readme.test.mjs .github/scripts/release-publication.test.mjs` in the existing `build` verification matrix alongside the blocking `Check library types` step added by plan 005, before publication can become eligible. Keep every existing required gate in its dependency list. Tests must use fixtures and mock transports only; a gate must never dispatch a workflow, push GitHub refs, or query a real registry as a test side effect. Review job-level output propagation, failed-step outputs, OIDC permissions, and all `if` branches for ready/stale/skipped/published outcomes. A failed version step's early `new_version` output must no longer be sufficient to trigger deletion.
 
 **Verify**: `node --test .github/scripts/release-publication.test.mjs`, `node --check .github/scripts/release-publication.mjs`, `node --test .github/scripts/refresh-release-readme.test.mjs`, `pnpm check`, `pnpm test:only`, `pnpm run build`, `trunk fmt`, `trunk check`, and `git diff --check` → each exits 0. `rg -n -A 1 'name: Check library types' .github/workflows/npm-publish.yml` → one unconditional step with `run: pnpm run check`; offline workflow dependency assertions prove it blocks publication. `git status --short` → only scoped executor changes, preserving unrelated predecessor work. Hosted workflow execution is deferred until the operator authorizes a real run; report that limitation explicitly instead of claiming live release validation.
 
