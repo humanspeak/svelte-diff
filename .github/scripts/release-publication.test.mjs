@@ -11,12 +11,17 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
+import process from 'node:process'
 import test from 'node:test'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, URL } from 'node:url'
 import { runInNewContext } from 'node:vm'
 
 const root = fileURLToPath(new URL('../../', import.meta.url))
-const workflow = () => readFileSync(join(root, '.github/workflows/npm-publish.yml'), 'utf8')
+const policy = JSON.parse(readFileSync(join(root, '.github/release-policy.json'), 'utf8'))
+const workflow = () =>
+    policy.event === 'calver'
+        ? ''
+        : readFileSync(join(root, '.github/workflows/npm-publish.yml'), 'utf8')
 const sha = 'a'.repeat(40)
 const oid = 'b'.repeat(40)
 const identity = { run: '17', attempt: '2' }
@@ -34,6 +39,7 @@ const initial = {
 }
 
 const cleanupRun = () => {
+    if (policy.event === 'calver') return 'node .github/scripts/release-publication.mjs cleanup'
     const text = workflow()
     const marker = '            - name: Cleanup on failure\n'
     assert.equal(text.split(marker).length, 2, 'Unique cleanup step required')
@@ -124,7 +130,27 @@ test('keeps published metadata after canonical registry success', (t) => {
     assert.deepEqual(shellFixture(t, { ...initial, canonical: true, registry: 'published' }), [])
 })
 
-const load = () => import('./release-publication.mjs')
+const fixturePolicy = {
+    manifests: [
+        'package.json',
+        'tombstones/svelte-diff/package.json',
+        'tombstones/svelte-diff-match-patch/package.json'
+    ],
+    lockfile: null,
+    readme: 'managed'
+}
+const load = async () => {
+    const helper = await import('./release-publication.mjs')
+    return {
+        ...helper,
+        validateMetadata: (before, after, paths, config = fixturePolicy) =>
+            helper.validateMetadata(before, after, paths, config),
+        selectBaseline: (input, exec, config = fixturePolicy) =>
+            helper.selectBaseline(input, exec, config),
+        validateDelta: (state, exec, read, config = fixturePolicy) =>
+            helper.validateDelta(state, exec, read, config)
+    }
+}
 const fixtureState = (t, changes = {}) => {
     const dir = mkdtempSync(join(tmpdir(), 'release-state-'))
     t.after(() => rmSync(dir, { recursive: true, force: true }))
@@ -171,9 +197,9 @@ const tagResponse = (object = oid, commit = sha) => ({
 })
 const releaseData = (id = 42, commit = sha) => ({
     id,
-    // trunk-ignore(eslint/camelcase): Fixture preserves required GitHub API wire fields.
+    // eslint-disable-next-line camelcase -- Fixture preserves required GitHub API wire fields.
     tag_name: 'v1.2.3',
-    // trunk-ignore(eslint/camelcase): Fixture preserves required GitHub API wire fields.
+    // eslint-disable-next-line camelcase -- Fixture preserves required GitHub API wire fields.
     target_commitish: commit
 })
 const lease = [
@@ -344,7 +370,7 @@ test('cleanup retains run B replacement tag object or commit', async (t) => {
         { stdout: 'ambiguous' }
     ]) {
         const mock = scripted([[tagLookup, output]])
-        cleanup(fixtureState(t), identity, false, mock.exec, () => {})
+        cleanup(fixtureState(t), identity, false, mock.exec, () => undefined)
         mock.done()
     }
 })
@@ -356,7 +382,7 @@ test('cleanup stored release ID 404 retains a different ID on same tag and OID',
         [releaseApi('42'), response(404)],
         [releaseApi('tags/v1.2.3'), response(200, releaseData(99))]
     ])
-    cleanup(fixtureState(t), identity, false, mock.exec, () => {})
+    cleanup(fixtureState(t), identity, false, mock.exec, () => undefined)
     mock.done()
 })
 
@@ -372,7 +398,7 @@ test('cleanup retains changed release ID or target and API errors', async (t) =>
             [tagLookup, tagResponse()],
             [releaseApi('42'), result]
         ])
-        cleanup(fixtureState(t), identity, false, mock.exec, () => {})
+        cleanup(fixtureState(t), identity, false, mock.exec, () => undefined)
         mock.done()
     }
 })
@@ -411,7 +437,7 @@ test('cleanup owns tag only when no release was ever attempted or found', async 
             identity,
             false,
             mock.exec,
-            () => {}
+            () => undefined
         )
         mock.done()
     }
@@ -466,7 +492,7 @@ for (const [name, result] of [
         mock.done()
         assert.equal(readState(path, identity).tag, failureAtMain ? 'not-attempted' : 'unknown')
         const noCalls = scripted([])
-        cleanup(path, identity, false, noCalls.exec, () => {})
+        cleanup(path, identity, false, noCalls.exec, () => undefined)
         noCalls.done()
     })
 }
@@ -534,7 +560,7 @@ test('creation API records numeric identity from creation response with structur
 test('creation ambiguous release response retains unknown ownership without later lookup inference', async (t) => {
     const { createRelease, readState, cleanup } = await load()
     for (const result of [
-        // trunk-ignore(eslint/camelcase): Fixture preserves required GitHub API wire fields.
+        // eslint-disable-next-line camelcase -- Fixture preserves required GitHub API wire fields.
         response(201, { tag_name: 'v1.2.3' }),
         { code: 1, stdout: '' },
         response(200, releaseData()),
@@ -561,7 +587,7 @@ test('creation ambiguous release response retains unknown ownership without late
         mock.done()
         assert.equal(readState(path, identity).release, 'unknown')
         const noCalls = scripted([])
-        cleanup(path, identity, false, noCalls.exec, () => {})
+        cleanup(path, identity, false, noCalls.exec, () => undefined)
         noCalls.done()
     }
 })
@@ -572,10 +598,10 @@ test('publish outcome attempt and success are irreversible cleanup barriers', as
     markRegistry(path, identity, 'attempt')
     assert.equal(readState(path, identity).registry, 'unknown')
     const mock = scripted([])
-    cleanup(path, identity, false, mock.exec, () => {})
+    cleanup(path, identity, false, mock.exec, () => undefined)
     markRegistry(path, identity, 'success')
     assert.equal(readState(path, identity).canonical, true)
-    cleanup(path, identity, false, mock.exec, () => {})
+    cleanup(path, identity, false, mock.exec, () => undefined)
     assert.throws(() => markRegistry(path, identity, 'attempt'))
     mock.done()
 })
@@ -844,105 +870,129 @@ test('whole working-tree delta is validated before staging and commit', async ()
     untracked.done()
 })
 
-test('workflow concurrency and tested checkout cover every code job with sole read-only bootstrap exception', () => {
-    const text = workflow()
-    assert.match(
-        text,
-        /concurrency:\n {4}group: repository-release\n {4}cancel-in-progress: false\n\njobs:/
-    )
-    assert.equal(text.match(/^concurrency:/gm).length, 1)
-    assert.ok(!text.includes('queue:'))
-    const jobs = text.split(/^ {4}(?=[a-z][\w-]*:\n)/m).slice(1)
-    const checkoutJobs = []
-    for (const job of jobs) {
-        const name = job.split(':')[0]
-        const checkouts = job.split(/uses: actions\/checkout@[^\n]+\n/).slice(1)
-        for (const checkout of checkouts) {
-            const config = checkout.split(/\n {12}- /)[0]
-            if (name === 'prepare') {
-                assert.match(config, /ref: \$\{\{ github.sha \}\}/)
-                assert.match(config, /persist-credentials: false/)
-                assert.match(job, /Sole bootstrap exception: read-only/)
-                assert.ok(!/pnpm|\.mjs (begin|push|release|cleanup)/.test(job))
-            } else {
-                assert.match(config, /ref: \$\{\{ needs.prepare.outputs.checkout_sha \}\}/, name)
-                assert.match(job, /needs: \[[^\n]*prepare[^\n]*\]/, name)
-                assert.match(job, /needs.prepare.outputs.ready == 'true'/, name)
+test(
+    'workflow concurrency and tested checkout cover every code job with sole read-only bootstrap exception',
+    { skip: policy.reference !== true },
+    () => {
+        const text = workflow()
+        assert.match(
+            text,
+            /concurrency:\n {4}group: repository-release\n {4}cancel-in-progress: false\n\njobs:/
+        )
+        assert.equal(text.match(/^concurrency:/gm).length, 1)
+        assert.ok(!text.includes('queue:'))
+        const jobs = text.split(/^ {4}(?=[a-z][\w-]*:\n)/m).slice(1)
+        const checkoutJobs = []
+        for (const job of jobs) {
+            const name = job.split(':')[0]
+            const checkouts = job.split(/uses: actions\/checkout@[^\n]+\n/).slice(1)
+            for (const checkout of checkouts) {
+                const config = checkout.split(/\n {12}- /)[0]
+                if (name === 'prepare') {
+                    assert.match(config, /ref: \$\{\{ github.sha \}\}/)
+                    assert.match(config, /persist-credentials: false/)
+                    assert.match(job, /Sole bootstrap exception: read-only/)
+                    assert.ok(!/pnpm|\.mjs (begin|push|release|cleanup)/.test(job))
+                } else {
+                    assert.match(
+                        config,
+                        /ref: \$\{\{ needs.prepare.outputs.checkout_sha \}\}/,
+                        name
+                    )
+                    assert.match(job, /needs: \[[^\n]*prepare[^\n]*\]/, name)
+                    assert.match(job, /needs.prepare.outputs.ready == 'true'/, name)
+                }
+                checkoutJobs.push(name)
             }
-            checkoutJobs.push(name)
         }
+        assert.deepEqual(checkoutJobs, [
+            'prepare',
+            'debug-check',
+            'build',
+            'playwright-tests',
+            'publish-github-packages'
+        ])
+        const build = jobs.find((job) => job.startsWith('build:'))
+        assert.match(build, /node-version: \[22, 24\]/)
+        assert.equal(text.match(/name: Check library types/g).length, 1)
+        assert.match(build, /- name: Check library types\n {14}run: pnpm run check/)
+        assert.match(
+            build,
+            /node --test \.github\/scripts\/refresh-release-readme.test.mjs \.github\/scripts\/release-publication.test.mjs\n {18}pnpm build\n {18}pnpm test/
+        )
+        const publish = jobs.find((job) => job.startsWith('publish-github-packages:'))
+        for (const gate of [
+            'prepare',
+            'debug-check',
+            'build',
+            'playwright-tests',
+            'coverage-report'
+        ])
+            assert.match(publish, new RegExp(`needs: \\[[^\\n]*${gate}[^\\n]*\\]`))
+        assert.match(publish, /needs.build.result == 'success'/)
+        assert.match(publish, /needs.debug-check.result == 'success'/)
+        assert.match(publish, /needs.playwright-tests.result == 'success'/)
+        assert.match(publish, /needs.coverage-report.result == 'success'/)
+        assert.ok(
+            !/git (reset|rebase)|git push --tags|git push --delete|gh release delete/.test(text)
+        )
     }
-    assert.deepEqual(checkoutJobs, [
-        'prepare',
-        'debug-check',
-        'build',
-        'playwright-tests',
-        'publish-github-packages'
-    ])
-    const build = jobs.find((job) => job.startsWith('build:'))
-    assert.match(build, /node-version: \[22, 24\]/)
-    assert.equal(text.match(/name: Check library types/g).length, 1)
-    assert.match(build, /- name: Check library types\n {14}run: pnpm run check/)
-    assert.match(
-        build,
-        /node --test \.github\/scripts\/refresh-release-readme.test.mjs \.github\/scripts\/release-publication.test.mjs\n {18}pnpm build\n {18}pnpm test/
-    )
-    const publish = jobs.find((job) => job.startsWith('publish-github-packages:'))
-    for (const gate of ['prepare', 'debug-check', 'build', 'playwright-tests', 'coverage-report'])
-        assert.match(publish, new RegExp(`needs: \\[[^\\n]*${gate}[^\\n]*\\]`))
-    assert.match(publish, /needs.build.result == 'success'/)
-    assert.match(publish, /needs.debug-check.result == 'success'/)
-    assert.match(publish, /needs.playwright-tests.result == 'success'/)
-    assert.match(publish, /needs.coverage-report.result == 'success'/)
-    assert.ok(!/git (reset|rebase)|git push --tags|git push --delete|gh release delete/.test(text))
-})
+)
 
-test('workflow provenance preserves original merged PR, labels, bump rules and skip policy', () => {
-    const text = workflow()
-    assert.match(text, /commit_sha: context.sha/)
-    assert.match(text, /prs.find\(\(candidate\) => candidate.merged_at\)/)
-    for (const label of ['skip-publish', 'major', 'minor'])
-        assert.ok(text.includes(`labels.includes('${label}')`))
-    assert.match(text, /EVENT_SHA: \$\{\{ github.sha \}\}/)
-    assert.match(text, /EVENT_REF: \$\{\{ github.ref \}\}/)
-    assert.match(text, /\[\[ "\$EVENT_NAME" == "push" && "\$PR_FOUND" != "true" \]\]/)
-    assert.match(text, /elif \[ "\$HAS_MAJOR" = "true" \]; then\n {20}BUMP_TYPE="major"/)
-    assert.match(text, /elif \[ "\$HAS_MINOR" = "true" \]; then\n {20}BUMP_TYPE="minor"/)
-    assert.match(text, /BUMP_TYPE="patch"/)
-    assert.match(text, /INPUT_VERSION: \$\{\{ github.event.inputs.version_bump \}\}/)
-})
+test(
+    'workflow provenance preserves original merged PR, labels, bump rules and skip policy',
+    { skip: policy.reference !== true },
+    () => {
+        const text = workflow()
+        assert.match(text, /commit_sha: context.sha/)
+        assert.match(text, /prs.find\(\(candidate\) => candidate.merged_at\)/)
+        for (const label of ['skip-publish', 'major', 'minor'])
+            assert.ok(text.includes(`labels.includes('${label}')`))
+        assert.match(text, /EVENT_SHA: \$\{\{ github.sha \}\}/)
+        assert.match(text, /EVENT_REF: \$\{\{ github.ref \}\}/)
+        assert.match(text, /\[\[ "\$EVENT_NAME" == "push" && "\$PR_FOUND" != "true" \]\]/)
+        assert.match(text, /elif \[ "\$HAS_MAJOR" = "true" \]; then\n {20}BUMP_TYPE="major"/)
+        assert.match(text, /elif \[ "\$HAS_MINOR" = "true" \]; then\n {20}BUMP_TYPE="minor"/)
+        assert.match(text, /BUMP_TYPE="patch"/)
+        assert.match(text, /INPUT_VERSION: \$\{\{ github.event.inputs.version_bump \}\}/)
+    }
+)
 
-test('workflow publication barrier is pure canonical step, independently guarded before state write and shims', () => {
-    const text = workflow()
-    assert.match(
-        text,
-        /- name: Publish\n {14}id: canonical\n {14}if: steps.ownership.outputs.ready == 'true'\n {14}run: pnpm publish --provenance --access public --no-git-checks\n/
-    )
-    assert.ok(text.indexOf('.mjs registry-attempt') < text.indexOf('- name: Publish\n'))
-    assert.ok(
-        text.indexOf('- name: Record canonical publication') > text.indexOf('- name: Publish\n')
-    )
-    assert.match(
-        text,
-        /- name: Record canonical publication\n {14}if: steps.canonical.outcome == 'success'/
-    )
-    assert.match(
-        text,
-        /- name: Cleanup on failure\n {14}if: failure\(\) && steps.ownership.outputs.ready == 'true' && steps.canonical.outcome != 'success'/
-    )
-    assert.match(text, /CANONICAL_SUCCESS: \$\{\{ steps.canonical.outcome \}\}/)
-    assert.match(text, /environment: production/)
-    assert.match(text, /id-token: write/)
-    assert.match(text, /git_commit_gpgsign: true/)
-    assert.match(text, /git_tag_gpgsign: true/)
-    assert.equal(text.match(/bash \.github\/scripts\/refresh-release-readme.sh/g).length, 1)
-    assert.match(
-        text,
-        /pnpm --dir tombstones\/svelte-diff publish --provenance --access public --no-git-checks \|\|/
-    )
-    assert.ok(text.indexOf('.mjs validate') < text.indexOf('git add package.json README.md'))
-    assert.ok(text.indexOf('.mjs begin') < text.indexOf('pnpm version "$BUMP_TYPE"'))
-})
+test(
+    'workflow publication barrier is pure canonical step, independently guarded before state write and shims',
+    { skip: policy.reference !== true },
+    () => {
+        const text = workflow()
+        assert.match(
+            text,
+            /- name: Publish\n {14}id: canonical\n {14}if: steps.ownership.outputs.ready == 'true'\n {14}run: pnpm publish --provenance --access public --no-git-checks\n/
+        )
+        assert.ok(text.indexOf('.mjs registry-attempt') < text.indexOf('- name: Publish\n'))
+        assert.ok(
+            text.indexOf('- name: Record canonical publication') > text.indexOf('- name: Publish\n')
+        )
+        assert.match(
+            text,
+            /- name: Record canonical publication\n {14}if: steps.canonical.outcome == 'success'/
+        )
+        assert.match(
+            text,
+            /- name: Cleanup on failure\n {14}if: failure\(\) && steps.ownership.outputs.ready == 'true' && steps.canonical.outcome != 'success'/
+        )
+        assert.match(text, /CANONICAL_SUCCESS: \$\{\{ steps.canonical.outcome \}\}/)
+        assert.match(text, /environment: production/)
+        assert.match(text, /id-token: write/)
+        assert.match(text, /git_commit_gpgsign: true/)
+        assert.match(text, /git_tag_gpgsign: true/)
+        assert.equal(text.match(/bash \.github\/scripts\/refresh-release-readme.sh/g).length, 1)
+        assert.match(
+            text,
+            /pnpm --dir tombstones\/svelte-diff publish --provenance --access public --no-git-checks \|\|/
+        )
+        assert.ok(text.indexOf('.mjs validate') < text.indexOf('git add package.json README.md'))
+        assert.ok(text.indexOf('.mjs begin') < text.indexOf('pnpm version "$BUMP_TYPE"'))
+    }
+)
 
 test('configured cleanup entry point deletes owned numeric ID and leased tag using mock-only PATH', (t) => {
     assert.deepEqual(
@@ -982,94 +1032,104 @@ const stepBody = (name, key = 'run') => {
         .join('\n')
 }
 
-test('provenance actual lookup uses original trigger SHA and merged PR labels despite a newer prepared SHA', async () => {
-    const text = workflow()
-    const section = text.split('            - id: pr\n')[1].split('            - id: check\n')[0]
-    assert.ok(section)
-    const script = section
-        .split('                  script: |\n')[1]
-        .split('\n')
-        .map((line) => (line.trim() ? line.slice(22) : ''))
-        .join('\n')
-    for (const labels of [['major', 'minor'], ['minor'], ['skip-publish'], []]) {
-        const outputs = {},
-            calls = []
-        await runInNewContext(`(async () => {${script}\n})()`, {
-            context: { sha, repo: { owner: 'fixture', repo: 'fixture' } },
-            github: {
-                rest: {
-                    repos: {
-                        listPullRequestsAssociatedWithCommit: async (args) => {
-                            calls.push(args)
-                            return {
-                                data: [
-                                    // trunk-ignore(eslint/camelcase): Fixture preserves required GitHub API wire fields.
-                                    { merged_at: null, number: 1, labels: [] },
-                                    {
-                                        // trunk-ignore(eslint/camelcase): Fixture preserves required GitHub API wire fields.
-                                        merged_at: 'fixture-time',
-                                        number: 2,
-                                        title: 'original PR',
-                                        // trunk-ignore(eslint/camelcase): Fixture preserves required GitHub API wire fields.
-                                        html_url: 'fixture PR',
-                                        labels: labels.map((name) => ({ name }))
-                                    }
-                                ]
+test(
+    'provenance actual lookup uses original trigger SHA and merged PR labels despite a newer prepared SHA',
+    { skip: policy.event !== 'push' },
+    async () => {
+        const text = workflow()
+        const section = text
+            .split('            - id: pr\n')[1]
+            .split('            - id: check\n')[0]
+        assert.ok(section)
+        const script = section
+            .split('                  script: |\n')[1]
+            .split('\n')
+            .map((line) => (line.trim() ? line.slice(22) : ''))
+            .join('\n')
+        for (const labels of [['major', 'minor'], ['minor'], ['skip-publish'], []]) {
+            const outputs = {},
+                calls = []
+            await runInNewContext(`(async () => {${script}\n})()`, {
+                context: { sha, repo: { owner: 'fixture', repo: 'fixture' } },
+                github: {
+                    rest: {
+                        repos: {
+                            listPullRequestsAssociatedWithCommit: async (args) => {
+                                calls.push(args)
+                                return {
+                                    data: [
+                                        // eslint-disable-next-line camelcase -- Fixture preserves required GitHub API wire fields.
+                                        { merged_at: null, number: 1, labels: [] },
+                                        {
+                                            // eslint-disable-next-line camelcase -- Fixture preserves required GitHub API wire fields.
+                                            merged_at: 'fixture-time',
+                                            number: 2,
+                                            title: 'original PR',
+                                            // eslint-disable-next-line camelcase -- Fixture preserves required GitHub API wire fields.
+                                            html_url: 'fixture PR',
+                                            labels: labels.map((name) => ({ name }))
+                                        }
+                                    ]
+                                }
                             }
                         }
                     }
-                }
-            },
-            core: { info: () => {}, setOutput: (key, value) => (outputs[key] = value) }
-        })
-        assert.equal(calls.length, 1)
-        assert.equal(calls[0].commit_sha, sha)
-        assert.equal(outputs.found, 'true')
-        assert.equal(outputs.title, 'original PR')
-        assert.equal(outputs.has_major, String(labels.includes('major')))
-        assert.equal(outputs.has_minor, String(labels.includes('minor')))
-        assert.equal(outputs.has_skip_label, String(labels.includes('skip-publish')))
+                },
+                core: { info: () => undefined, setOutput: (key, value) => (outputs[key] = value) }
+            })
+            assert.equal(calls.length, 1)
+            assert.equal(calls[0].commit_sha, sha)
+            assert.equal(outputs.found, 'true')
+            assert.equal(outputs.title, 'original PR')
+            assert.equal(outputs.has_major, String(labels.includes('major')))
+            assert.equal(outputs.has_minor, String(labels.includes('minor')))
+            assert.equal(outputs.has_skip_label, String(labels.includes('skip-publish')))
+        }
     }
-})
+)
 
-test('provenance actual bump shell preserves major/minor/patch and manual skip', (t) => {
-    const dir = mkdtempSync(join(tmpdir(), 'release-bump-'))
-    t.after(() => rmSync(dir, { recursive: true, force: true }))
-    const run = stepBody('Determine version bump type')
-    for (const [event, input, major, minor, expected] of [
-        ['push', '', 'true', 'true', 'major'],
-        ['push', '', 'false', 'true', 'minor'],
-        ['push', '', 'false', 'false', 'patch'],
-        ['workflow_dispatch', 'major', 'false', 'false', 'major'],
-        ['workflow_dispatch', 'minor', 'false', 'false', 'minor'],
-        ['workflow_dispatch', 'patch', 'false', 'false', 'patch'],
-        ['workflow_dispatch', 'skip', 'false', 'false', 'skip']
-    ]) {
-        const output = join(dir, 'output')
-        writeFileSync(output, '')
-        const result = spawnSync(
-            '/bin/bash',
-            ['-e', '-c', run.replaceAll('${{ github.event_name }}', event)],
-            {
-                cwd: dir,
-                encoding: 'utf8',
-                env: {
-                    PATH: '/usr/bin:/bin',
-                    HOME: dir,
-                    GITHUB_OUTPUT: output,
-                    INPUT_VERSION: input,
-                    HAS_MAJOR: major,
-                    HAS_MINOR: minor
+test(
+    'provenance actual bump shell preserves major/minor/patch and manual skip',
+    { skip: policy.event === 'calver' },
+    (t) => {
+        const dir = mkdtempSync(join(tmpdir(), 'release-bump-'))
+        t.after(() => rmSync(dir, { recursive: true, force: true }))
+        const run = stepBody('Determine version bump type')
+        for (const [event, input, major, minor, expected] of [
+            ['push', '', 'true', 'true', 'major'],
+            ['push', '', 'false', 'true', 'minor'],
+            ['push', '', 'false', 'false', 'patch'],
+            ['workflow_dispatch', 'major', 'false', 'false', 'major'],
+            ['workflow_dispatch', 'minor', 'false', 'false', 'minor'],
+            ['workflow_dispatch', 'patch', 'false', 'false', 'patch'],
+            ['workflow_dispatch', 'skip', 'false', 'false', 'skip']
+        ]) {
+            const output = join(dir, 'output')
+            writeFileSync(output, '')
+            const result = spawnSync(
+                '/bin/bash',
+                ['-e', '-c', run.replaceAll('${{ github.event_name }}', event)],
+                {
+                    cwd: dir,
+                    encoding: 'utf8',
+                    env: {
+                        PATH: '/usr/bin:/bin',
+                        HOME: dir,
+                        GITHUB_OUTPUT: output,
+                        INPUT_VERSION: input,
+                        HAS_MAJOR: major,
+                        HAS_MINOR: minor
+                    }
                 }
-            }
-        )
-        assert.equal(result.status, 0)
-        assert.equal(
-            readFileSync(output, 'utf8'),
-            expected === 'skip' ? 'should_publish=false\n' : `bump=${expected}\n`
-        )
+            )
+            assert.equal(result.status, 0)
+            assert.equal(
+                readFileSync(output, 'utf8'),
+                expected === 'skip' ? 'should_publish=false\n' : `bump=${expected}\n`
+            )
+        }
     }
-})
+)
 
 test('baseline rejects file mode changes before reading release contents', async () => {
     const { selectBaseline, validateDelta } = await load()

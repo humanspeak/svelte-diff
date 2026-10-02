@@ -1,3 +1,4 @@
+# Release safety managed by humanspeak/docs-kit .github/release-workflows/sync.py
 # 1. Workflow metadata
 name: Publish to NPM
 
@@ -28,6 +29,19 @@ on:
             - package.json
             - pnpm-lock.yaml
             - .github/workflows/npm-publish.yml
+            - pnpm-workspace.yaml
+            - tsconfig*.json
+            - svelte.config.*
+            - vite.config.*
+            - vitest.config.*
+            - vitest.setup.*
+            - playwright.config.*
+            - eslint.config.*
+            - .npmrc
+            - .github/scripts/**
+            - .github/release-policy.json
+            - .github/release-source.json
+
     workflow_dispatch:
         inputs:
             # trunk-ignore(checkov/CKV_GHA_7): We need manual version control for releases
@@ -326,6 +340,10 @@ jobs:
 
             - name: Check library types
               run: pnpm run check
+
+            - name: Test release workflow offline
+              run: |
+                  node --test .github/scripts/release-workflow.test.mjs
 
             - name: Test
               run: |

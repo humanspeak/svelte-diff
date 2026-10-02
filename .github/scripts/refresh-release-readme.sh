@@ -3,7 +3,7 @@
 set +x
 set -euo pipefail
 
-if [[ -z ${GITHUB_TOKEN:-} ]]; then
+if [[ -z ${GITHUB_TOKEN-} ]]; then
 	echo "::warning::missing ecosystem updater download credential; skipping README refresh"
 	exit 0
 fi
