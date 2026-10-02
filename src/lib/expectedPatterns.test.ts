@@ -643,3 +643,194 @@ describe('findNamedGroups (via parseExpectedPatterns)', () => {
         expect(result!.groups[0].pattern).toBe('')
     })
 })
+
+/** Observes source access while forwarding boxed-string behavior to native strings. */
+const countSourceTraversal = (primitive: string) => {
+    let traversed = 0
+    const value = new Proxy(new String(primitive), {
+        get(target, property) {
+            if (typeof property === 'string' && /^(0|[1-9]\d*)$/.test(property)) {
+                if (Number(property) < primitive.length) traversed++
+                return Reflect.get(target, property)
+            }
+            if (property === Symbol.iterator) {
+                return function* () {
+                    for (const character of primitive) {
+                        traversed += character.length
+                        yield character
+                    }
+                }
+            }
+            if (property === Symbol.toPrimitive) {
+                return () => {
+                    traversed += primitive.length
+                    return primitive
+                }
+            }
+            const member: unknown = Reflect.get(target, property)
+            if (typeof member !== 'function') return member
+            return (...args: unknown[]) => {
+                const result: unknown = Reflect.apply(member, primitive, args)
+                if (property === 'charAt' || property === 'at') {
+                    traversed += typeof result === 'string' ? result.length : 0
+                } else if (property === 'charCodeAt' || property === 'codePointAt') {
+                    if (typeof result === 'number' && Number.isFinite(result)) {
+                        traversed += property === 'codePointAt' && result > 0xffff ? 2 : 1
+                    }
+                } else if (
+                    property === 'slice' ||
+                    property === 'substring' ||
+                    property === 'substr'
+                ) {
+                    traversed += typeof result === 'string' ? result.length : 0
+                } else {
+                    // Native conversion/search/transformation work can traverse the whole source.
+                    traversed += primitive.length
+                }
+                return result
+            }
+        }
+    })
+    return { value, reads: () => traversed }
+}
+
+it('rejected candidates have bounded source traversal', () => {
+    for (const markers of [64, 128, 256]) {
+        const primitiveInput = '(?<A>'.repeat(markers)
+        const budget = 64 * primitiveInput.length + 128
+        const parsedInput = countSourceTraversal(primitiveInput)
+        const parsed = parseExpectedPatterns(parsedInput.value as unknown as string)
+        expect(parsed).toBeNull()
+        expect
+            .soft(
+                parsedInput.reads(),
+                `parse: ${markers} markers, ${primitiveInput.length} chars, budget ${budget}`
+            )
+            .toBeLessThanOrEqual(budget)
+
+        const cleanedInput = countSourceTraversal(primitiveInput)
+        const cleaned = cleanTemplate(cleanedInput.value as unknown as string)
+        expect(String(cleaned)).toBe(primitiveInput)
+        expect
+            .soft(
+                cleanedInput.reads(),
+                `clean: ${markers} markers, ${primitiveInput.length} chars, budget ${budget}`
+            )
+            .toBeLessThanOrEqual(budget)
+    }
+})
+
+describe('scanner compatibility', () => {
+    const cases = [
+        {
+            title: 'closed rejected outer retains its valid inner',
+            text: '(?<outer>(?<inner>foo))',
+            groups: [{ name: 'inner', pattern: 'foo' }],
+            matches: [{ fullMatch: '(?<inner>foo)', name: 'inner', pattern: 'foo', index: 9 }],
+            parts: ['(?<outer>', '(?<inner>foo)', ')'],
+            cleaned: '(?<outer><inner>)'
+        },
+        {
+            title: 'several rejected ancestors retain their valid inner',
+            text: '(?<a>(?<b>(?<c>foo)))',
+            groups: [{ name: 'c', pattern: 'foo' }],
+            matches: [{ fullMatch: '(?<c>foo)', name: 'c', pattern: 'foo', index: 10 }],
+            parts: ['(?<a>(?<b>', '(?<c>foo)', '))'],
+            cleaned: '(?<a>(?<b><c>))'
+        },
+        {
+            title: 'unclosed outer retains its closed valid inner',
+            text: '(?<outer>before (?<inner>foo) tail',
+            groups: [{ name: 'inner', pattern: 'foo' }],
+            matches: [{ fullMatch: '(?<inner>foo)', name: 'inner', pattern: 'foo', index: 16 }],
+            parts: ['(?<outer>before ', '(?<inner>foo)', ' tail'],
+            cleaned: '(?<outer>before <inner> tail'
+        },
+        {
+            title: 'escaped parentheses and brackets preserve the boundary',
+            text: 'x (?<value>\\(a\\)\\[b\\]) y',
+            groups: [{ name: 'value', pattern: '\\(a\\)\\[b\\]' }],
+            matches: [
+                {
+                    fullMatch: '(?<value>\\(a\\)\\[b\\])',
+                    name: 'value',
+                    pattern: '\\(a\\)\\[b\\]',
+                    index: 2
+                }
+            ],
+            parts: ['x ', '(?<value>\\(a\\)\\[b\\])', ' y'],
+            cleaned: 'x <value> y'
+        },
+        {
+            title: 'parentheses and marker text inside a class stay in the accepted group',
+            text: '(?<value>[()(?<inner>]) tail',
+            groups: [{ name: 'value', pattern: '[()(?<inner>]' }],
+            matches: [
+                {
+                    fullMatch: '(?<value>[()(?<inner>])',
+                    name: 'value',
+                    pattern: '[()(?<inner>]',
+                    index: 0
+                }
+            ],
+            parts: ['', '(?<value>[()(?<inner>])', ' tail'],
+            cleaned: '<value> tail'
+        },
+        {
+            title: 'escaped closing parenthesis does not end a group',
+            text: '(?<value>a\\)b)',
+            groups: [{ name: 'value', pattern: 'a\\)b' }],
+            matches: [{ fullMatch: '(?<value>a\\)b)', name: 'value', pattern: 'a\\)b', index: 0 }],
+            parts: ['', '(?<value>a\\)b)', ''],
+            cleaned: '<value>'
+        },
+        {
+            title: 'valid group following malformed name syntax is retained',
+            text: '(?<1bad>oops) (?<ok>foo)',
+            groups: [{ name: 'ok', pattern: 'foo' }],
+            matches: [{ fullMatch: '(?<ok>foo)', name: 'ok', pattern: 'foo', index: 14 }],
+            parts: ['(?<1bad>oops) ', '(?<ok>foo)', ''],
+            cleaned: '(?<1bad>oops) <ok>'
+        },
+        {
+            title: 'adjacent valid groups retain empty literal parts',
+            text: '(?<a>x)(?<b>y)',
+            groups: [
+                { name: 'a', pattern: 'x' },
+                { name: 'b', pattern: 'y' }
+            ],
+            matches: [
+                { fullMatch: '(?<a>x)', name: 'a', pattern: 'x', index: 0 },
+                { fullMatch: '(?<b>y)', name: 'b', pattern: 'y', index: 7 }
+            ],
+            parts: ['', '(?<a>x)', '', '(?<b>y)', ''],
+            cleaned: '<a><b>'
+        },
+        {
+            title: 'multiline Unicode literals retain UTF-16 indices',
+            text: 'α😀\n(?<word>\\w+)\n終',
+            groups: [{ name: 'word', pattern: '\\w+' }],
+            matches: [{ fullMatch: '(?<word>\\w+)', name: 'word', pattern: '\\w+', index: 4 }],
+            parts: ['α😀\n', '(?<word>\\w+)', '\n終'],
+            cleaned: 'α😀\n<word>\n終'
+        }
+    ]
+
+    it.each(cases)('$title', ({ text, groups, matches, parts, cleaned }) => {
+        const result = parseExpectedPatterns(text)
+        if (result === null) throw new Error(`Expected primitive template to parse: ${text}`)
+        expect(result.groups).toEqual(groups)
+        expect(result.matches).toEqual(matches)
+        expect(result.parts).toEqual(parts)
+        expect(result.cleanedText).toBe(cleaned)
+        expect(cleanTemplate(text)).toBe(cleaned)
+    })
+
+    it.each(['(?<value>[abc)', '(?<1bad>foo)', '(?<ébad>foo)', '(?<-bad>foo)'])(
+        'retains rejected primitive input %s',
+        (text) => {
+            expect(parseExpectedPatterns(text)).toBeNull()
+            expect(cleanTemplate(text)).toBe(text)
+        }
+    )
+})

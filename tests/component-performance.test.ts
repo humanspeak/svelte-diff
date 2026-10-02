@@ -367,3 +367,46 @@ test('component performance diagnostics are split into focused pages', async ({ 
         await expectPending(page.getByTestId(`diagnostic-${number}`))
     }
 })
+
+test('006 rejects repeated malformed patterns within the discovery ceiling', async ({ page }) => {
+    await page.goto('/tests/component-performance/006')
+
+    const assertSamples = async () => {
+        const card = await assertDiagnosticPass(page, '006')
+        const diagnostics = (await card.innerText()).trim()
+        await expect(card.getByTestId('diagnostic-006-samples').getByRole('listitem')).toHaveCount(
+            3
+        )
+        await expect(card, diagnostics).toHaveAttribute('data-input-length', '80000')
+        await expect(card, diagnostics).toHaveAttribute('data-marker-count', '16000')
+        await expect(card, diagnostics).toHaveAttribute('data-output-valid', 'true')
+        await expect(card, diagnostics).toHaveAttribute('data-output-validity', 'true,true,true')
+        await expect(card, diagnostics).toHaveAttribute('data-ceiling-ms', '2000')
+        await expect(card, diagnostics).toHaveAttribute('data-failure-reasons', '')
+        const samples = (await card.getAttribute('data-samples-ms'))!.split(',').map(Number)
+        expect(samples, diagnostics).toHaveLength(3)
+        for (const sample of samples) {
+            expect(Number.isFinite(sample), diagnostics).toBe(true)
+            expect(sample, diagnostics).toBeGreaterThanOrEqual(0)
+            expect(sample, diagnostics).toBeLessThanOrEqual(2000)
+        }
+        expect(Number(await card.getAttribute('data-elapsed-ms')), diagnostics).toBe(
+            Math.max(...samples)
+        )
+        await expect(page.getByTestId('diagnostic-overall'), diagnostics).toHaveAttribute(
+            'data-status',
+            'pass'
+        )
+    }
+
+    await assertSamples()
+    const runButton = page.getByRole('button', { name: 'Run diagnostic 006' })
+    await observeRunningState(runButton, '006')
+    await runButton.click()
+    const documentElement = page.locator('html')
+    await expect(documentElement).toHaveAttribute('data-observed-button-disabled', 'true')
+    await expect(documentElement).toHaveAttribute('data-observed-overall-running', 'true')
+    await expect(documentElement).toHaveAttribute('data-observed-card-running', 'true')
+    await assertSamples()
+    await expect(runButton).toBeEnabled()
+})
