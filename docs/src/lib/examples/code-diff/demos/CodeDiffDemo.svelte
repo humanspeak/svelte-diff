@@ -207,6 +207,7 @@ export async function loadTeam(ids: string[]): Promise<User[]> {
             <textarea
                 id="before-source"
                 aria-label="Before"
+                autocomplete="off"
                 bind:value={originalText}
                 oninput={edited}
                 spellcheck="false"
@@ -219,6 +220,7 @@ export async function loadTeam(ids: string[]): Promise<User[]> {
             <textarea
                 id="after-source"
                 aria-label="After"
+                autocomplete="off"
                 bind:value={modifiedText}
                 oninput={edited}
                 spellcheck="false"
