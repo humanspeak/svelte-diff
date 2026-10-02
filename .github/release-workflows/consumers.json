@@ -215,7 +215,7 @@
         "packageManager": "pnpm@12.6.0",
         "policy": {
             "manager": "pnpm",
-            "event": "manual",
+            "event": "pull_request",
             "manifests": ["package.json"],
             "lockfile": null,
             "readme": "managed"
@@ -224,9 +224,7 @@
         "authentication": "OIDC",
         "signing": "signed commits and annotated tags",
         "sourceCheck": "pnpm run typecheck && pnpm run build && pnpm run test:unit && pnpm run test:pages:build",
-        "publishCommands": [
-            "pnpm publish --provenance --access public --no-git-checks --tag \"$DIST_TAG\""
-        ]
+        "publishCommands": ["pnpm publish --provenance --access public --no-git-checks"]
     },
     {
         "repository": "humanspeak/svelte-subscribe",
