@@ -21,6 +21,7 @@
         "@humanspeak/docs-kit": "github:humanspeak/docs-kit#2026.9.10",
         "@humanspeak/svelte-diff": "workspace:*",
         "@humanspeak/svelte-markdown": "^1.8.7",
+        "@tanstack/highlight": "1.0.0",
         "runed": "^0.37.1"
     },
     "devDependencies": {

@@ -82,6 +82,7 @@
         "@sveltejs/kit": "^2.70.3",
         "@sveltejs/package": "^2.5.8",
         "@sveltejs/vite-plugin-svelte": "^7.3.0",
+        "@tanstack/highlight": "1.0.0",
         "@testing-library/jest-dom": "^7.0.1",
         "@testing-library/svelte": "^5.4.2",
         "@testing-library/user-event": "^14.6.5",
@@ -111,7 +112,13 @@
         "vitest": "^4.1.11"
     },
     "peerDependencies": {
+        "@tanstack/highlight": "^1.0.0",
         "svelte": "^5.0.0"
+    },
+    "peerDependenciesMeta": {
+        "@tanstack/highlight": {
+            "optional": true
+        }
     },
     "packageManager": "pnpm@12.6.0",
     "volta": {
