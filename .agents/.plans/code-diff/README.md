@@ -1,5 +1,10 @@
 # Code-diff plans
 
+Execution started 2026-10-02 on `feat/highlighted-code-diff`, created from fresh
+main `068080b` after package improvements and capture DOM metadata merged in
+PR #216. Plan A is re-baselined to that reviewed state; plan B will be
+reconciled again after A passes. Baseline: 172 library units.
+
 Written with the improve skill on 2026-10-02 against fresh `origin/main`
 `fa0cfc9`, on the planning branch `chore/package-improvements`. See the completed
 [package-improvements batch](../../.plans-closed/package-improvements/README.md) record. These are
@@ -10,7 +15,7 @@ changes or permission to publish/deploy.
 
 | Plan | Audit option | Title | Priority | Effort | Risk | Depends on | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| [001](001-extract-shared-diff-core-and-literal-mode.md) | A | Shared computation and literal source mode | P2 | M | MED | Package improvements complete | TODO |
+| [001](001-extract-shared-diff-core-and-literal-mode.md) | A | Shared computation and literal source mode | P2 | M | MED | Package improvements complete | IN PROGRESS |
 | [002](002-add-tanstack-highlighted-code-diff.md) | B | Optional TanStack-highlighted CodeDiff | P2 | L | MED | 001 | TODO |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (reason) | REJECTED (reason).

@@ -4,7 +4,9 @@
 > implementation handoff, not authorization to publish or deploy. Update this
 > batch's README status when complete unless your reviewer owns the index.
 >
-> **Drift check**: `git diff --stat fa0cfc9..HEAD -- src/lib src/routes/tests/diff-modes tests/diff-modes.test.ts README.md docs/src/routes/docs`
+> **Revision 2026-10-02**: Execution begins on `feat/highlighted-code-diff` from fresh main `068080b` after PR #216 merged. All ten package improvements are DONE; baseline is 172 passing library units. Preserve the untracked processing callback, ordered/reusable pattern extraction, invalid/duplicate literal fallback, linear discovery, and built-in `data-capture-name` / full `data-capture-value` metadata (including multiline fragments). The guard owns README status. Existing release infrastructure is outside this initiative; only B's expressly scoped docs CI integration is planned. Source excerpts below describe the prior structure; current code and completed regression tests are authoritative.
+>
+> **Drift check**: `git diff --stat 068080b..HEAD -- src/lib src/routes/tests/diff-modes tests/diff-modes.test.ts README.md docs/src/routes/docs`
 > Compare changes with the excerpts below. Required package-improvement changes
 > are expected drift: inspect their completed tests and preserve them. Stop for
 > unrelated changes that invalidate this plan instead of restoring older code.
@@ -17,7 +19,7 @@
 - **Depends on**: package-improvements plans 002–007 and 009; all ten package
   improvements should finish before this initiative starts
 - **Category**: direction / enhancement
-- **Planned at**: commit `fa0cfc9`, 2026-10-02
+- **Planned at**: commit `068080b`, 2026-10-02
 
 ## Why this matters
 
@@ -115,7 +117,7 @@ export const computeDiff = (
 | --- | --- | --- |
 | Install if needed | `pnpm install --frozen-lockfile` | exit 0; no manifest changes |
 | Targeted red/green | `pnpm exec vitest run src/lib/SvelteDiff.test.ts -t 'literal source'` | red in step 1, green thereafter |
-| Core units | `pnpm exec vitest run src/lib/` | all tests pass; audited baseline was 123 |
+| Core units | `pnpm exec vitest run src/lib/` | all tests pass; execution baseline is 172 |
 | Typecheck | `pnpm run check` | zero errors/warnings |
 | Format / lint | `trunk fmt` / `trunk check` | no new failures; Trunk is authority |
 | Package | `pnpm run package` | Svelte package and publint pass |
@@ -123,8 +125,8 @@ export const computeDiff = (
 | Docs build | `pnpm run package`; `pnpm --filter docs build` | authored API/types/guide render; normal generators succeed |
 | Docs source check | Python wrapper below, before and after build | zero errors/warnings; generated worker restored |
 
-The audit used existing dependencies and got 123 passing units and root check
-0/0. Browser/package gates are required execution gates, not claims already
+The original audit used existing dependencies and got 123 passing units and root check
+0/0; completed package improvements now establish 172 passing units. Browser/package gates are required execution gates, not claims already
 verified by this planning session. Use the configured Node 24.15/pnpm 12.6
 toolchain; report unavailable browsers/tools rather than claiming a pass.
 
@@ -173,8 +175,8 @@ incidental tracked generation changes instead of silently expanding scope.
 ## Git workflow
 
 These plans were authored on `chore/package-improvements` from fresh main.
-Execution begins after that initiative finishes; the operator chooses an isolated
-feature branch/worktree (suggestion `feat/code-diff-core`). Do not switch the
+Execution is authorized on `feat/highlighted-code-diff`, created from fresh main
+`068080b`. A and B run serially on this branch. Do not switch the
 operator's branch, commit, push, or open a PR without execution authorization.
 Match conventional subjects such as `feat: add literal source diff computation`.
 
