@@ -64,6 +64,7 @@ certain dynamic regions (dates, names, versions) are expected to differ.
 
 <script lang="ts">
     import { DiffMatchPatch } from 'diff-match-patch-ts'
+    import { untrack } from 'svelte'
     import { computeTokenDiff } from './diffModes.js'
     import type {
         SvelteDiffMode,
@@ -225,7 +226,10 @@ certain dynamic regions (dates, names, versions) are expected to differ.
 
     $effect(() => {
         const result = processingResult
-        onProcessing?.(result.timing, result.diffs, result.captures)
+        const callback = onProcessing
+        untrack(() => {
+            callback?.(result.timing, result.diffs, result.captures)
+        })
     })
 
     // Per segment type: child snippet > renderers entry > built-in fallback.

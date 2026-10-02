@@ -1,8 +1,9 @@
 import { fireEvent, render, waitFor } from '@testing-library/svelte'
-import { createRawSnippet } from 'svelte'
+import { createRawSnippet, flushSync, tick } from 'svelte'
 import { describe, expect, it, vi } from 'vitest'
 import DiffModesFixture from '../routes/tests/diff-modes/+page.svelte'
 import SvelteDiff from './SvelteDiff.svelte'
+import ProcessingCallbackFixture from './test/ProcessingCallbackFixture.svelte'
 
 const textSnippet = (className: string) =>
     createRawSnippet<[string]>((text) => ({
@@ -51,6 +52,35 @@ describe('SvelteDiff component', () => {
         expect(typeof timing.main).toBe('number')
         expect(typeof timing.cleanup).toBe('number')
         expect(typeof timing.total).toBe('number')
+    })
+
+    it('does not subscribe to state read and written by onProcessing', async () => {
+        const observe = vi.fn()
+        const { getByTestId } = render(ProcessingCallbackFixture, { observe })
+
+        flushSync()
+        await tick()
+
+        expect(observe).toHaveBeenCalledTimes(1)
+        expect(getByTestId('counter').textContent).toBe('1')
+    })
+
+    it('does not notify when state only read by onProcessing changes', async () => {
+        const observe = vi.fn()
+        const { getByRole } = render(ProcessingCallbackFixture, {
+            observe,
+            incrementOnProcessing: false
+        })
+
+        flushSync()
+        await tick()
+        expect(observe).toHaveBeenCalledTimes(1)
+
+        await fireEvent.click(getByRole('button', { name: 'Increment counter' }))
+        flushSync()
+        await tick()
+
+        expect(observe).toHaveBeenCalledTimes(1)
     })
 
     it('reuses the computed diff when only onProcessing changes', async () => {
