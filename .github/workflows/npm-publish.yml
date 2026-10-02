@@ -286,6 +286,9 @@ jobs:
               run: |
                   pnpm install --filter . --prefer-offline --frozen-lockfile --ignore-scripts --config.engine-strict=false
 
+            - name: Check library types
+              run: pnpm run check
+
             - name: Test
               run: |
                   pnpm build
