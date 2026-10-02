@@ -6,9 +6,11 @@
 >
 > **Revision 2026-10-02**: The operator explicitly approved a release-age exception only for `@tanstack/highlight@1.0.0`. Add that exact version selector to `minimumReleaseAgeExclude` in `pnpm-workspace.yaml` when implementing B. Keep `minimumReleaseAge: 2880` and all existing exclusions unchanged; no package-wide, wildcard, global, or transitive exception is authorized. Pin the docs dependency to 1.0.0 as well as the development dependency. A must pass before B is dispatched; re-baseline to A's reviewed snapshot then. This amendment records policy authorization only; no dependency has been installed.
 >
-> **Revision 2026-10-02**: A passed at reviewed snapshot `a4f19bc`: 186 library units, check 0/0, package/publint, docs before/build/after checks, 20 diff-mode / 40 performance / 35 capture browser cases. Re-baseline to that implementation. Existing docs CI already runs all docs tests; preserve `.github/workflows/docs-diff-modes.yml` byte-for-byte. Dependency manifests/policy are dispatched first, normal lock generation happens in an isolated temporary workspace, an executor copies the generated lock, and guard runs a frozen install writing ignored artifacts only before steps 2–5. No other gates change.
+> **Revision 2026-10-02**: A passed at reviewed snapshot `a4f19bc`: 186 library units, check 0/0, package/publint, docs before/build/after checks, 20 diff-mode / 40 performance / 35 capture browser cases. Re-baseline to that implementation. The normal docs generator uses nested guide mirror paths (`docs/static/docs/guides/code-diffs.md`), as A reproduced. Existing docs CI already runs all docs tests; preserve `.github/workflows/docs-diff-modes.yml` byte-for-byte. Dependency manifests/policy are dispatched first, normal lock generation happens in an isolated temporary workspace, an executor copies the generated lock, and guard runs a frozen install writing ignored artifacts only before steps 2–5. No other gates change.
 >
-> **Drift check**: `git diff --stat a4f19bc..HEAD -- src/lib package.json pnpm-lock.yaml pnpm-workspace.yaml docs/package.json docs/src/lib docs/src/routes tests docs/tests .github/workflows/docs-diff-modes.yml`
+> **Revision 2026-10-02**: Execution resumed after transient executor/DNS failures before any B source edits. Registry access is now available; TanStack 1.0.0 metadata was reproduced. Corrected the guide mirror path to the nested layout observed in the normal A build. Re-stamped the baseline to current HEAD, which adds only guard records to reviewed A.
+>
+> **Drift check**: `git diff --stat 6d242bf..HEAD -- src/lib package.json pnpm-lock.yaml pnpm-workspace.yaml docs/package.json docs/src/lib docs/src/routes tests docs/tests .github/workflows/docs-diff-modes.yml`
 > Plan A and package improvements are expected drift. Verify their resulting
 > contracts explicitly; stop for conflicting changes rather than restoring the
 > baseline excerpts or silently changing the design.
@@ -20,7 +22,7 @@
 - **Risk**: MED
 - **Depends on**: `001-extract-shared-diff-core-and-literal-mode.md`
 - **Category**: direction / feature
-- **Planned at**: commit `a4f19bc`, 2026-10-02 (reviewed A snapshot)
+- **Planned at**: commit `6d242bf`, 2026-10-02 (reviewed A plus guard records)
 
 ## Why this matters
 
@@ -299,7 +301,7 @@ now made obsolete by the optional feature, retaining the Svelte-only positioning
 
 **Verify**: root-browser command, docs packaging, docs source check with existing
 worker workaround, and docs-browser command -> pass. Check generated
-`docs/static/examples/code-diff.md` and `docs/static/docs/guides-code-diffs.md`
+`docs/static/examples/code-diff.md` and `docs/static/docs/guides/code-diffs.md`
 exist after the build and the example's show-code control exposes current source.
 
 ### Step 5: Verify package isolation and complete regression gates

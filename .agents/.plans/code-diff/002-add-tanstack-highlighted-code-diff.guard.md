@@ -17,3 +17,12 @@ a4f19bc · A PASS and B pre-flight
 - Re-baselined to reviewed A snapshot. Existing docs CI discovers every test; no workflow edit needed. Release infrastructure remains outside this initiative.
 - Isolated pnpm 12.6 fixture accepted exact exclusion while retaining 2880-minute policy. No repository dependency or policy changes yet.
 - Action: commit amendment, dispatch dependency setup, generate normal lock in temporary workspace for executor copy, frozen bootstrap, then full implementation.
+
+## Checkpoint 3 — 2026-10-02 14:41 — PLAN AMENDED
+
+6d242bf · operator continued after transient connection failures
+
+- Two companion dispatches failed through five reconnects without changing any source. Cancelled stuck calls; no orphaned local executor or preview process remains in this resumed environment.
+- Registry access now succeeds and confirms TanStack 1.0.0 with core/theme and selective language/theme exports. Exact-version exception remains approved.
+- Corrected generated guide mirror path to the existing nested generator layout reproduced in A; no gate weakened. Baseline now includes A guard records, no B source drift.
+- Action: commit amended contract, retry separate dependency executor, then frozen bootstrap and implementation.
