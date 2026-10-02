@@ -319,7 +319,7 @@ Compared source:   Copyright <year> MIT
 
 ## Programmatic API
 
-The expected-pattern engine is also exported as framework-agnostic functions, so you can compute matches and tag diffs without mounting the component:
+The expected-pattern helpers are exported for use within a Svelte-aware toolchain. You can call them without mounting the component; the package entry still requires Svelte-aware module resolution and compilation.
 
 ```typescript
 import {
