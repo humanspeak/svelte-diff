@@ -19,7 +19,7 @@ An operator/reviewer owns these status rows unless they delegate updates.
 | --- | --- | --- | --- | --- | --- | --- |
 | [001](001-pin-release-updater.md) | Pin the release updater and isolate credentials | P1 | M | MED | — | DONE |
 | [002](002-isolate-processing-callbacks.md) | Isolate processing callback state reads | P1 | S | LOW | — | DONE |
-| [003](003-preserve-capture-property-names.md) | Preserve accepted capture property names | P1 | S | LOW | 002, shared component tests | TODO |
+| [003](003-preserve-capture-property-names.md) | Preserve accepted capture property names | P1 | S | LOW | 002, shared component tests | DONE |
 | [004](004-handle-invalid-pattern-compilation.md) | Reject invalid templates without rendering failures | P1 | M | MED | 003, shared parser/tests | TODO |
 | [005](005-enforce-library-ci-gates.md) | Enforce root typechecks and pnpm CI input coverage | P1 | S | LOW | 001, shared release workflow | TODO |
 | [006](006-linearize-rejected-pattern-parsing.md) | Bound rejected-pattern discovery to linear traversal | P1 | M | MED | 004 | TODO |
@@ -111,3 +111,5 @@ production deployment/runtime, or every third-party competitive claim.
 Execution authorized on 2026-10-02: run package improvements serially until STOP or COMPLETE. Guard owns commits and status rows; no live release or PR. Plan 001 passed at 687b7c4 with a documented Darwin runtime-key clarification and independently reproduced red/green tests.
 
 Plan 002 passed at b3448d3: 125 units and 35 diagnostics across all five browser projects, with independent baseline callback-count reproductions. Plan 003 is re-baselined to this reviewed source tip because 002 added component tests.
+
+Plan 003 passed at 40c286c: 131 units, 25 expected-pattern browser cases, and independent reserved-name baseline replay. Plan 004 is re-baselined to the completed parser/storage and callback predecessors; its docs source-check baseline passes 0/0 with the existing worker wrapper.

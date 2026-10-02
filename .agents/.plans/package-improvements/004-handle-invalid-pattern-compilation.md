@@ -2,7 +2,9 @@
 
 > **Executor instructions**: Read fully, execute steps in order, and confirm each command's expected result. On a STOP condition report instead of improvising. The operator owns the sibling README; report completion and results for their update.
 >
-> **Drift check (run first)**: `git diff --stat fa0cfc9..HEAD -- src/lib/expectedPatterns.ts src/lib/expectedPatterns.test.ts src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/lib/index.ts tests/expected-patterns.test.ts README.md docs/src/routes/docs/guides/expected-patterns/+page.svx`. Compare live code with excerpts. Prerequisite 003 changes capture assignment, and independent plan 002 may untrack observer bodies; these are expected declared changes. Stop for unrelated mismatch. Check `git status --short` for pre-existing local changes.
+> Revision 2026-10-02: Plans 002 and 003 are DONE. Re-baseline to reviewed 40c286c, preserve callback untrack and own data-property capture storage plus their tests, and make predecessor instructions unconditional. Independent docs source-check pre-flight passed 0 errors/0 warnings using the existing worker wrapper. Scope and invalid/duplicate rejection policy are unchanged.
+>
+> **Drift check (run first)**: `git diff --stat 40c286c..HEAD -- src/lib/expectedPatterns.ts src/lib/expectedPatterns.test.ts src/lib/SvelteDiff.svelte src/lib/SvelteDiff.test.ts src/lib/index.ts tests/expected-patterns.test.ts README.md docs/src/routes/docs/guides/expected-patterns/+page.svx`. Compare live code with excerpts. Completed 003 stores own enumerable capture values, and completed 002 untracks observer bodies. Preserve both reviewed changes and their tests. Stop for unrelated mismatch. Check `git status --short` for pre-existing local changes.
 
 ## Status
 
@@ -11,7 +13,7 @@
 - **Risk**: MED
 - **Depends on**: `003-preserve-capture-property-names.md`; precedes `006-linearize-rejected-pattern-parsing.md` and `007-match-template-occurrences-in-order.md` to serialize shared engine/test changes and establish their rejection contract
 - **Category**: bug
-- **Planned at**: commit `fa0cfc9`, 2026-10-02
+- **Planned at**: commit `40c286c`, 2026-10-02
 
 ## Why this matters
 
@@ -43,8 +45,8 @@ if (matches.length === 0) return text
 // each group is replaced by <name>, without compiling or name uniqueness validation
 ```
 
-- `src/lib/SvelteDiff.svelte:125` derives `parseExpectedPatterns(originalText)`. Lines 143–151 resolve a successfully parsed template or use its cleaned placeholder text when extraction does not match. If parsing returns null, it already compares the original literally; do not conflate invalid-template fallback with a valid template that has no target match.
-- `src/lib/expectedPatterns.test.ts:65–77` tests incomplete syntax/invalid names but not invalid balanced regex bodies. `src/lib/SvelteDiff.test.ts:263–272` explicitly requires cleaned placeholders for valid patterns that fail extraction; preserve that behavior.
+- `src/lib/SvelteDiff.svelte:126` derives `parseExpectedPatterns(originalText)`. Lines 144–152 resolve a successfully parsed template or use its cleaned placeholder text when extraction does not match. If parsing returns null, it already compares the original literally; do not conflate invalid-template fallback with a valid template that has no target match.
+- `src/lib/expectedPatterns.test.ts:65–77` tests incomplete syntax/invalid names but not invalid balanced regex bodies. `src/lib/SvelteDiff.test.ts:293–302` explicitly requires cleaned placeholders for valid patterns that fail extraction; preserve that behavior.
 - `tests/expected-patterns.test.ts:22–41` fills existing `text1`/`text2` controls; route `src/routes/tests/expected-patterns/+page.svelte:46–76` exposes these controls and `diff-result`, `.diff-expected`, `.diff-remove`, `.diff-insert`. No new fixture route is needed.
 - `README.md:307–327` currently states ordinary diff behavior for no groups, and the Programmatic API row says parsing returns null only when no groups exist; cleaner is described as replacing named syntax unconditionally. These authored descriptions must reflect the new rejection policy.
 - `docs/src/routes/docs/guides/expected-patterns/+page.svx:78–88` currently says:
@@ -154,7 +156,7 @@ Update JSDoc for parse and clean: return null/original literal input when no sup
 
 Add `it('rethrows unexpected regex compilation errors', ...)` in the helper test file. Temporarily replace the global RegExp constructor with a constructable test double that throws a sentinel `TypeError`; assert parsing a recognized valid marker throws the same sentinel. Save/restore the native constructor in `try/finally` so no global replacement leaks. Do not use an arrow-only constructor mock that fails with its own unrelated TypeError. The only intended assertion is that the sentinel is not swallowed by the SyntaxError boundary.
 
-Add `it('compares invalid templates literally and recovers after valid edits', ...)` in `src/lib/SvelteDiff.test.ts`, patterned on lines 207–238. First render identical original/modified `(?<bad>*)`: no throw, no expected spans, callback captures undefined, and raw tuple reconstruction for operations <=0 and >=0 equals the literal input. Rerender through a same-line duplicate source, a cross-line duplicate source, a valid unmatched template (must still clean), and a valid matched template (captures/styling restored). Assert callback values and source reconstruction, not just visible text.
+Add `it('compares invalid templates literally and recovers after valid edits', ...)` in `src/lib/SvelteDiff.test.ts`, patterned on lines 237–268. First render identical original/modified `(?<bad>*)`: no throw, no expected spans, callback captures undefined, and raw tuple reconstruction for operations <=0 and >=0 equals the literal input. Rerender through a same-line duplicate source, a cross-line duplicate source, a valid unmatched template (must still clean), and a valid matched template (captures/styling restored). Assert callback values and source reconstruction, not just visible text.
 
 Add browser test `test('keeps invalid templates literal and recovers to expected captures', ...)` in the existing expected-pattern suite. Collect `pageerror`; fill both controls with identical invalid input, assert `diff-result` literal text and zero expected spans, then fill the valid year example and assert expected year span returns. Add duplicate-name input to the same test or a separate table and assert no page errors. Existing valid non-match browser test remains unchanged.
 
