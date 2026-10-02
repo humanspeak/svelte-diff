@@ -15,8 +15,8 @@ changes or permission to publish/deploy.
 
 | Plan | Audit option | Title | Priority | Effort | Risk | Depends on | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| [001](001-extract-shared-diff-core-and-literal-mode.md) | A | Shared computation and literal source mode | P2 | M | MED | Package improvements complete | IN PROGRESS |
-| [002](002-add-tanstack-highlighted-code-diff.md) | B | Optional TanStack-highlighted CodeDiff | P2 | L | MED | 001 | TODO |
+| [001](001-extract-shared-diff-core-and-literal-mode.md) | A | Shared computation and literal source mode | P2 | M | MED | Package improvements complete | DONE — PASS at a4f19bc |
+| [002](002-add-tanstack-highlighted-code-diff.md) | B | Optional TanStack-highlighted CodeDiff | P2 | L | MED | 001 | IN PROGRESS — dependency setup, then implementation |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (reason) | REJECTED (reason).
 The operator/reviewer owns these rows unless they delegate updates. Executors
@@ -73,3 +73,12 @@ installed while writing these plans.
 - Claiming source-offset fidelity implies browser DOM/clipboard preservation of
   raw CR/CRLF: rejected; model reconstruction stays exact, and HTML parsing needs
   normalization-aware browser assertions and explicit hydration verification.
+
+## Release-age exception authorization
+
+On 2026-10-02 the operator approved an exception only for
+`@tanstack/highlight@1.0.0`. B may add that exact selector to
+`pnpm-workspace.yaml` while retaining the 2880-minute policy and existing
+exclusions. A passed at `a4f19bc`; B is re-baselined to that reviewed snapshot.
+Dependency setup precedes implementation so the executor can inspect installed declarations.
+Release infrastructure stays unchanged; existing docs CI already discovers new tests.

@@ -4,7 +4,11 @@
 > gates, and update this batch's README status unless your reviewer owns it. This
 > plan does not authorize publishing, deploying, or replacing the docs highlighter.
 >
-> **Drift check**: `git diff --stat fa0cfc9..HEAD -- src/lib package.json pnpm-lock.yaml docs/package.json docs/src/lib docs/src/routes tests docs/tests .github/workflows/docs-diff-modes.yml`
+> **Revision 2026-10-02**: The operator explicitly approved a release-age exception only for `@tanstack/highlight@1.0.0`. Add that exact version selector to `minimumReleaseAgeExclude` in `pnpm-workspace.yaml` when implementing B. Keep `minimumReleaseAge: 2880` and all existing exclusions unchanged; no package-wide, wildcard, global, or transitive exception is authorized. Pin the docs dependency to 1.0.0 as well as the development dependency. A must pass before B is dispatched; re-baseline to A's reviewed snapshot then. This amendment records policy authorization only; no dependency has been installed.
+>
+> **Revision 2026-10-02**: A passed at reviewed snapshot `a4f19bc`: 186 library units, check 0/0, package/publint, docs before/build/after checks, 20 diff-mode / 40 performance / 35 capture browser cases. Re-baseline to that implementation. Existing docs CI already runs all docs tests; preserve `.github/workflows/docs-diff-modes.yml` byte-for-byte. Dependency manifests/policy are dispatched first, normal lock generation happens in an isolated temporary workspace, an executor copies the generated lock, and guard runs a frozen install writing ignored artifacts only before steps 2–5. No other gates change.
+>
+> **Drift check**: `git diff --stat a4f19bc..HEAD -- src/lib package.json pnpm-lock.yaml pnpm-workspace.yaml docs/package.json docs/src/lib docs/src/routes tests docs/tests .github/workflows/docs-diff-modes.yml`
 > Plan A and package improvements are expected drift. Verify their resulting
 > contracts explicitly; stop for conflicting changes rather than restoring the
 > baseline excerpts or silently changing the design.
@@ -16,7 +20,7 @@
 - **Risk**: MED
 - **Depends on**: `001-extract-shared-diff-core-and-literal-mode.md`
 - **Category**: direction / feature
-- **Planned at**: commit `fa0cfc9`, 2026-10-02
+- **Planned at**: commit `a4f19bc`, 2026-10-02 (reviewed A snapshot)
 
 ## Why this matters
 
@@ -208,6 +212,7 @@ source regressions. The docs build's GitHub stats fetch can require network acce
 `docs/src/routes/docs/api/code-diff/+page.svx`, `docs/tests/code-diff.test.ts`,
 `scripts/verify-code-diff-packaging.mjs`;
 modify `package.json`, `pnpm-lock.yaml`, `docs/package.json`, `README.md`,
+`pnpm-workspace.yaml` (only the authorized exact-version release-age exclusion),
 `docs/src/lib/examplesIndex.ts`, `docs/src/lib/docsNav.ts`,
 `docs/tests/example-navigation.test.ts` (update its fixed example order, titles,
 and counters from eight to nine),
@@ -236,7 +241,8 @@ Use conventional commit subjects such as `feat: add highlighted code diffs`.
 
 Confirm A's literal helper and installed/planned TanStack 1.0.0 declarations.
 Add optional peer/dev/doc dependencies and `./code` export without changing root
-runtime imports. Use pnpm, retain minimumReleaseAge/workspace policy, and update
+runtime imports. Use pnpm, retain the 2880-minute minimumReleaseAge/workspace
+policy, add only the approved `@tanstack/highlight@1.0.0` exclusion, and update
 the lockfile normally; do not bypass release-age policy broadly. Create the
 component entry and explicit props. This is net-new behavior, so no preexisting
 runtime red test is required; write its contract tests alongside implementation.
