@@ -26,3 +26,13 @@ a4f19bc · A PASS and B pre-flight
 - Registry access now succeeds and confirms TanStack 1.0.0 with core/theme and selective language/theme exports. Exact-version exception remains approved.
 - Corrected generated guide mirror path to the existing nested generator layout reproduced in A; no gate weakened. Baseline now includes A guard records, no B source drift.
 - Action: commit amended contract, retry separate dependency executor, then frozen bootstrap and implementation.
+
+## Checkpoint 4 — 2026-10-02 14:46 — ON TRACK
+
+25e788f · dependency bootstrap snapshot
+
+- Separate executors authored three manifests/policy and copied exact normal temporary-workspace lock. Snapshot passed normal format/Trunk/root check hooks.
+- pnpm12.6 normal lock generation passed 724 supply-chain entries; only 12 lock lines added for root/docs TanStack 1.0.0. Frozen repository install succeeded, reused one package, no tracked mutations.
+- Registry preflight and installed core/type/theme/language declarations match planned 1.0.0. Independently verified full-source token reconstruction for TS and unknown-language fallback, including regex braces, CRLF, tabs and emoji.
+- Full scope review: only optional peer/dev/docs metadata, exact exclusion and lock addition; minimumReleaseAge 2880 retained, all existing exclusions unchanged. No workflow/helper/root source/export changes.
+- Action: commit checkpoint record and dispatch remaining entry/component/model/tests/docs/packaging implementation. B remains IN PROGRESS.
