@@ -524,9 +524,6 @@ jobs:
                   git config --global commit.gpgsign true
                   git config --global user.signingkey "$GPG_KEY_ID"
 
-                  # Set up authentication for push
-                  git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
-
                   # Validate bump type for security
                   case "$BUMP_TYPE" in
                     "major"|"minor"|"patch") ;;
@@ -558,20 +555,13 @@ jobs:
                   ESCAPED_TITLE=$(echo "$PR_TITLE" | sed 's/[`$"\]/\\&/g')
                   ESCAPED_URL=$(echo "$PR_URL" | sed 's/[`$"\]/\\&/g')
 
-                  # Refresh the managed README footer (the docs-kit ecosystem block +
-                  # standardized License/Credits). Runs AFTER `pnpm version` so the
-                  # working tree is clean when pnpm runs — pnpm version aborts on a
-                  # dirty tree. Fetched raw from the private docs-kit repo (no install,
-                  # no dependency here); reuses $GITHUB_TOKEN (ACTIONS_KEY) for auth.
-                  # Best-effort: a failed fetch or roster blip only warns.
-                  UPDATER="$RUNNER_TEMP/update-ecosystem-readme.mjs"
-                  if curl -fsSL -H "Authorization: token $GITHUB_TOKEN" \
-                      https://raw.githubusercontent.com/humanspeak/docs-kit/main/scripts/update-ecosystem-readme.mjs \
-                      -o "$UPDATER"; then
-                      node "$UPDATER" || echo "::warning::ecosystem updater errored; README left unchanged"
-                  else
-                      echo "::warning::could not fetch ecosystem updater; skipping README refresh"
-                  fi
+                  # Refresh the managed README footer after versioning, before Git
+                  # write authentication. The pinned updater runs best-effort with
+                  # only PATH in its environment.
+                  bash .github/scripts/refresh-release-readme.sh
+
+                  # Set up authentication for push
+                  git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
 
                   # Commit the version changes (and any refreshed README ecosystem block)
                   git add package.json README.md tombstones/svelte-diff/package.json tombstones/svelte-diff-match-patch/package.json
