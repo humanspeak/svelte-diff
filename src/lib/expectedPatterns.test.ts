@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
     cleanTemplate,
     extractCaptures,
@@ -200,6 +200,129 @@ describe('compiled expected-pattern metadata', () => {
 })
 
 describe('extractCaptures', () => {
+    it('matches repeated template context in source order', () => {
+        const source = 'Item: (?<first>\\w+)\nItem: (?<second>\\w+)'
+        const target = 'Item: Alpha\nItem: Beta'
+        const parsed = parseExpectedPatterns(source)!
+        const result = extractCaptures(source, target, parsed)!
+
+        expect(result.captures).toEqual({ first: 'Alpha', second: 'Beta' })
+        expect(result.resolvedText).toBe(target)
+        expect(result.captureRangesInText2).toEqual([
+            { name: 'first', start: 6, end: 11 },
+            { name: 'second', start: 18, end: 22 }
+        ])
+        for (const { name, start, end } of result.captureRangesInText2) {
+            expect(target.slice(start, end)).toBe(result.captures[name])
+        }
+    })
+
+    it.each(['Item: Alpha\r\nItem: Beta', 'Header 😀\r\nItem: Alpha\r\nItem: Beta'])(
+        'preserves absolute capture offsets after leading content and CRLF: %s',
+        (target) => {
+            const source = 'Item: (?<first>\\w+)\nItem: (?<second>\\w+)'
+            const result = extractCaptures(source, target, parseExpectedPatterns(source)!)!
+            expect(result.captures).toEqual({ first: 'Alpha', second: 'Beta' })
+            expect(result.captureRangesInText2).toEqual([
+                { name: 'first', start: target.indexOf('Alpha'), end: target.indexOf('Alpha') + 5 },
+                { name: 'second', start: target.indexOf('Beta'), end: target.indexOf('Beta') + 4 }
+            ])
+            for (const { name, start, end } of result.captureRangesInText2) {
+                expect(target.slice(start, end)).toBe(result.captures[name])
+            }
+        }
+    )
+
+    it('does not reuse an earlier occurrence when a later line is missing', () => {
+        const source = 'Item: (?<first>\\w+)\nItem: (?<second>\\w+)'
+        expect(extractCaptures(source, 'Item: Alpha', parseExpectedPatterns(source)!)).toBeNull()
+    })
+
+    it('rejects target occurrences that reverse source context order', () => {
+        const source = 'A: (?<first>\\w+)\nB: (?<second>\\w+)'
+        expect(
+            extractCaptures(source, 'B: Beta\nA: Alpha', parseExpectedPatterns(source)!)
+        ).toBeNull()
+    })
+
+    it('resets compiled regex search state after success and failure', () => {
+        const source = 'Item: (?<first>\\w+)\nItem: (?<second>\\w+)'
+        const parsed = parseExpectedPatterns(source)!
+        const regexes = parsed.linePatterns.map(({ regex }) => regex)
+        for (const values of [['Alpha', 'Beta'], ['Delta', 'Gamma'], null, ['Omega', 'Theta']]) {
+            const target = values ? `Item: ${values[0]}\nItem: ${values[1]}` : 'Item: Alpha'
+            const result = extractCaptures(source, target, parsed)
+            if (values) {
+                expect(result?.captures).toEqual({ first: values[0], second: values[1] })
+                expect(result?.resolvedText).toBe(target)
+                expect(result?.captureRangesInText2).toEqual([
+                    { name: 'first', start: 6, end: 6 + values[0].length },
+                    { name: 'second', start: 13 + values[0].length, end: target.length }
+                ])
+            } else {
+                expect(result).toBeNull()
+            }
+            parsed.linePatterns.forEach(({ regex }, index) => {
+                expect(regex).toBe(regexes[index])
+                expect(regex.lastIndex).toBe(0)
+            })
+        }
+    })
+
+    it('resets compiled regex search state when exec throws', () => {
+        const source = 'A: (?<first>Alpha)\nB: (?<second>Beta)'
+        const parsed = parseExpectedPatterns(source)!
+        const regex = parsed.linePatterns[1].regex
+        const error = new Error('unexpected extraction failure')
+        const exec = vi.spyOn(regex, 'exec').mockImplementation(() => {
+            expect(regex.lastIndex).toBe(8)
+            regex.lastIndex = 99
+            throw error
+        })
+        try {
+            expect(() => extractCaptures(source, 'A: Alpha\nB: Beta', parsed)).toThrow(error)
+            expect(parsed.linePatterns.every(({ regex }) => regex.lastIndex === 0)).toBe(true)
+        } finally {
+            exec.mockRestore()
+        }
+        expect(extractCaptures(source, 'A: Alpha\nB: Beta', parsed)?.captures).toEqual({
+            first: 'Alpha',
+            second: 'Beta'
+        })
+    })
+
+    it('keeps whole-target anchors and lookbehind semantics', () => {
+        const anchored = 'A: (?<first>Alpha)\n(?<second>^Beta)'
+        expect(
+            extractCaptures(anchored, 'A: AlphaBeta', parseExpectedPatterns(anchored)!)
+        ).toBeNull()
+        const source = '(?<first>Alpha)\n(?<second>(?<=Alpha)Beta)'
+        const result = extractCaptures(source, 'AlphaBeta', parseExpectedPatterns(source)!)!
+        expect(result.captures).toEqual({ first: 'Alpha', second: 'Beta' })
+        expect(result.captureRangesInText2).toEqual([
+            { name: 'first', start: 0, end: 5 },
+            { name: 'second', start: 5, end: 9 }
+        ])
+    })
+
+    it('allows empty captures at a shared boundary without skipping following content', () => {
+        const source = '(?<empty>)\n(?<content>Alpha)'
+        const parsed = parseExpectedPatterns(source)!
+        const regexes = parsed.linePatterns.map(({ regex }) => regex)
+        for (let invocation = 0; invocation < 2; invocation++) {
+            const result = extractCaptures(source, 'Alpha', parsed)!
+            expect(result.captures).toEqual({ empty: '', content: 'Alpha' })
+            expect(result.captureRangesInText2).toEqual([
+                { name: 'empty', start: 0, end: 0 },
+                { name: 'content', start: 0, end: 5 }
+            ])
+            parsed.linePatterns.forEach(({ regex }, index) => {
+                expect(regex).toBe(regexes[index])
+                expect(regex.lastIndex).toBe(0)
+            })
+        }
+    })
+
     it('returns null when capture patterns are genuinely absent', () => {
         const text = 'Copyright (?<year>\\d{4}) MIT'
         const parsed = parseExpectedPatterns(text)!

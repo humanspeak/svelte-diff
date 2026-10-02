@@ -41,6 +41,23 @@ test.describe('Expected Patterns', () => {
         await expect(page.getByTestId('diff-result')).toContainText('brave')
     })
 
+    test('matches repeated template contexts in order across target edits', async ({ page }) => {
+        const pageErrors: Error[] = []
+        page.on('pageerror', (error) => pageErrors.push(error))
+        const result = page.getByTestId('diff-result')
+        await page.getByTestId('text1').fill('Item: (?<first>\\w+)\nItem: (?<second>\\w+)')
+        await page.getByTestId('text2').fill('Item: Alpha\nItem: Beta')
+        await expect(result.locator('span[title="first"]')).toHaveText('Alpha')
+        await expect(result.locator('span[title="second"]')).toHaveText('Beta')
+        await expect(result.locator('.diff-remove, .diff-insert')).toHaveCount(0)
+        await page.getByTestId('text2').fill('Item: Alpha\nItem: Gamma')
+        await expect(result.locator('span[title="first"]')).toHaveText('Alpha')
+        await expect(result.locator('span[title="second"]')).toHaveText('Gamma')
+        await expect(result.locator('.diff-remove, .diff-insert')).toHaveCount(0)
+        await expect(result).not.toContainText('Beta')
+        expect(pageErrors).toEqual([])
+    })
+
     test('keeps invalid templates literal and recovers to expected captures', async ({ page }) => {
         const pageErrors: Error[] = []
         page.on('pageerror', (error) => pageErrors.push(error))

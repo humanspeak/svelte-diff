@@ -286,6 +286,66 @@ describe('SvelteDiff expected patterns', () => {
         expect(container.querySelector('span[title="year"]')?.textContent).toBe('2024')
     })
 
+    it('renders distinct repeated-context captures and updates them independently', async () => {
+        const onProcessing = vi.fn()
+        const originalText = 'Item: (?<first>\\w+)\nItem: (?<second>\\w+)'
+        const props = {
+            originalText,
+            modifiedText: 'Item: Alpha\nItem: Beta',
+            onProcessing,
+            rendererClasses: { remove: 'removed', insert: 'inserted' }
+        }
+        const { container, rerender } = render(SvelteDiff, props)
+        const assertResult = async (second: string) => {
+            const target = `Item: Alpha\nItem: ${second}`
+            await waitFor(() => {
+                expect(container.querySelectorAll('span[title="first"]')).toHaveLength(1)
+                expect(container.querySelector('span[title="first"]')?.textContent).toBe('Alpha')
+                expect(container.querySelectorAll('span[title="second"]')).toHaveLength(1)
+                expect(container.querySelector('span[title="second"]')?.textContent).toBe(second)
+                expect(container.querySelectorAll('.removed, .inserted')).toHaveLength(0)
+                expect(onProcessing.mock.lastCall?.[2]).toEqual({ first: 'Alpha', second })
+            })
+            const tuples = onProcessing.mock.lastCall![1] as [number, string][]
+            for (const excluded of [-1, 1]) {
+                expect(
+                    tuples
+                        .filter(([op]) => op !== excluded)
+                        .map(([, text]) => text)
+                        .join('')
+                ).toBe(target)
+            }
+        }
+        await assertResult('Beta')
+        await rerender({ ...props, modifiedText: 'Item: Alpha\nItem: Gamma' })
+        await assertResult('Gamma')
+        expect(container.textContent).not.toContain('Beta')
+    })
+
+    it.each([
+        [
+            'Item: (?<first>\\w+)\nItem: (?<second>\\w+)',
+            'Item: Alpha',
+            'Item: <first>\nItem: <second>'
+        ],
+        ['A: (?<first>\\w+)\nB: (?<second>\\w+)', 'B: Beta\nA: Alpha', 'A: <first>\nB: <second>']
+    ])(
+        'keeps cleaned fallback for unmatched ordered template %s',
+        async (originalText, modifiedText, cleaned) => {
+            const onProcessing = vi.fn()
+            const { container } = render(SvelteDiff, { originalText, modifiedText, onProcessing })
+            await waitFor(() => expect(onProcessing).toHaveBeenCalled())
+            const tuples = onProcessing.mock.lastCall![1] as [number, string][]
+            expect(
+                tuples
+                    .filter(([op]) => op !== 1)
+                    .map(([, text]) => text)
+                    .join('')
+            ).toBe(cleaned)
+            expect(container.querySelectorAll('span[title]')).toHaveLength(0)
+        }
+    )
+
     it('reuses expected-pattern metadata when only modifiedText changes', async () => {
         const onProcessing = vi.fn()
         const originalText = 'Copyright (?<year>\\d{4}) MIT'

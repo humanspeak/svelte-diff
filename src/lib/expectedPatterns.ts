@@ -257,7 +257,8 @@ const groupSyntaxLength = (group: LineGroup): number => {
  * - Preserves literal text between groups as escaped anchors.
  * - Keeps named groups as-is.
  * - Is unanchored (no `^`/`$`) so it can search anywhere in text2.
- * - Uses the `d` flag for `match.indices` (no `s` flag so `.` doesn't match `\n`).
+ * - Uses `dg` for absolute UTF-16 indices and whole-target search from a cursor.
+ *   Extraction resets each regex's lastIndex after use (no `s` flag).
  *
  * @param lineText - The template line text containing capture group syntax.
  * @param groups - The capture groups found on this line with their positions.
@@ -296,7 +297,7 @@ const buildLineRegex = (lineText: string, groups: LineGroup[]): RegExp => {
         pattern += `(?<${currGroup.name}>${currGroup.pattern})`
     }
 
-    return new RegExp(pattern, 'd')
+    return new RegExp(pattern, 'dg')
 }
 
 /**
@@ -438,8 +439,11 @@ export interface ExtractResult {
 /**
  * Extracts captures from modifiedText using context-anchored, gap-flexible regexes.
  *
- * Reuses compiled per-line regexes to search text2 with the `d` flag for
- * `match.indices`, then builds resolvedText from the retained source matches.
+ * Reuses compiled per-line regexes to search the whole target in source order,
+ * starting after the previous full match. Indices remain absolute UTF-16 offsets.
+ * Each invocation owns its cursor and resets each used regex's lastIndex to zero
+ * immediately after exec, including on failure or throw. Zero-width matches allow
+ * the next finite source line to search from the same boundary.
  *
  * @param originalText - The template text containing named capture groups.
  * @param modifiedText - The actual text (text2) to extract captures from.
@@ -454,9 +458,16 @@ export const extractCaptures = (
 ): ExtractResult | null => {
     const allCaptures: Record<string, string> = {}
     const captureRangesInText2: CaptureRange[] = []
+    let cursor = 0
 
     for (const { groups, regex } of parseResult.linePatterns) {
-        const match = regex.exec(modifiedText)
+        let match: RegExpExecArray | null
+        regex.lastIndex = cursor
+        try {
+            match = regex.exec(modifiedText)
+        } finally {
+            regex.lastIndex = 0
+        }
 
         if (!match || !match.groups || !match.indices?.groups) {
             return null
@@ -483,6 +494,8 @@ export const extractCaptures = (
                 end: indices[1]
             })
         }
+
+        cursor = match.index + match[0].length
     }
 
     const resolvedText = resolveTemplate(originalText, parseResult.matches, allCaptures)
