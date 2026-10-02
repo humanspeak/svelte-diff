@@ -79,7 +79,7 @@
 <label><input type="checkbox" bind:checked={expectedPatterns} />Enable template patterns</label>
 <section aria-label="Template comparison">
     <SvelteDiff
-        originalText="Year (?<year>\d{4})"
+        originalText={'Year (?<year>\\d{4})'}
         modifiedText="Year 2026"
         {expectedPatterns}
         {diffMode}
