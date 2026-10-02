@@ -9,11 +9,18 @@ const errors = (page: Page) => {
     const messages: string[] = []
     page.on('pageerror', (error) => messages.push(error.message))
     page.on('console', (message) => {
+        const text = message.text()
+        if (/hydrat/i.test(text)) {
+            messages.push(text)
+            return
+        }
+        // The site's pre-existing Ahrefs script is blocked by its CSP.
         if (
-            message.type() === 'error' ||
-            (message.type() === 'warning' && /hydrat/i.test(message.text()))
+            text.startsWith("Loading the script 'https://analytics.ahrefs.com/analytics.js'") &&
+            text.includes('violates the following Content Security Policy directive')
         )
-            messages.push(message.text())
+            return
+        if (message.type() === 'error') messages.push(text)
     })
     return messages
 }
