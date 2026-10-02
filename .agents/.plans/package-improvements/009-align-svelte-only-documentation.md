@@ -2,7 +2,9 @@
 
 > **Executor instructions**: Follow all steps and verification. STOP on the named conditions. The operator maintains the batch index unless delegated. The selected direction is documentation correction only: do not add headless support.
 >
-> **Drift check (run first)**: `git diff --stat fa0cfc9..HEAD -- README.md`. Compare the authored programmatic API section below against live text; preserve prior unrelated work. STOP on a conflicting section change.
+> Revision 2026-10-02: Plans 001–008 are DONE. Re-baseline to reviewed eb3b994 because 004 updated the shared README helper table and fallback policy. The unsupported introductory claim remains unchanged. Preserve the table, import example, four signatures and all completed 004 wording; only explanatory Programmatic API prose is in scope.
+>
+> **Drift check (run first)**: `git diff --stat eb3b994..HEAD -- README.md`. Compare the authored programmatic API section below against live text; preserve prior unrelated work. STOP on a conflicting section change.
 
 ## Status
 
@@ -11,7 +13,7 @@
 - **Risk**: LOW
 - **Depends on**: `004-handle-invalid-pattern-compilation.md` operationally, to serialize README edits; this plan changes wording only
 - **Category**: docs
-- **Planned at**: commit `fa0cfc9`, 2026-10-02
+- **Planned at**: commit `eb3b994`, 2026-10-02
 
 ## Why this matters
 
@@ -56,7 +58,7 @@ The README promises framework-agnostic helpers but documents imports from the Sv
 
 ## Git workflow
 
-- Use operator branch `chore/package-improvements`; baseline `fa0cfc9`.
+- Use operator branch `chore/package-improvements`; baseline `eb3b994`.
 - No commit, push, PR, or publication is authorized. Preserve other plans and prior work.
 - Independent of other implementation plans. Avoid running release footer tooling; it is unnecessary for this authored section.
 
@@ -66,7 +68,7 @@ The README promises framework-agnostic helpers but documents imports from the Sv
 
 Read `README.md`'s Programmatic API section, the read-only package export map, and the own-doc claim inventory. Confirm the claim is the single authored unsupported promise. If another own source makes the same promise, STOP and ask the operator to expand exact scope; do not replace competitor claims or generated assets.
 
-**Verify**: `rg -n 'framework[- ]agnostic|without mounting' README.md docs/README.md docs/src/routes/docs docs/static/llms-prepend.md docs/static/llms-append.md` → the known README line is the unsupported own-package claim. `git diff --stat fa0cfc9..HEAD -- README.md` → no unexplained conflicting Programmatic API edit.
+**Verify**: `rg -n 'framework[- ]agnostic|without mounting' README.md docs/README.md docs/src/routes/docs docs/static/llms-prepend.md docs/static/llms-append.md` → the known README line is the unsupported own-package claim. `git diff --stat eb3b994..HEAD -- README.md` → no unexplained conflicting Programmatic API edit.
 
 ### Step 2: Replace the framework-agnostic promise
 

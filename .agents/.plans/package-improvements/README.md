@@ -24,7 +24,7 @@ An operator/reviewer owns these status rows unless they delegate updates.
 | [005](005-enforce-library-ci-gates.md) | Enforce root typechecks and pnpm CI input coverage | P1 | S | LOW | 001, shared release workflow | DONE |
 | [006](006-linearize-rejected-pattern-parsing.md) | Bound rejected-pattern discovery to linear traversal | P1 | M | MED | 004 | DONE |
 | [007](007-match-template-occurrences-in-order.md) | Match expected template contexts in source order | P1 | M | MED | 004, 006 | DONE |
-| [008](008-serialize-release-publication.md) | Serialize publication and protect owned artifacts | P1 | L | MED | 001, 005 | TODO |
+| [008](008-serialize-release-publication.md) | Serialize publication and protect owned artifacts | P1 | L | MED | 001, 005 | DONE |
 | [009](009-align-svelte-only-documentation.md) | Correct Svelte-only helper documentation | P2 | S | LOW | 004, shared README sections | TODO |
 | [010](010-fix-docs-onboarding.md) | Document initial packaging, watchers, and docs checks | P2 | S | LOW | — | TODO |
 
@@ -123,3 +123,7 @@ Plan 006 Step 1 at 9bdf527 reproduces all traversal-budget failures and 13 compa
 Plan 006 passed at 88b1b41:159 units, isolated five-browser regression and40 full diagnostic cases; original budgets/ceilings preserved. Independent12012-input scanner comparison has zero mismatch. Plan007 is re-baselined to this reviewed tip and must preserve all parser/storage/callback predecessors.
 
 Plan 007 passed at 1c8e197: 171 units, 35 expected-pattern browser cases, 40 full diagnostics, independent Alpha/Alpha baseline replay, root/package/Trunk gates. Plan 008 is re-baselined to this reviewed tip; completed updater isolation and library gates must be preserved.
+
+Plan 008 stopped after two executor Trunk failures following correction. Guard independently confirms nine remaining camelcase findings, 55 offline tests on each Node 22/24, 171 library tests and clean check/build/package. Source snapshot commit was refused by the existing pre-commit lint gate; no bypass. Candidate is preserved staged at Git tree `1287f13acd6a9de7ef032e52024e257e4b25965b`, with guard artifacts uncommitted. Plans 009–010 and code-diff A/B remain TODO. See the 008 guard report for the precise remaining work.
+
+Plan 008 passed at eb3b994 after operator-authorized, line-level Trunk ignores and completed cleanup diagnostics. The normal hook and all local gates pass; 56 offline tests on each Node 22/24 and 171 units. The earlier STOP remains in the guard log. Plan 009 is re-baselined to this reviewed tip, preserving completed 004 documentation policy.
