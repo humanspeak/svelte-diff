@@ -54,10 +54,12 @@ The version and date render as `expected`. Their names and values are also avail
 
 ## Custom expected markup
 
+Built-in expected-region spans expose `data-capture-name` and `data-capture-value` alongside the hover `title`. Use `element.dataset.captureName` and `element.dataset.captureValue` for richer tooltips. Each fragment of a multiline capture carries the full captured value. Custom snippets own their markup; this example exposes their supplied text, while `onProcessing` provides full capture values.
+
 ```svelte
 <SvelteDiff {originalText} {modifiedText}>
     {#snippet expected(text: string, groupName: string)}
-        <span class="expected" title={`Matched ${groupName}`}>
+        <span class="expected" data-capture-name={groupName} data-capture-value={text} title={`Matched ${groupName}`}>
             {text}
         </span>
     {/snippet}

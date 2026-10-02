@@ -319,6 +319,8 @@ template that does not match uses readable `<name>` placeholders instead.
         style={rendererClasses.expected
             ? ''
             : 'background-color: #dbeafe; border-bottom: 1px dashed #3b82f6;'}
+        data-capture-name={groupName}
+        data-capture-value={processingResult.captures?.[groupName] ?? text}
         title={groupName}>{text}</span
     >
 {/snippet}

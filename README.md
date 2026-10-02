@@ -292,6 +292,8 @@ The `onProcessing` callback receives captured values as its third argument:
 
 ### Available Snippets for Expected Regions
 
+Built-in expected-region spans expose `data-capture-name` and `data-capture-value` alongside the hover `title`. Custom tooltip code can read `element.dataset.captureName` and `element.dataset.captureValue`. Each fragment of a multiline capture carries the full captured value. Custom snippets own their markup; the example below exposes their supplied text, while full capture values are available through `onProcessing`.
+
 | Snippet  | Parameters          | Description                                     |
 | -------- | ------------------- | ----------------------------------------------- |
 | expected | `text`, `groupName` | Renders matched capture regions with group name |
@@ -299,7 +301,7 @@ The `onProcessing` callback receives captured values as its third argument:
 ```svelte
 <SvelteDiff {originalText} {modifiedText}>
     {#snippet expected(text: string, groupName: string)}
-        <span class="expected" title={groupName}>{text}</span>
+        <span class="expected" data-capture-name={groupName} data-capture-value={text} title={groupName}>{text}</span>
     {/snippet}
 </SvelteDiff>
 ```

@@ -11,9 +11,32 @@ test.describe('Expected Patterns', () => {
         ).toBeVisible()
     })
 
-    test('expected regions have title attribute with group name', async ({ page }) => {
-        await expect(page.getByTestId('diff-result').locator('span[title="year"]')).toBeVisible()
-        await expect(page.getByTestId('diff-result').locator('span[title="holder"]')).toBeVisible()
+    test('expected regions expose group names for hover and custom tooltips', async ({ page }) => {
+        const result = page.getByTestId('diff-result')
+        for (const name of ['year', 'holder']) {
+            const capture = result.locator(`span[data-capture-name="${name}"]`)
+            await expect(capture).toBeVisible()
+            await expect(capture).toHaveAttribute('title', name)
+            await expect(capture).toHaveAttribute(
+                'data-capture-value',
+                (await capture.textContent())!
+            )
+        }
+        await page.getByTestId('text1').fill('Owner (?<owner>\\w+)')
+        await page.getByTestId('text2').fill('Owner Alpha')
+        await expect(result.locator('span[data-capture-name="owner"]')).toHaveText('Alpha')
+        await expect(result.locator('span[data-capture-name="owner"]')).toHaveAttribute(
+            'data-capture-value',
+            'Alpha'
+        )
+        await page.getByTestId('text2').fill('Owner Beta')
+        await expect(result.locator('span[data-capture-name="owner"]')).toHaveAttribute(
+            'data-capture-value',
+            'Beta'
+        )
+        await expect(
+            result.locator('[data-capture-name="year"], [data-capture-name="holder"]')
+        ).toHaveCount(0)
     })
 
     test('non-captured deviations still show as insert/remove', async ({ page }) => {

@@ -380,7 +380,7 @@ describe('SvelteDiff expected patterns', () => {
         })
     })
 
-    it('renders expected regions with default styling and title attribute', () => {
+    it('renders expected regions with default styling and capture metadata', () => {
         const { container } = render(SvelteDiff, {
             originalText: 'Copyright (?<year>\\d{4}) MIT',
             modifiedText: 'Copyright 2024 MIT'
@@ -388,6 +388,9 @@ describe('SvelteDiff expected patterns', () => {
         const expectedSpan = container.querySelector('span[title="year"]')
         expect(expectedSpan).toBeTruthy()
         expect(expectedSpan!.textContent).toBe('2024')
+        expect(expectedSpan!.getAttribute('data-capture-name')).toBe('year')
+        expect(expectedSpan!.getAttribute('data-capture-value')).toBe('2024')
+        expect(container.querySelectorAll('[data-capture-name]')).toHaveLength(1)
         expect(expectedSpan!.getAttribute('style')).toContain('background-color')
     })
 
@@ -399,7 +402,27 @@ describe('SvelteDiff expected patterns', () => {
 
         const expectedSpans = container.querySelectorAll('span[title="value"]')
         expect([...expectedSpans].map((span) => span.textContent)).toEqual(['alpha', 'beta'])
+        expect([...expectedSpans].map((span) => span.getAttribute('data-capture-name'))).toEqual([
+            'value',
+            'value'
+        ])
+        expect([...expectedSpans].map((span) => span.getAttribute('data-capture-value'))).toEqual([
+            'alpha\nbeta',
+            'alpha\nbeta'
+        ])
         expect(container.querySelectorAll('br')).toHaveLength(1)
+    })
+
+    it('preserves literal capture values in metadata without creating HTML', () => {
+        const value = '<img src="x" onerror="alert(1)"> & \'quoted\''
+        const { container } = render(SvelteDiff, {
+            originalText: 'Value: (?<value>.+)',
+            modifiedText: `Value: ${value}`
+        })
+        const capture = container.querySelector('[data-capture-name="value"]')
+        expect(capture?.getAttribute('data-capture-value')).toBe(value)
+        expect(capture?.textContent).toBe(value)
+        expect(container.querySelector('img')).toBeNull()
     })
 
     it('falls back to normal diff with cleaned template when regex does not match', () => {
@@ -476,7 +499,7 @@ describe('SvelteDiff expected patterns', () => {
         ).toBe('Value: Alpha')
     })
 
-    it('applies rendererClasses.expected with title still present', () => {
+    it('applies rendererClasses.expected with capture metadata still present', () => {
         const { container } = render(SvelteDiff, {
             originalText: 'Copyright (?<year>\\d{4}) MIT',
             modifiedText: 'Copyright 2024 MIT',
@@ -485,6 +508,8 @@ describe('SvelteDiff expected patterns', () => {
         const expectedSpan = container.querySelector('.test-expected')
         expect(expectedSpan).toBeTruthy()
         expect(expectedSpan!.getAttribute('title')).toBe('year')
+        expect(expectedSpan!.getAttribute('data-capture-name')).toBe('year')
+        expect(expectedSpan!.getAttribute('data-capture-value')).toBe('2024')
     })
 
     it('no change in behavior when no capture groups in originalText', () => {
@@ -496,6 +521,9 @@ describe('SvelteDiff expected patterns', () => {
         const titledSpans = container.querySelectorAll('span[title]')
         expect(titledSpans.length).toBe(0)
         expect(container.textContent).toContain('brave')
+        expect(
+            container.querySelectorAll('[data-capture-name], [data-capture-value]')
+        ).toHaveLength(0)
     })
 })
 
@@ -880,11 +908,21 @@ describe('display shape transitions', () => {
         expect(
             [...container.querySelectorAll('[title="value"]')].map((node) => node.textContent)
         ).toEqual(['beta', 'gamma'])
+        expect(
+            [...container.querySelectorAll('[data-capture-name="value"]')].map((node) =>
+                node.getAttribute('data-capture-value')
+            )
+        ).toEqual(['beta\ngamma', 'beta\ngamma'])
         expect(container.textContent).toBe('Value: betagamma')
         expect(container.querySelectorAll('br')).toHaveLength(1)
         await rerender(props)
         expect(container.textContent).toBe('Value: alpha')
         expect(container.querySelectorAll('[title="value"]')).toHaveLength(1)
+        expect(
+            container
+                .querySelector('[data-capture-name="value"]')
+                ?.getAttribute('data-capture-value')
+        ).toBe('alpha')
         expect(container.querySelectorAll('br')).toHaveLength(0)
     })
 
