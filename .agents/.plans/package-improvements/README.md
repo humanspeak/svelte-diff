@@ -26,7 +26,7 @@ An operator/reviewer owns these status rows unless they delegate updates.
 | [007](007-match-template-occurrences-in-order.md) | Match expected template contexts in source order | P1 | M | MED | 004, 006 | DONE |
 | [008](008-serialize-release-publication.md) | Serialize publication and protect owned artifacts | P1 | L | MED | 001, 005 | DONE |
 | [009](009-align-svelte-only-documentation.md) | Correct Svelte-only helper documentation | P2 | S | LOW | 004, shared README sections | DONE |
-| [010](010-fix-docs-onboarding.md) | Document initial packaging, watchers, and docs checks | P2 | S | LOW | — | TODO |
+| [010](010-fix-docs-onboarding.md) | Document initial packaging, watchers, and docs checks | P2 | S | LOW | — | BLOCKED (STOP: tracked stats refresh) |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (reason) | REJECTED (reason).
 Effort includes regression verification; 001/004/008 are larger than the initial
@@ -129,3 +129,5 @@ Plan 008 initially stopped after two executor Trunk failures following correctio
 Plan 008 passed at eb3b994 after operator-authorized, line-level Trunk ignores and completed cleanup diagnostics. The normal hook and all local gates pass; 56 offline tests on each Node 22/24 and 171 units. The earlier STOP remains in the guard log. Plan 009 is re-baselined to this reviewed tip, preserving completed 004 documentation policy.
 
 Plan 009 passed at 2c28500: exact one-sentence Svelte-only prose correction, unchanged imports/signatures/fallback table and all other README bytes; 171 units, check 0/0 and Trunk gates pass. Plan 010 preflight retains its unchanged fa0cfc9 README baseline and named tracked-regeneration STOP.
+
+Plan 010 source snapshot a0d024d contains the verified docs README update; package/check/171 units, normal docs build and exact worker checks before/after pass. The build refreshed tracked docs/src/lib/github-stats.json (stars/timestamp), triggering its named STOP. That generated change remains uncommitted; 010 BLOCKED and batch active pending the operator decision recorded in its guard report. Code-diff A/B remain TODO.
