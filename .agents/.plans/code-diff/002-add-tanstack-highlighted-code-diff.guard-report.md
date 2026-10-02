@@ -1,0 +1,55 @@
+# Guard report — 002 add-tanstack-highlighted-code-diff
+
+**Recommendation: PASS** — full-source syntax composition, optional packaged entry and polished interactive examples independently verified.
+**Reviewed at** `76d7459` · 2026-10-02 15:39 · **Plan planned at** `42f2c74`
+
+Source snapshots passed normal hooks before judgment. No PR opened: dispatch batch close leaves PR creation as the operator's next decision. A passed at `a4f19bc`.
+
+## Done criteria
+
+| Criterion | Result | Evidence |
+| --- | --- | --- |
+| `./code` exports the Svelte component and props, with optional peer metadata. | met | Reviewed package.json and src/lib/code.ts; Svelte/types conditions, named/default component and CodeDiffProps; optional peer ^1.0.0, pinned dev/docs 1.0.0. Root build/package/publint pass. |
+| Ordinary package root has no runtime TanStack import; isolation smoke passes. | met | Guard ran scripts/verify-code-diff-packaging.mjs: both named PASS results. Real packed text-only consumer has no installed optional peer, root declaration dependency, resolved or emitted TanStack module. Selective consumer installs exact 1.0.0 and bundles individual TS only. |
+| Both original and modified source reconstruct exactly from model output. | met | Independently reproduced all 27 model tests: eight source pairs across three modes plus fallback/empty-token cases; exact original/modified projections including mixed CR/LF, tabs, trailing newlines and emoji. |
+| Whole-source context tests and native escaping tests pass. | met | All 217 library units pass (seven files); model classifications checked against independently tokenized complete sources at each UTF-16 unit. Component tests retain literal regex/HTML escaping and no executable descendants. Root browsers verify no-JS and hydrated source projections. |
+| Before/after token caches and theme/class-only updates meet specified counts. | met | Four component tests prove two initial complete-source tokenizations, original reuse on after-only edits, no class-only diff/token work, language/identity invalidation and per-instance caches. Root/docs browser theme tests retain existing node identities and source. |
+| Single pre/code, del/ins, syntax colors, public demo/guide/API, and discovery artifacts exist. | met | Component/browser assertions pass; production root 25/25 and docs 20/20. Docs checks include show-code source, guide/API links, sitemap/LLM discovery and generated example/guide mirrors. Normal docs build regenerates loaders and artifacts. |
+| Root and docs type/unit/package/Trunk/browser gates pass without weakened old tests. | met | Root check 0/0 and build/package/publint pass; 217 units, 25 code browsers, 40 unchanged performance browsers, 20 docs/navigation browsers pass. Final docs before/after checks both 0/0, worker restored. Scoped Trunk format: 24 modified files, no issues. Full-tree Trunk: only two unchanged baseline complexity findings, no new failures. Existing assertions retained. |
+| No patch/headless/framework-agnostic features or Shiki migration were added. | met | Whole diff reviewed against scope and predecessor; Svelte-only optional entry, one combined body, caller registrations/theme CSS. Shiki config and all workflows/release infrastructure unchanged. |
+| Only scoped changes remain and batch README status is updated. | met | Drift review accounts for A, dependency bootstrap and separately committed corrections. Stats restored to exact baseline blob 6269e3dd70f8f541f9ff318c0292abfa6065dddb; working tree clean before guard records, git diff --check passes; B marked DONE. |
+
+## Spirit
+
+Svelte consumers can compare two literal code strings while retaining syntax context from each complete source. Deleted text uses original classifications; unchanged and inserted text use modified classifications. The native escaped body preserves model fidelity and accessibility without making TanStack a dependency of ordinary text-diff imports. Both example surfaces now fit the existing Humanspeak presentation: compact controls, paired source panes, clear result labels, useful presets and an opt-in replay. Desktop and mobile layouts were visually inspected; the 390px view remains 390px wide.
+
+## Scope & conduct
+
+- Guard reviewed the entire implementation and reproduced verification locally; separate serial executors authored all source, including corrections and stats restoration. Guard authored plans/records and committed normal-hook snapshots.
+- Pre-flight amendments on 2026-10-02 recorded the exact-version release-age exception approved by the operator, A/dependency baseline, nested guide mirror path, case-insensitive test filenames and user-directed playground refinement. Existing 2880-minute policy/exclusions stay intact.
+- Keyboard scrolling, exact accessible combobox locators, final pager indexes and a conflicting docs type name were corrected through separate executors without dropping assertions. The docs diagnostic exclusion matches only the pre-existing Ahrefs script-loading CSP message; every pageerror/runtime/hydration check remains active.
+- Checkpoint 6 documents the companion's premature completion signal and subsequent source writes in this session. Later jobs prohibited delegation/background work and awaited completion; all source was captured at reviewed commits before judgment. No outside session was blamed and no writer remains active.
+- Native preview checks reproduced exact replay completion and cancellation. The preview host then explicitly became unavailable, so a temporary external Playwright verification script completed both surfaces' replay/manual/reset cancellation, reduced-motion and mobile-width checks and saved screenshots. No temporary verification code was added to the repository.
+- Normal docs builds alone regenerated artifacts. Before/after source checks used the existing worker move/restore try/finally procedure; no backup remains. No sibling repository, global design system, dependency family, publish/deploy or release workflow was changed.
+
+## Verification evidence
+
+- `/tmp/code-b-final-units.log`: 217 passed, seven files; library unchanged by the subsequent example-only presentation commit.
+- `/tmp/code-b-root-build.log`: final root production build/package/publint pass.
+- `/tmp/code-b-final-packaging.log`: both actual packaged consumer boundary checks pass; package/library unchanged by subsequent example-only presentation work.
+- `/tmp/code-b-root-code-browsers.log`: final 25/25 across desktop Chromium/Firefox/WebKit and mobile Chrome/Safari.
+- `/tmp/code-b-root-performance.log`: unchanged suite 40/40 serially across all five projects; component/core/performance fixtures unchanged by presentation work.
+- `/tmp/code-b-docs-before.log`, `/tmp/code-b-docs-build.log`, `/tmp/code-b-docs-after.log`: final production build and source checks pass, zero source errors/warnings.
+- `/tmp/code-b-docs-browsers.log`: final production 20/20, desktop/mobile Chromium.
+- `/tmp/code-b-playground-review.log`: both surfaces pass exact replay, editing/reset cancellation, reduced motion and 390/390 mobile bounds.
+- `/tmp/code-b-final-fmt.log`, `/tmp/code-b-final-trunk.log`: scoped formatting clean; full-tree baseline findings only. All snapshot hooks pass.
+
+## Residual risk / follow-ups
+
+- Full-tree Trunk still reports existing complexity in diffModes.ts:19 (16 > 15) and expectedPatterns.ts:126 (23 > 15). Neither file changed in B; scoped checks and normal hooks pass.
+- The existing docs Ahrefs script remains blocked by the existing CSP. Tests ignore only that exact baseline diagnostic; this feature does not alter analytics or CSP configuration.
+- Source offsets/model reconstruction are UTF-16 exact; browsers normalize CR/CRLF in native HTML. Docs and browser assertions state and verify that boundary. Syntax accuracy depends on caller registrations and the highlighter's token contract.
+- Performance ceilings were verified serially to avoid unrelated concurrent build load. Replay is opt-in, cancels on edits/reset/presets, respects reduced motion and clears timers on destruction; background tabs may throttle animation timing.
+- Side-by-side alignment, gutters, patches, callbacks, parser guarantees and virtualization remain separate future contracts. Review the peer range deliberately when TanStack changes its tokens.
+
+Next: retire the completed A/B batch and leave the feature branch ready for an operator-requested PR.

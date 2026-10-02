@@ -65,3 +65,14 @@ b02a979 · implementation snapshot and independent review corrections
 - Operator rejected screenshots of both bare root fixture and mismatched public controls, explicitly requesting fun, cohesive examples inspired by Svelte Motion and other sibling repositories. Guard inspected rendered Motion glow/drag stages and source in JSON View, Markdown and docs-kit; no sibling modifications.
 - Amendment adds compact Humanspeak controls/pane framing, useful presets, opt-in replay with cleanup and reduced-motion handling, clearer result legend and separate visible whitespace sample. Existing package contracts, fixtures, assertions, theme DOM ownership and dependency boundaries stay fixed. Existing three scoped example files suffice.
 - Action: commit amendment before separate serial presentation executor; then visually inspect both surfaces and reproduce affected gates before B PASS.
+
+## Checkpoint 8 — 2026-10-02 15:39 — PASS
+
+76d7459 · final source snapshot and independent verification
+
+- Separately authored presentation refinement captured at 76d7459 with normal hooks: three scoped example files only. Guard visually inspected root/public desktop and mobile screenshots; compact controls and pane framing match the sibling-inspired amendment. No package API or regression assertions changed.
+- Final root build/package/publint and hook check pass; 217 library units and both real packaged consumer isolation/selective-language smokes remain valid against unchanged library/package source. Code browsers after refinement pass 25/25 across all five projects. Unchanged performance suite passes 40/40 serially; component/core/performance files unchanged by presentation work.
+- Final production docs build, before/after source checks (0 errors/warnings) and docs/navigation browser suite (20/20 desktop/mobile Chromium) pass. Generated worker restored, no backup; example/guide mirrors, show-code source, API/discovery and nine-example navigation verified.
+- Native preview confirmed replay completion and cancellation. After explicit host-unavailable response, temporary external Playwright checks completed both surfaces: exact target replay, manual/reset cancellation, reduced motion and mobile width 390/390. Screenshots saved outside the repo; no temporary test added to source.
+- Full-tree Trunk checks 216 files with only the two unchanged baseline complexity findings; final scoped format checks 24 modified files with no issues. Workflow/release/Shiki diffs empty; whitespace check passes. Separate executor restored unrelated stats to exact baseline blob 6269e3dd70f8f541f9ff318c0292abfa6065dddb; guard reproduced hash and clean working tree.
+- Action: B DONE/PASS, standalone report written; commit guard records separately, retire the A/B batch, and leave PR creation as the operator's next decision. No publish/deploy/PR performed.

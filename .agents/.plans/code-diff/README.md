@@ -16,7 +16,7 @@ changes or permission to publish/deploy.
 | Plan | Audit option | Title | Priority | Effort | Risk | Depends on | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | [001](001-extract-shared-diff-core-and-literal-mode.md) | A | Shared computation and literal source mode | P2 | M | MED | Package improvements complete | DONE — PASS at a4f19bc |
-| [002](002-add-tanstack-highlighted-code-diff.md) | B | Optional TanStack-highlighted CodeDiff | P2 | L | MED | 001 | IN PROGRESS — playground presentation refinement and final verification |
+| [002](002-add-tanstack-highlighted-code-diff.md) | B | Optional TanStack-highlighted CodeDiff | P2 | L | MED | 001 | DONE — PASS at 76d7459 |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (reason) | REJECTED (reason).
 The operator/reviewer owns these rows unless they delegate updates. Executors
