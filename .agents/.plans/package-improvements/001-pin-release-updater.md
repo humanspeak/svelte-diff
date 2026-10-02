@@ -2,7 +2,9 @@
 
 > **Executor instructions**: Follow each step and verification below. STOP on the named conditions; do not improvise. The operator maintains the batch index unless they explicitly delegate it. This is an implementation handoff, not authorization to publish a release.
 >
-> **Drift check (run first)**: `git diff --stat fa0cfc9..HEAD -- .github/workflows/npm-publish.yml .github/scripts/refresh-release-readme.sh .github/scripts/refresh-release-readme.test.mjs`. Compare changed files to the excerpts below. Plans 001 → 005 → 008 share this workflow and must execute sequentially; reread the live workflow between plans. An already completed earlier plan is expected drift; unrelated changes are a STOP.
+> Revision 2026-10-02: Independent Node 24.15.0 verification confirms macOS Node adds `__CF_USER_TEXT_ENCODING` even when exec receives only PATH. The synthetic updater may exclude that exact runtime-added key on Darwin when comparing observed keys; production must still pass only PATH via `env -i`, and every credential/sentinel assertion remains strict. Runtime clarification only; original red baseline is 7df0857, reviewed implementation is 687b7c4.
+>
+> **Drift check (run first)**: `git diff --stat 687b7c4..HEAD -- .github/workflows/npm-publish.yml .github/scripts/refresh-release-readme.sh .github/scripts/refresh-release-readme.test.mjs`. Compare changed files to the excerpts below. Plans 001 → 005 → 008 share this workflow and must execute sequentially; reread the live workflow between plans. An already completed earlier plan is expected drift; unrelated changes are a STOP.
 
 ## Status
 
@@ -11,7 +13,7 @@
 - **Risk**: MED
 - **Depends on**: none
 - **Category**: security
-- **Planned at**: commit `fa0cfc9`, 2026-10-02
+- **Planned at**: commit `687b7c4`, 2026-10-02
 
 ## Why this matters
 

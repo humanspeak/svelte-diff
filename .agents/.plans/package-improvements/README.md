@@ -17,7 +17,7 @@ An operator/reviewer owns these status rows unless they delegate updates.
 
 | Plan | Title | Priority | Effort | Risk | Depends on | Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| [001](001-pin-release-updater.md) | Pin the release updater and isolate credentials | P1 | M | MED | — | TODO |
+| [001](001-pin-release-updater.md) | Pin the release updater and isolate credentials | P1 | M | MED | — | DONE |
 | [002](002-isolate-processing-callbacks.md) | Isolate processing callback state reads | P1 | S | LOW | — | TODO |
 | [003](003-preserve-capture-property-names.md) | Preserve accepted capture property names | P1 | S | LOW | 002, shared component tests | TODO |
 | [004](004-handle-invalid-pattern-compilation.md) | Reject invalid templates without rendering failures | P1 | M | MED | 003, shared parser/tests | TODO |
@@ -105,3 +105,7 @@ configuration, and release/verification workflow paths. Not exhaustively audited
 vendored dependencies, tombstone implementations, full browser behavior, private
 docs-kit internals beyond the pinned updater and relevant read-only loaders,
 production deployment/runtime, or every third-party competitive claim.
+
+## Dispatch record
+
+Execution authorized on 2026-10-02: run package improvements serially until STOP or COMPLETE. Guard owns commits and status rows; no live release or PR. Plan 001 passed at 687b7c4 with a documented Darwin runtime-key clarification and independently reproduced red/green tests.
