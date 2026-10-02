@@ -17,3 +17,13 @@
 - Guard deterministic red: six actual budget excesses, values 55136/55456, 220864/221504, 884096/885376 against 20608/41088/82048; null/fallback assertions pass. Primitive compatibility: all 13 pass.
 - Browser command fails before running with No tests found. This is selector/plan defect, not timing evidence. Playwright grep applies to full title; replace anchored ^006 with unique unanchored diagnostic title everywhere, leaving all numerical constraints unchanged.
 - Action: commit amendment, retry Chromium one-worker on unchanged production. No production-edit dispatch until genuine primitive browser red.
+
+## Checkpoint 3 — 2026-10-02 06:07 — ON TRACK / browser RED confirmed
+
+9bdf527 · unchanged production/test fixture snapshot; amended selector at 48683d7
+
+- Guard exact corrected Chromium one-worker command executes the intended test and fails at assertDiagnosticPass on status, with actual samples 4737.80 / 4782.00 / 5642.60 ms vs unchanged 2000 ms ceiling.
+- All three primitive 80000-character calls return null; failure is timing, not fixture/transport/output. Full command log retained at /tmp/svelte-diff-006-guard-browser-red.log and raw samples recorded here permanently.
+- Production byte identity with 202504c verified; both old test files remain exact byte prefixes, so red predates any implementation.
+- Deterministic red and 13 primitive compatibility passes independently reproduced. No genuine STOP remains.
+- Action: dispatch Steps 2–3 to executor; guard later owns all five-browser green/full diagnostics gates.
