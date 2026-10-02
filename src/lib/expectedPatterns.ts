@@ -433,7 +433,13 @@ export const extractCaptures = (
             const value = match.groups[group.name]
             if (value === undefined) return null
 
-            allCaptures[group.name] = value
+            // Preserve accepted names such as __proto__ without invoking inherited setters.
+            Object.defineProperty(allCaptures, group.name, {
+                value,
+                enumerable: true,
+                writable: true,
+                configurable: true
+            })
 
             const indices = match.indices.groups[group.name]
             if (!indices) return null

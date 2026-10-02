@@ -333,6 +333,37 @@ describe('SvelteDiff expected patterns', () => {
         expect(captures.year).toBe('2024')
     })
 
+    it('renders and delivers own __proto__ capture values', async () => {
+        const onProcessing = vi.fn()
+        const { container } = render(SvelteDiff, {
+            originalText: 'Value: (?<__proto__>\\w+)',
+            modifiedText: 'Value: Alpha',
+            onProcessing
+        })
+        expect(container.querySelector('span[title="__proto__"]')?.textContent).toBe('Alpha')
+        await waitFor(() => expect(onProcessing).toHaveBeenCalled())
+
+        const captures = onProcessing.mock.calls[0][2]
+        expect(captures).toBeDefined()
+        expect(Object.hasOwn(captures, '__proto__')).toBe(true)
+        expect(captures['__proto__']).toBe('Alpha')
+        expect(Object.keys(captures)).toEqual(['__proto__'])
+        expect(Object.getPrototypeOf(captures)).toBe(Object.prototype)
+        const tuples: [number, string][] = onProcessing.mock.calls[0][1]
+        expect(
+            tuples
+                .filter(([op]) => op !== 1)
+                .map(([, text]) => text)
+                .join('')
+        ).toBe('Value: Alpha')
+        expect(
+            tuples
+                .filter(([op]) => op !== -1)
+                .map(([, text]) => text)
+                .join('')
+        ).toBe('Value: Alpha')
+    })
+
     it('applies rendererClasses.expected with title still present', () => {
         const { container } = render(SvelteDiff, {
             originalText: 'Copyright (?<year>\\d{4}) MIT',

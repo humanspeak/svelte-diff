@@ -165,6 +165,73 @@ describe('extractCaptures', () => {
         expect(result!.resolvedText).toBe('Copyright 2024 Jason Kummerl')
     })
 
+    it('preserves __proto__ as an own enumerable capture property', () => {
+        const original = 'Value: (?<__proto__>\\w+)'
+        const modified = 'Value: Alpha'
+        const parsed = parseExpectedPatterns(original)!
+        const result = extractCaptures(original, modified, parsed)
+
+        expect(result).not.toBeNull()
+        expect.soft(result!.resolvedText).toBe('Value: Alpha')
+        expect(result!.captureRangesInText2).toEqual([{ name: '__proto__', start: 7, end: 12 }])
+        const { captures } = result!
+        expect.soft(Object.hasOwn(captures, '__proto__')).toBe(true)
+        expect.soft(captures['__proto__']).toBe('Alpha')
+        expect.soft(Object.keys(captures)).toEqual(['__proto__'])
+        expect.soft(JSON.parse(JSON.stringify(captures))['__proto__']).toBe('Alpha')
+        expect(Object.getPrototypeOf(captures)).toBe(Object.prototype)
+    })
+
+    it.each([
+        ['constructor', 'Constructor', 'Alpha'],
+        ['toString', 'String', 'Beta'],
+        ['hasOwnProperty', 'Property', 'Gamma']
+    ])('preserves %s as an own enumerable capture property', (name, label, value) => {
+        const original = `${label}: (?<${name}>\\w+)`
+        const modified = `${label}: ${value}`
+        const parsed = parseExpectedPatterns(original)!
+        const result = extractCaptures(original, modified, parsed)
+
+        expect(result).not.toBeNull()
+        expect(result!.resolvedText).toBe(modified)
+        const { captures } = result!
+        expect(Object.hasOwn(captures, name)).toBe(true)
+        expect(captures[name]).toBe(value)
+        expect(Object.getOwnPropertyDescriptor(captures, name)).toEqual({
+            value,
+            enumerable: true,
+            writable: true,
+            configurable: true
+        })
+        expect(Object.getPrototypeOf(captures)).toBe(Object.prototype)
+        expect(Object.entries(captures)).toEqual([[name, value]])
+        expect(JSON.parse(JSON.stringify(captures))).toEqual({ [name]: value })
+    })
+
+    it('preserves mixed __proto__ and constructor capture values', () => {
+        const original = 'Values: (?<__proto__>\\w+) and (?<constructor>\\w+)'
+        const modified = 'Values: Alpha and Beta'
+        const parsed = parseExpectedPatterns(original)!
+        const result = extractCaptures(original, modified, parsed)
+
+        expect(result).not.toBeNull()
+        expect(result!.resolvedText).toBe(modified)
+        const { captures } = result!
+        expect(Object.hasOwn(captures, '__proto__')).toBe(true)
+        expect(Object.hasOwn(captures, 'constructor')).toBe(true)
+        expect(captures['__proto__']).toBe('Alpha')
+        expect(captures['constructor']).toBe('Beta')
+        expect(Object.getPrototypeOf(captures)).toBe(Object.prototype)
+        expect(Object.entries(captures)).toEqual([
+            ['__proto__', 'Alpha'],
+            ['constructor', 'Beta']
+        ])
+        expect(JSON.parse(JSON.stringify(captures))).toEqual({
+            ['__proto__']: 'Alpha',
+            constructor: 'Beta'
+        })
+    })
+
     it('computes correct capture ranges in text2', () => {
         const original = 'Copyright (?<year>\\d{4}) MIT'
         const modified = 'Copyright 2024 MIT'
