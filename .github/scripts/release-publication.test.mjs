@@ -370,7 +370,7 @@ test('cleanup retains run B replacement tag object or commit', async (t) => {
         { stdout: 'ambiguous' }
     ]) {
         const mock = scripted([[tagLookup, output]])
-        cleanup(fixtureState(t), identity, false, mock.exec, () => {})
+        cleanup(fixtureState(t), identity, false, mock.exec, () => undefined)
         mock.done()
     }
 })
@@ -382,7 +382,7 @@ test('cleanup stored release ID 404 retains a different ID on same tag and OID',
         [releaseApi('42'), response(404)],
         [releaseApi('tags/v1.2.3'), response(200, releaseData(99))]
     ])
-    cleanup(fixtureState(t), identity, false, mock.exec, () => {})
+    cleanup(fixtureState(t), identity, false, mock.exec, () => undefined)
     mock.done()
 })
 
@@ -398,7 +398,7 @@ test('cleanup retains changed release ID or target and API errors', async (t) =>
             [tagLookup, tagResponse()],
             [releaseApi('42'), result]
         ])
-        cleanup(fixtureState(t), identity, false, mock.exec, () => {})
+        cleanup(fixtureState(t), identity, false, mock.exec, () => undefined)
         mock.done()
     }
 })
@@ -437,7 +437,7 @@ test('cleanup owns tag only when no release was ever attempted or found', async 
             identity,
             false,
             mock.exec,
-            () => {}
+            () => undefined
         )
         mock.done()
     }
@@ -492,7 +492,7 @@ for (const [name, result] of [
         mock.done()
         assert.equal(readState(path, identity).tag, failureAtMain ? 'not-attempted' : 'unknown')
         const noCalls = scripted([])
-        cleanup(path, identity, false, noCalls.exec, () => {})
+        cleanup(path, identity, false, noCalls.exec, () => undefined)
         noCalls.done()
     })
 }
@@ -587,7 +587,7 @@ test('creation ambiguous release response retains unknown ownership without late
         mock.done()
         assert.equal(readState(path, identity).release, 'unknown')
         const noCalls = scripted([])
-        cleanup(path, identity, false, noCalls.exec, () => {})
+        cleanup(path, identity, false, noCalls.exec, () => undefined)
         noCalls.done()
     }
 })
@@ -598,10 +598,10 @@ test('publish outcome attempt and success are irreversible cleanup barriers', as
     markRegistry(path, identity, 'attempt')
     assert.equal(readState(path, identity).registry, 'unknown')
     const mock = scripted([])
-    cleanup(path, identity, false, mock.exec, () => {})
+    cleanup(path, identity, false, mock.exec, () => undefined)
     markRegistry(path, identity, 'success')
     assert.equal(readState(path, identity).canonical, true)
-    cleanup(path, identity, false, mock.exec, () => {})
+    cleanup(path, identity, false, mock.exec, () => undefined)
     assert.throws(() => markRegistry(path, identity, 'attempt'))
     mock.done()
 })
@@ -1075,7 +1075,7 @@ test(
                         }
                     }
                 },
-                core: { info: () => {}, setOutput: (key, value) => (outputs[key] = value) }
+                core: { info: () => undefined, setOutput: (key, value) => (outputs[key] = value) }
             })
             assert.equal(calls.length, 1)
             assert.equal(calls[0].commit_sha, sha)

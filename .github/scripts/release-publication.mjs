@@ -93,8 +93,8 @@ export const validateMetadata = (before, after, paths, policy = defaultPolicy) =
                     b.dependencies?.[old.name] === `^${fresh.version}`,
                 'Shim dependency mismatch'
             )
-            delete a.dependencies[old.name]
-            delete b.dependencies[old.name]
+            Reflect.deleteProperty(a.dependencies, old.name)
+            Reflect.deleteProperty(b.dependencies, old.name)
         }
         requireValue(isDeepStrictEqual(a, b), 'Non-version manifest change')
     }

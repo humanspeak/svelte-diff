@@ -125,6 +125,21 @@ class SyncTests(unittest.TestCase):
                     self.assertNotIn('git push --tags', text)
                     self.assertNotIn('gh release delete', text)
 
+    def test_generated_ci_is_pinned_and_has_no_whitespace_only_lines(self):
+        for manager in ['npm', 'pnpm']:
+            with self.subTest(manager=manager), tempfile.TemporaryDirectory(prefix='release-sync-') as directory:
+                target = Path(directory)
+                (target / '.github/workflows').mkdir(parents=True)
+                (target / '.github/release-policy.json').write_text(json.dumps(self.policy(manager)))
+                (target / '.github/workflows/npm-publish.yml').write_text(legacy(manager))
+                sync.sync(target, 'a' * 40)
+                text = (target / '.github/workflows/run-tests.yml').read_text()
+                self.assertFalse(any(line and not line.strip() for line in text.splitlines()))
+                self.assertNotIn('pnpm/action-setup@v6', text)
+                self.assertEqual('pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86' in text,
+                                 manager == 'pnpm')
+                self.assertEqual(sync.sync(target, 'a' * 40, check=True), [])
+
     def test_manual_policy_restores_tag_choices_and_removes_automatic_release(self):
         policy = self.policy(event='manual')
         text = sync.harden(legacy(), policy)

@@ -279,7 +279,9 @@ def sync(target, revision, check=False):
         manager = policy['manager']
         text = text.replace('__LOCKFILE__', 'package-lock.json' if manager == 'npm' else 'pnpm-lock.yaml')
         text = text.replace('__NODE_MATRIX__', '[20, 22]' if manager == 'npm' else '[22, 24]')
-        text = text.replace('# __MANAGER_SETUP__', '- uses: pnpm/action-setup@v6' if manager == 'pnpm' else '')
+        text = text.replace('            # __MANAGER_SETUP__\n',
+                            '            - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6\n'
+                            if manager == 'pnpm' else '')
         text = text.replace('__INSTALL__', 'npm ci' if manager == 'npm' else 'pnpm install --frozen-lockfile --ignore-scripts')
         text = text.replace('__MANAGER__', manager)
         outputs['.github/workflows/run-tests.yml'] = paths(text, manager, False).encode()
