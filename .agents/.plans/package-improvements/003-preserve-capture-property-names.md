@@ -2,7 +2,9 @@
 
 > **Executor instructions**: Read this plan completely and follow each step in order. Run each verification command and confirm its expected result before continuing. On a STOP condition, report instead of improvising. The operator maintains `.agents/.plans/package-improvements/README.md`; report your completion to them rather than editing their index unless explicitly delegated.
 >
-> **Drift check (run first)**: `git diff --stat fa0cfc9..HEAD -- src/lib/expectedPatterns.ts src/lib/expectedPatterns.test.ts src/lib/SvelteDiff.test.ts`. Compare any changed in-scope files with the excerpts below. Reconcile explicitly listed prerequisite changes; stop on unrelated drift or assumptions that no longer hold. Also run `git status --short` to identify pre-existing local changes.
+> Revision 2026-10-02: Plan 002 is DONE and added bounded callback-state tests to SvelteDiff.test.ts. Re-baseline to reviewed b3448d3 and preserve those tests and callback isolation. Capture engine/storage source is unchanged; scope and accepted-property contract remain identical.
+>
+> **Drift check (run first)**: `git diff --stat b3448d3..HEAD -- src/lib/expectedPatterns.ts src/lib/expectedPatterns.test.ts src/lib/SvelteDiff.test.ts`. Compare any changed in-scope files with the excerpts below. Reconcile explicitly listed prerequisite changes; stop on unrelated drift or assumptions that no longer hold. Also run `git status --short` to identify pre-existing local changes.
 
 ## Status
 
@@ -11,7 +13,7 @@
 - **Risk**: LOW
 - **Depends on**: `002-isolate-processing-callbacks.md` operationally, to serialize shared component tests; capture storage has no behavioral dependency on callback isolation
 - **Category**: bug
-- **Planned at**: commit `fa0cfc9`, 2026-10-02
+- **Planned at**: commit `b3448d3`, 2026-10-02
 
 ## Why this matters
 
@@ -29,7 +31,7 @@ allCaptures[group.name] = value
 ```
 
 - `src/lib/expectedPatterns.ts:474–476` resolves using `captures[match.name] ?? ''`; `src/lib/index.ts:219–220` documents a public `Record<string, string>`.
-- `src/lib/expectedPatterns.test.ts:156–177` is the helper regression exemplar: parse a template, extract, assert captures, resolved text, and absolute ranges. `src/lib/SvelteDiff.test.ts:291–303` checks the actual callback capture argument. Existing parser/extraction helpers are typed arrow functions with JSDoc; match their style rather than introducing a class or map-shaped public API.
+- `src/lib/expectedPatterns.test.ts:156–177` is the helper regression exemplar: parse a template, extract, assert captures, resolved text, and absolute ranges. `src/lib/SvelteDiff.test.ts:320–334` checks the actual callback capture argument. Existing parser/extraction helpers are typed arrow functions with JSDoc; match their style rather than introducing a class or map-shaped public API.
 
 The Svelte 5/TypeScript library deliberately defaults to character diffing. Word/line diffs remain lossless and skip cleanup. Preserve automatic expected-pattern interpretation for valid templates, compiled-pattern reuse on target-only edits, cached diff array identity on callback-only edits, forward expected-region tagging, compact DOM rendering, and meaningful SSR. Do not reopen the completed `.agents/.plans/component-performance/` initiative. Regex extraction remains outside the algorithm timeout by design.
 
@@ -90,7 +92,7 @@ Keep `allCaptures` an ordinary object. Replace the bracket assignment in `extrac
 
 In the same unit file add a table-driven test for `constructor`, `toString`, and `hasOwnProperty`, each with a distinct valid template and target, checking own enumerable string value, correct resolved text, ordinary prototype, `Object.entries` and JSON serialization. Use `Object.hasOwn`, never `captures.hasOwnProperty`, since a capture may validly shadow that method. Add a mixed template containing `__proto__` and `constructor` with distinct names; assert both own values survive without changing the prototype.
 
-In `src/lib/SvelteDiff.test.ts`, add `it('renders and delivers own __proto__ capture values', ...)`, following lines 291–303. Assert the expected span titled `__proto__` contains `Alpha`, callback captures have an own enumerable `__proto__` value, and callback raw tuples reconstruct `Value: Alpha` on both sides. Construct expected objects with a computed key or own-property assertions, since a literal `{'__proto__': ...}` has special JavaScript semantics.
+In `src/lib/SvelteDiff.test.ts`, add `it('renders and delivers own __proto__ capture values', ...)`, following lines 320–334. Assert the expected span titled `__proto__` contains `Alpha`, callback captures have an own enumerable `__proto__` value, and callback raw tuples reconstruct `Value: Alpha` on both sides. Construct expected objects with a computed key or own-property assertions, since a literal `{'__proto__': ...}` has special JavaScript semantics.
 
 **Verify**: `pnpm exec vitest run src/lib/expectedPatterns.test.ts src/lib/SvelteDiff.test.ts` → PASS, including all name compatibility checks and existing normal-name tests.
 
