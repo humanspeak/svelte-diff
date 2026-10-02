@@ -113,9 +113,9 @@ interface GroupMatch {
 }
 
 /**
- * Finds all `(?<name>pattern)` named capture groups using an iterative
- * parenthesis-counting parser. Runs in O(n) time with no backtracking,
- * eliminating ReDoS risk from nested quantifiers.
+ * Finds all `(?<name>pattern)` named capture groups with O(n) source discovery
+ * and O(n) boundary metadata. This does not bound compilation or execution of
+ * user-supplied regular expressions.
  *
  * Rejects nested named groups (`(?<` inside the pattern body) to match
  * the previous regex behavior.
@@ -125,6 +125,61 @@ interface GroupMatch {
  */
 const findNamedGroups = (text: string): GroupMatch[] => {
     const results: GroupMatch[] = []
+    const length = text.length
+    // Each suffix has two candidate-local entry states. A boundary is the first
+    // unmatched `)` reached from that state; -1 means the suffix never closes.
+    const outsideEnd = new Int32Array(length + 2).fill(-1)
+    const insideEnd = new Int32Array(length + 2).fill(-1)
+    const outsideNested = new Uint8Array(length + 2)
+    const insideNested = new Uint8Array(length + 2)
+
+    for (let position = length - 1; position >= 0; position--) {
+        const character = text[position]
+        const next = position + 1
+        if (character === '\\') {
+            // Escapes skip exactly one character in either entry state.
+            outsideEnd[position] = outsideEnd[position + 2]
+            insideEnd[position] = insideEnd[position + 2]
+            outsideNested[position] = outsideNested[position + 2]
+            insideNested[position] = insideNested[position + 2]
+            continue
+        }
+
+        if (character === ']') {
+            insideEnd[position] = outsideEnd[next]
+            insideNested[position] = outsideNested[next]
+        } else {
+            insideEnd[position] = insideEnd[next]
+            insideNested[position] = insideNested[next]
+        }
+
+        if (character === '[') {
+            outsideEnd[position] = insideEnd[next]
+            outsideNested[position] = insideNested[next]
+        } else if (character === ')') {
+            outsideEnd[position] = position
+        } else if (character === '(') {
+            const close = outsideEnd[next]
+            if (close !== -1) {
+                // Compose the balanced child and its following suffix once,
+                // rather than walking the child again for every ancestor.
+                outsideEnd[position] = outsideEnd[close + 1]
+                outsideNested[position] =
+                    outsideNested[next] |
+                    outsideNested[close + 1] |
+                    Number(
+                        text[next] === '?' &&
+                            text[position + 2] === '<' &&
+                            position + 3 < length &&
+                            /[a-zA-Z_]/.test(text[position + 3])
+                    )
+            }
+        } else {
+            outsideEnd[position] = outsideEnd[next]
+            outsideNested[position] = outsideNested[next]
+        }
+    }
+
     let i = 0
 
     while (i < text.length) {
@@ -150,44 +205,12 @@ const findNamedGroups = (text: string): GroupMatch[] => {
                 continue
             }
 
-            const name = text.slice(nameStart, nameEnd)
             const patternStart = nameEnd + 1
-
-            // Count parenthesis depth to find balanced closing `)`
-            // We start at depth 1 (for the opening `(` at startIndex)
-            let depth = 1
-            let j = patternStart
-            let hasNestedNamedGroup = false
-            let inCharacterClass = false
-
-            while (j < text.length && depth > 0) {
-                if (text[j] === '\\') {
-                    j += 2 // skip escaped character
-                    continue
-                }
-                if (text[j] === '[' && !inCharacterClass) {
-                    inCharacterClass = true
-                } else if (text[j] === ']' && inCharacterClass) {
-                    inCharacterClass = false
-                } else if (text[j] === '(' && !inCharacterClass) {
-                    // Check for nested named group
-                    if (
-                        text[j + 1] === '?' &&
-                        text[j + 2] === '<' &&
-                        j + 3 < text.length &&
-                        /[a-zA-Z_]/.test(text[j + 3])
-                    ) {
-                        hasNestedNamedGroup = true
-                    }
-                    depth++
-                } else if (text[j] === ')' && !inCharacterClass) {
-                    depth--
-                    if (depth === 0) break
-                }
-                j++
-            }
-
-            if (depth === 0 && !hasNestedNamedGroup) {
+            // Discovery stays literal even after rejection: an inner candidate
+            // starts outside a class regardless of the rejected outer's state.
+            const j = outsideEnd[patternStart]
+            if (j !== -1 && !outsideNested[patternStart]) {
+                const name = text.slice(nameStart, nameEnd)
                 const pattern = text.slice(patternStart, j)
                 const fullMatch = text.slice(startIndex, j + 1)
                 results.push({ fullMatch, name, pattern, index: startIndex })
