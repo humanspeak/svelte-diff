@@ -40,7 +40,7 @@
             notes,
             barCells: [
                 { k: 'modes', v: '3' },
-                { k: 'input', v: 'identical' }
+                { k: 'input', v: 'editable' }
             ],
             sourceUrl
         }
