@@ -125,7 +125,7 @@ class SyncTests(unittest.TestCase):
                     self.assertNotIn('git push --tags', text)
                     self.assertNotIn('gh release delete', text)
 
-    def test_generated_ci_is_pinned_and_has_no_whitespace_only_lines(self):
+    def test_generated_ci_uses_version_tags_and_has_no_whitespace_only_lines(self):
         for manager in ['npm', 'pnpm']:
             with self.subTest(manager=manager), tempfile.TemporaryDirectory(prefix='release-sync-') as directory:
                 target = Path(directory)
@@ -135,8 +135,9 @@ class SyncTests(unittest.TestCase):
                 sync.sync(target, 'a' * 40)
                 text = (target / '.github/workflows/run-tests.yml').read_text()
                 self.assertFalse(any(line and not line.strip() for line in text.splitlines()))
-                self.assertNotIn('pnpm/action-setup@v6', text)
-                self.assertEqual('pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86' in text,
+                self.assertNotRegex(text, r'uses: [^\s]+@[0-9a-f]{40}')
+                self.assertIn('actions/setup-node@v7 # zizmor: ignore[unpinned-uses]', text)
+                self.assertEqual('pnpm/action-setup@v6 # zizmor: ignore[unpinned-uses]' in text,
                                  manager == 'pnpm')
                 self.assertEqual(sync.sync(target, 'a' * 40, check=True), [])
 
