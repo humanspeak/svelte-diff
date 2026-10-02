@@ -100,7 +100,6 @@ template that does not match uses readable `<name>` placeholders instead.
         timeout: number
         cleanupSemantic: boolean
         cleanupEfficiency: number
-        expectedPatterns: boolean
         compiledPattern: ReturnType<typeof parseExpectedPatterns>
     }
 
@@ -138,7 +137,6 @@ template that does not match uses readable `<name>` placeholders instead.
             diffMode,
             cleanupSemantic,
             cleanupEfficiency,
-            expectedPatterns,
             compiledPattern: parseResult
         }
         if (
@@ -148,7 +146,6 @@ template that does not match uses readable `<name>` placeholders instead.
             computationCache.input.diffMode === input.diffMode &&
             computationCache.input.cleanupSemantic === input.cleanupSemantic &&
             computationCache.input.cleanupEfficiency === input.cleanupEfficiency &&
-            computationCache.input.expectedPatterns === input.expectedPatterns &&
             computationCache.input.compiledPattern === input.compiledPattern
         ) {
             return computationCache.result
@@ -190,11 +187,12 @@ template that does not match uses readable `<name>` placeholders instead.
 
 {#each processingResult.displayDiffs as diff, index (index)}
     {@const { operation, text, expected } = diff}
+    {@const multiline = text.includes('\n')}
     <!-- Hydrated snippet ranges need a fresh owner when switching display shape.
          Same-shape text updates keep their existing renderer and DOM. -->
-    {#key text.includes('\n')}
+    {#key multiline}
         {#if expected}
-            {#if text.includes('\n')}
+            {#if multiline}
                 {#each text.split('\n') as line, lineIndex (lineIndex)}
                     {#if lineIndex > 0}{@render displayRenderers.lineBreak()}{/if}{#if line.length > 0}{@render displayRenderers.expected(
                             line,
@@ -211,12 +209,12 @@ template that does not match uses readable `<name>` placeholders instead.
                     : operation === -1
                       ? displayRenderers.remove
                       : displayRenderers.insert}
-            {#if text.includes('\n') && renderer === equalTextFallback && displayRenderers.lineBreak === lineBreakFallback}
+            {#if multiline && renderer === equalTextFallback && displayRenderers.lineBreak === lineBreakFallback}
                 <!-- Built-in compact lines need no dynamic snippet branches. -->
                 {#each text.split('\n') as line, lineIndex (lineIndex)}
                     {#if lineIndex > 0}<br />{/if}{line}
                 {/each}
-            {:else if text.includes('\n')}
+            {:else if multiline}
                 {#each text.split('\n') as line, lineIndex (lineIndex)}
                     {#if lineIndex > 0}{@render displayRenderers.lineBreak()}{/if}{#if line.length > 0}{@render renderer(
                             line

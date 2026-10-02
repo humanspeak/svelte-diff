@@ -1,5 +1,4 @@
 <script lang="ts">
-    import type { HighlightTokenResult } from '@tanstack/highlight/core'
     import { DiffOp } from 'diff-match-patch-ts'
     import type { CodeDiffProps } from './code.js'
     import { composeCodeDiff, type CodePiece } from './codeDiff.js'
@@ -19,54 +18,39 @@
         rendererClasses = {}
     }: CodeDiffProps = $props()
 
-    // Each closure belongs to this component instance. Value keys also survive
-    // Testing Library's replacement props objects without repeating source work.
-    const tokenCache = () => {
-        let previous:
-            | {
-                  text: string
-                  language: string
-                  highlighter: CodeDiffProps['highlighter']
-                  result: HighlightTokenResult
-              }
-            | undefined
-        return (text: string, language: string, highlighter: CodeDiffProps['highlighter']) => {
-            if (
-                previous?.text === text &&
-                previous.language === language &&
-                previous.highlighter === highlighter
-            )
+    // Props re-fire with unchanged values on rerender; reuse the last result
+    // when every argument is identical so tokenizing and diffing run only on change.
+    const memoizeLast = <A extends unknown[], R>(compute: (...args: A) => R) => {
+        let previous: { args: A; result: R } | undefined
+        return (...args: A): R => {
+            if (previous?.args.every((value, index) => Object.is(value, args[index])))
                 return previous.result
-            const result = highlighter.tokenize(text, { lang: language })
-            previous = { text, language, highlighter, result }
+            const result = compute(...args)
+            previous = { args, result }
             return result
         }
     }
-    const originalCache = tokenCache()
-    const modifiedCache = tokenCache()
-    const diffCache = (() => {
-        let previous: { key: string; result: ReturnType<typeof computeDiff> } | undefined
-        return (
+    const tokenize = (text: string, language: string, highlighter: CodeDiffProps['highlighter']) =>
+        highlighter.tokenize(text, { lang: language })
+    const originalCache = memoizeLast(tokenize)
+    const modifiedCache = memoizeLast(tokenize)
+    const diffCache = memoizeLast(
+        (
             before: string,
             after: string,
-            mode: typeof diffMode,
+            mode: NonNullable<CodeDiffProps['diffMode']>,
             deadline: number,
             semantic: boolean,
             efficiency: number
-        ) => {
-            const key = JSON.stringify([before, after, mode, deadline, semantic, efficiency])
-            if (previous?.key === key) return previous.result
-            const result = computeDiff(before, after, {
+        ) =>
+            computeDiff(before, after, {
                 diffMode: mode,
                 timeout: deadline,
                 cleanupSemantic: semantic,
                 cleanupEfficiency: efficiency,
                 expectedPatterns: false
             })
-            previous = { key, result }
-            return result
-        }
-    })()
+    )
     const originalTokens = $derived(originalCache(originalText, language, highlighter))
     const modifiedTokens = $derived(modifiedCache(modifiedText, language, highlighter))
     const comparison = $derived(

@@ -125,6 +125,8 @@ interface GroupMatch {
  */
 const findNamedGroups = (text: string): GroupMatch[] => {
     const results: GroupMatch[] = []
+    // Most component inputs are plain text; skip the boundary tables entirely.
+    if (!text.includes('(?<')) return results
     const length = text.length
     // Each suffix has two candidate-local entry states. A boundary is the first
     // unmatched `)` reached from that state; -1 means the suffix never closes.

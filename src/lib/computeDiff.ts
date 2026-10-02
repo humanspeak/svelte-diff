@@ -1,6 +1,11 @@
 import { DiffMatchPatch } from 'diff-match-patch-ts'
 import { computeTokenDiff } from './diffModes.js'
-import { extractCaptures, parseExpectedPatterns, tagExpectedRegions } from './expectedPatterns.js'
+import {
+    type CaptureRange,
+    extractCaptures,
+    parseExpectedPatterns,
+    tagExpectedRegions
+} from './expectedPatterns.js'
 import type { SvelteDiffComputeOptions, SvelteDiffResult } from './index.js'
 
 /**
@@ -18,7 +23,7 @@ export const computeDiffWithEngine = (
     dmp: DiffMatchPatch,
     text1: string,
     text2: string,
-    options: Required<SvelteDiffComputeOptions>,
+    options: Required<Omit<SvelteDiffComputeOptions, 'expectedPatterns'>>,
     compiledPattern: ReturnType<typeof parseExpectedPatterns>
 ): SvelteDiffResult => {
     dmp.Diff_Timeout = options.timeout
@@ -26,7 +31,7 @@ export const computeDiffWithEngine = (
 
     let diffText1 = text1
     let captures: Record<string, string> | undefined
-    let captureRanges: import('./expectedPatterns.js').CaptureRange[] = []
+    let captureRanges: CaptureRange[] = []
 
     if (compiledPattern) {
         const extractResult = extractCaptures(text1, text2, compiledPattern)
@@ -40,6 +45,7 @@ export const computeDiffWithEngine = (
         }
     }
 
+    const isCharacter = options.diffMode === 'character'
     const startTotal = performance.now()
     const diffs =
         options.diffMode === 'character'
@@ -47,17 +53,16 @@ export const computeDiffWithEngine = (
             : computeTokenDiff(dmp, diffText1, text2, options.diffMode, options.timeout)
     const endMain = performance.now()
 
-    const startCleanup = performance.now()
-    if (options.diffMode === 'character' && options.cleanupSemantic) {
+    if (isCharacter && options.cleanupSemantic) {
         dmp.diff_cleanupSemantic(diffs)
-    } else if (options.diffMode === 'character' && options.cleanupEfficiency > 0) {
+    } else if (isCharacter && options.cleanupEfficiency > 0) {
         dmp.diff_cleanupEfficiency(diffs)
     }
     const endTotal = performance.now()
 
     const timing = {
         main: endMain - startTotal,
-        cleanup: options.diffMode === 'character' ? endTotal - startCleanup : 0,
+        cleanup: isCharacter ? endTotal - endMain : 0,
         total: endTotal - startTotal
     }
     const displayDiffs =

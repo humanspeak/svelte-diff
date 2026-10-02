@@ -9,6 +9,9 @@ coverage
 /build
 /dist
 
+# Generated docs
+/docs/src/lib/github-stats.json
+
 # OS
 .DS_Store
 Thumbs.db

@@ -1,6 +1,6 @@
 import type { Highlighter } from '@tanstack/highlight/core'
 import CodeDiff from './CodeDiff.svelte'
-import type { SvelteDiffMode } from './index.js'
+import type { RendererClasses, SvelteDiffMode } from './index.js'
 
 export default CodeDiff
 /** Syntax-highlighted literal source comparison in one combined code block. */
@@ -29,5 +29,5 @@ export type CodeDiffProps = {
     /** Accessible overflow-region name; defaults to Code differences. */
     ariaLabel?: string
     /** Additional operation classes; syntax foreground remains theme-owned. */
-    rendererClasses?: { remove?: string; insert?: string }
+    rendererClasses?: Pick<RendererClasses, 'remove' | 'insert'>
 }

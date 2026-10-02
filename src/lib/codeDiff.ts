@@ -38,6 +38,11 @@ const sourceCursor = (result: HighlightTokenResult) => {
  * Compose existing raw diffs and complete-source token results without tokenizing.
  * Deletions read original syntax; equals and insertions read modified syntax.
  * Cursors only move forward; joining either side preserves every UTF-16 unit.
+ *
+ * @param diffs Raw diff tuples between the original and modified source.
+ * @param original Token result for the complete original source.
+ * @param modified Token result for the complete modified source.
+ * @return One run per diff tuple, split at syntax token boundaries.
  * @internal
  */
 export const composeCodeDiff = (

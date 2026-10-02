@@ -11,12 +11,15 @@ For contributors editing the library and docs together:
 ```bash
 pnpm install --frozen-lockfile
 pnpm run package
+pnpm --filter docs exec tsx scripts/fetch-github-stats.ts
 pnpm run dev:all
 ```
 
 The docs workspace consumes the library's generated `dist/index.js`; installing dependencies alone does not create it. Initial packaging generates that output and runs publint. `pnpm run dev:all` starts both the package watcher and the docs server, keeping the generated library output current as you edit.
 
-For docs-only edits, run `pnpm --filter docs dev` after initial packaging.
+GitHub stats in `docs/src/lib/github-stats.json` are generated and git-ignored. On fresh checkouts, run the generator above before docs dev or check; production builds refresh the stats automatically.
+
+For docs-only edits, run `pnpm --filter docs dev` after initial packaging and GitHub stats generation.
 
 The local server normally runs on <http://localhost:8523>. Vite can choose another port if it is occupied, so use the URL logged by the server.
 
@@ -26,6 +29,7 @@ With no generated worker from a prior docs build, generate the library output, c
 
 ```bash
 pnpm run package
+pnpm --filter docs exec tsx scripts/fetch-github-stats.ts
 pnpm --filter docs check
 pnpm --filter docs build
 ```
