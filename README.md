@@ -162,6 +162,49 @@ Read the [diff modes guide](https://diff.svelte.page/docs/guides/diff-modes),
 [editable word example](https://diff.svelte.page/examples/word-diff), and
 [editable line example](https://diff.svelte.page/examples/line-diff).
 
+## Syntax-highlighted code diffs
+
+`CodeDiff` is an optional Svelte entry. Install `@tanstack/highlight@1.0.0`
+and register only your languages; ordinary root consumers need no TanStack.
+
+```svelte
+<script lang="ts">
+    import CodeDiff from '@humanspeak/svelte-diff/code'
+    import { createHighlighter } from '@tanstack/highlight/core'
+    import { ts } from '@tanstack/highlight/languages/ts'
+    import { createThemeCss } from '@tanstack/highlight/theme'
+    import { githubLightTheme } from '@tanstack/highlight/themes/github-light'
+    import { githubDarkTheme } from '@tanstack/highlight/themes/github-dark'
+
+    const highlighter = createHighlighter({ languages: [ts] })
+    const themeCss = createThemeCss({ light: githubLightTheme, dark: githubDarkTheme })
+    const before = 'const count = 10;\n'
+    const after = 'const count = 20;\n'
+</script>
+
+<svelte:head><svelte:element this={"style"}>{themeCss}</svelte:element></svelte:head>
+<CodeDiff originalText={before} modifiedText={after} language="typescript" {highlighter} />
+```
+
+Both complete sources are highlighted before diff composition, retaining comment
+and string context. Regex capture groups are literal source; native Svelte text
+escaping handles HTML safely. Word mode is the default, with character and line
+available. Cleanup defaults to off; word/line skip it. The caller owns syntax
+foreground CSS; change backgrounds use `--svelte-diff-remove-bg` and
+`--svelte-diff-insert-bg` without default strike-through. Model offsets preserve
+UTF-16 and exact whitespace; browser SSR parsing can normalize CR/CRLF.
+
+Import `CodeDiffProps` from `@humanspeak/svelte-diff/code`. Required props are
+`originalText`, `modifiedText`, and `highlighter: Pick<Highlighter, 'tokenize'>`.
+Optional props are `language='plaintext'`, `diffMode='word'`, `timeout=1`,
+`cleanupSemantic=false`, `cleanupEfficiency=0`, `class`,
+`ariaLabel='Code differences'`, and `rendererClasses` with `remove`/`insert`.
+There are no expected-pattern, callback, patch, gutter, or headless features.
+
+Read the [guide](https://diff.svelte.page/docs/guides/code-diffs),
+[API](https://diff.svelte.page/docs/api/code-diff), and
+[editable example](https://diff.svelte.page/examples/code-diff).
+
 ## Custom Rendering with Snippets
 
 You can customize how the diff is rendered using Svelte snippets. This gives you full control over the HTML structure and styling of each diff part.

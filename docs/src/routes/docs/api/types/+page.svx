@@ -19,7 +19,8 @@ description: Public components, callbacks, renderer maps, tuples, and expected-p
 
 # Types & Exports
 
-Everything public is exported from the package root.
+The text-diff API is exported from the package root. Optional syntax-highlighted
+code diffs use the separate `@humanspeak/svelte-diff/code` entry.
 
 ```typescript
 import SvelteDiff, {
@@ -41,11 +42,41 @@ import SvelteDiff, {
 
 ## Components
 
-| Export | Notes |
-|---|---|
-| `default` | The `SvelteDiff` component |
-| `SvelteDiff` | Named export of the same component |
-| `SvelteDiffMatchPatch` | Deprecated compatibility alias |
+| Export                 | Notes                              |
+| ---------------------- | ---------------------------------- |
+| `default`              | The `SvelteDiff` component         |
+| `SvelteDiff`           | Named export of the same component |
+| `SvelteDiffMatchPatch` | Deprecated compatibility alias     |
+
+## Optional code entry
+
+```typescript
+import CodeDiff, {
+    CodeDiff as NamedCodeDiff,
+    type CodeDiffProps
+} from '@humanspeak/svelte-diff/code'
+import type { Highlighter } from '@tanstack/highlight/core'
+
+interface CodeDiffProps {
+    originalText: string
+    modifiedText: string
+    highlighter: Pick<Highlighter, 'tokenize'>
+    language?: string
+    diffMode?: SvelteDiffMode
+    timeout?: number
+    cleanupSemantic?: boolean
+    cleanupEfficiency?: number
+    class?: string
+    ariaLabel?: string
+    rendererClasses?: { remove?: string; insert?: string }
+}
+```
+
+CodeDiff defaults to word mode, plaintext, timeout 1, semantic cleanup false,
+and efficiency 0. `ariaLabel` defaults to Code differences. Source is always
+literal. The root does not re-export this component or load optional TanStack
+at runtime. See the [CodeDiff API](/docs/api/code-diff) and
+[guide](/docs/guides/code-diffs).
 
 ## `SvelteDiffMode`
 

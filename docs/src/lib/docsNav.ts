@@ -36,6 +36,7 @@ export const docsSections: NavSection[] = [
         icon: BookOpen,
         items: [
             { title: 'SvelteDiff', href: '/docs/api/svelte-diff', icon: GitCompareArrows },
+            { title: 'CodeDiff', href: '/docs/api/code-diff', icon: Code },
             { title: 'Types & Exports', href: '/docs/api/types', icon: Type }
         ]
     },
@@ -46,6 +47,7 @@ export const docsSections: NavSection[] = [
             { title: 'Custom Rendering', href: '/docs/guides/custom-rendering', icon: Paintbrush },
             { title: 'Expected Patterns', href: '/docs/guides/expected-patterns', icon: Regex },
             { title: 'Diff Modes', href: '/docs/guides/diff-modes', icon: Type },
+            { title: 'Code Diffs', href: '/docs/guides/code-diffs', icon: Code },
             { title: 'Cleanup Modes', href: '/docs/guides/cleanup', icon: Sparkles },
             { title: 'Timing & Performance', href: '/docs/guides/performance', icon: Gauge }
         ]
@@ -56,7 +58,9 @@ export const docsSections: NavSection[] = [
         items: [
             { title: 'All Examples', href: '/examples', icon: Play, exact: true },
             ...examples.map(({ slug, title, icon }) => ({
-                title, href: `/examples/${slug}`, icon
+                title,
+                href: `/examples/${slug}`,
+                icon
             }))
         ]
     },

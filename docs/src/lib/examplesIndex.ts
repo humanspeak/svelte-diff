@@ -6,7 +6,8 @@ export const examples = [
         icon: GitCompareArrows,
         title: 'Basic Diff',
         tag: 'START',
-        description: 'The smallest useful setup: two strings, semantic cleanup, and class-based styling.'
+        description:
+            'The smallest useful setup: two strings, semantic cleanup, and class-based styling.'
     },
     {
         slug: 'word-diff',
@@ -23,6 +24,13 @@ export const examples = [
         description: 'Compare complete configuration lines, preserving blank lines and endings.'
     },
     {
+        slug: 'code-diff',
+        icon: Braces,
+        title: 'Code Diff',
+        tag: 'SYNTAX',
+        description: 'Compare literal source with optional full-source syntax highlighting.'
+    },
+    {
         slug: 'live-editor',
         icon: Activity,
         title: 'Live Editor',
@@ -34,21 +42,24 @@ export const examples = [
         icon: Regex,
         title: 'Expected Patterns',
         tag: 'PATTERNS',
-        description: 'Match versions, dates, and names as intentional variation and inspect captures.'
+        description:
+            'Match versions, dates, and names as intentional variation and inspect captures.'
     },
     {
         slug: 'custom-snippets',
         icon: Braces,
         title: 'Custom Snippets',
         tag: 'RENDERING',
-        description: 'Replace default spans with semantic del/ins markup and your own visual language.'
+        description:
+            'Replace default spans with semantic del/ins markup and your own visual language.'
     },
     {
         slug: 'cleanup-modes',
         icon: Sparkles,
         title: 'Cleanup Modes',
         tag: 'READABILITY',
-        description: 'Compare raw, efficiency-cleaned, and semantically-cleaned output side by side.'
+        description:
+            'Compare raw, efficiency-cleaned, and semantically-cleaned output side by side.'
     },
     {
         slug: 'timing',
