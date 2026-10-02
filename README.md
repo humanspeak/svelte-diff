@@ -183,8 +183,18 @@ and register only your languages; ordinary root consumers need no TanStack.
 </script>
 
 <svelte:head><svelte:element this={"style"}>{themeCss}</svelte:element></svelte:head>
-<CodeDiff originalText={before} modifiedText={after} language="typescript" {highlighter} />
+<CodeDiff
+    originalText={before}
+    modifiedText={after}
+    language="typescript"
+    diffMode="line"
+    {highlighter}
+/>
 ```
+
+These examples explicitly use line mode to keep removed and inserted code lines
+together. The component default remains word; word and character modes are
+available for inline comparisons.
 
 Both complete sources are highlighted before diff composition, retaining comment
 and string context. Regex capture groups are literal source; native Svelte text

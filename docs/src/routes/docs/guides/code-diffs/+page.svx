@@ -44,7 +44,7 @@ highlighter using individual language entries; register only what you use.
 </script>
 
 <svelte:head><svelte:element this={"style"}>{themeCss}</svelte:element></svelte:head>
-<CodeDiff originalText={before} modifiedText={after} language="typescript" {highlighter} />
+<CodeDiff originalText={before} modifiedText={after} language="typescript" diffMode="line" {highlighter} />
 ```
 
 The theme helper supplies syntax colors. Its default dark selector is `.dark`;
@@ -67,6 +67,10 @@ It has no expected-pattern prop or capture parsing. Unknown or unregistered
 languages fall back to plain text with TanStack's default highlighter settings.
 
 ## Modes, styles, and access
+
+These examples explicitly use line mode to keep removed and inserted code lines
+together. The component default remains word; word and character modes are
+available for inline comparisons.
 
 Word mode is the default; character and line modes are also available. Character
 cleanup defaults to off, and word/line skip cleanup entirely. JSON is highlighted

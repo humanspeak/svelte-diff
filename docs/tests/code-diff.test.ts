@@ -1,8 +1,10 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 
 const route = '/examples/code-diff'
-const initialBefore = 'const count: number = 10;\r\n\tconst label = "old";\n'
-const initialAfter = 'const count: number = 20;\r\n\tconst label = "new";\n'
+const initialBefore =
+    'const count: number = 10;\r\n\tconst label = "old";\nconst format = "compact";\n'
+const initialAfter =
+    'const count: number = 20;\r\n\tconst label = "new";\nconst format = "compact";\n'
 const normalize = (text: string) => text.replace(/\r\n?/g, '\n')
 const result = (page: Page) => page.getByRole('region', { name: 'Code differences', exact: true })
 const errors = (page: Page) => {
@@ -80,6 +82,7 @@ test('hydrated editing covers all modes, language fallback, literal source and r
     const region = result(page)
     const before = page.getByLabel('Before', { exact: true })
     const after = page.getByLabel('After', { exact: true })
+    await expect(page.getByRole('combobox', { name: 'Diff mode', exact: true })).toHaveValue('line')
     await before.fill('const value = 10;\n')
     await after.fill('const value = 20;\n')
     for (const [mode, removed, inserted] of [
@@ -113,11 +116,37 @@ test('hydrated editing covers all modes, language fallback, literal source and r
     await page.getByRole('button', { name: 'Reset', exact: true }).click()
     await expect(before).toHaveValue(normalize(initialBefore))
     await expect(after).toHaveValue(normalize(initialAfter))
-    await expect(page.getByRole('combobox', { name: 'Diff mode', exact: true })).toHaveValue('word')
+    await expect(page.getByRole('combobox', { name: 'Diff mode', exact: true })).toHaveValue('line')
     await expect(page.getByRole('combobox', { name: 'Language', exact: true })).toHaveValue(
         'typescript'
     )
     await verifySources(region, initialBefore, initialAfter)
+    expect(messages).toEqual([])
+})
+
+test('default line mode keeps manual async replacements in complete blocks', async ({ page }) => {
+    const messages = errors(page)
+    await page.goto(route)
+    const region = result(page)
+    const mode = page.getByRole('combobox', { name: 'Diff mode', exact: true })
+    const before = page.getByLabel('Before', { exact: true })
+    const after = page.getByLabel('After', { exact: true })
+    await expect(mode).toHaveValue('line')
+    await page.getByRole('button', { name: 'Async refactor', exact: true }).click()
+    await expect(mode).toHaveValue('line')
+    const sourceBefore = await before.inputValue()
+    const sourceAfter = 'const manual = true;\n'
+    await after.fill(sourceAfter)
+    await expect(before).toHaveValue(sourceBefore)
+    await expect(region.locator('del')).toHaveCount(1)
+    await expect(region.locator('ins')).toHaveCount(1)
+    await expect
+        .poll(async () => (await region.locator('del').allTextContents()).map(normalize))
+        .toEqual([normalize(sourceBefore)])
+    await expect
+        .poll(async () => (await region.locator('ins').allTextContents()).map(normalize))
+        .toEqual([normalize(sourceAfter)])
+    await verifySources(region, sourceBefore, sourceAfter)
     expect(messages).toEqual([])
 })
 

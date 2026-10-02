@@ -25,8 +25,10 @@
         themeTokenClasses
             .map((token) => `.code-fixture .th-${token} { color: var(--th-${token}); }`)
             .join('\n')
-    const initialOriginal = 'const count: number = 10;\r\n\tconst label = "old";\n'
-    const initialModified = 'const count: number = 20;\r\n\tconst label = "new";\n'
+    const initialOriginal =
+        'const count: number = 10;\r\n\tconst label = "old";\nconst format = "compact";\n'
+    const initialModified =
+        'const count: number = 20;\r\n\tconst label = "new";\nconst format = "compact";\n'
     const contextOriginal =
         '/* repeated text\nold repeated text */\nconst text = "old repeated text";\nconst re = /(?<year>\\d{4})/;\nconst html = "<script>&</scr' +
         'ipt>";\n'
@@ -35,7 +37,7 @@
     let originalText = $state(initialOriginal)
     let modifiedText = $state(initialModified)
     let language = $state('typescript')
-    let diffMode = $state<SvelteDiffMode>('word')
+    let diffMode = $state<SvelteDiffMode>('line')
     let theme = $state('system')
     const presets = [
         {
@@ -161,7 +163,7 @@ export async function loadTeam(ids: string[]): Promise<User[]> {
         originalText = initialOriginal
         modifiedText = initialModified
         language = 'typescript'
-        diffMode = 'word'
+        diffMode = 'line'
         theme = 'system'
     }
 </script>
