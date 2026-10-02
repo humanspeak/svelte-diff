@@ -2,7 +2,9 @@
 
 > **Executor instructions**: Follow every step and verification; STOP on the named conditions. The operator maintains the batch index unless delegated. Do not implement library changes as part of this workflow plan.
 >
-> **Drift check (run first)**: `git diff --stat fa0cfc9..HEAD -- .github/workflows/run-tests.yml .github/workflows/npm-publish.yml`. Read the live workflow and compare excerpts. Plans 001 → 005 → 008 edit the publish workflow sequentially; the completed 001 change is expected drift and must be preserved. STOP on unrelated drift.
+> Revision 2026-10-02: Plan 001 is DONE and root check at reviewed 7068933 passes 0/0. Re-baseline shared workflow drift to this reviewed tip; completed pinned updater integration and credential isolation must remain unchanged. Source/test contract and gate policy are unchanged.
+>
+> **Drift check (run first)**: `git diff --stat 7068933..HEAD -- .github/workflows/run-tests.yml .github/workflows/npm-publish.yml`. Read the live workflow and compare excerpts. Plans 001 → 005 → 008 edit the publish workflow sequentially; the completed 001 change is already in the baseline and must be preserved. STOP on unrelated drift.
 
 ## Status
 
@@ -11,7 +13,7 @@
 - **Risk**: LOW
 - **Depends on**: `001-pin-release-updater.md` for shared-workflow operational ordering; execute before 008
 - **Category**: dx
-- **Planned at**: commit `fa0cfc9`, 2026-10-02
+- **Planned at**: commit `7068933`, 2026-10-02
 
 ## Why this matters
 
@@ -61,7 +63,7 @@ The library's build and runtime tests do not enforce its TypeScript contract. Th
 
 ## Git workflow
 
-- Use `chore/package-improvements`; baseline `fa0cfc9`. Preserve operator work and earlier plan edits.
+- Use `chore/package-improvements`; reviewed baseline `7068933`. Preserve operator work and earlier plan edits.
 - No commits, pushes, PRs, or workflow dispatches are authorized.
 - Serialize this plan between 001 and 008 if those plans are being executed. It has no behavioral dependency on them.
 
