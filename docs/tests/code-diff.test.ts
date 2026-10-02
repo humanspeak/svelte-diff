@@ -1,10 +1,27 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 
 const route = '/examples/code-diff'
-const initialBefore =
-    'const count: number = 10;\r\n\tconst label = "old";\nconst format = "compact";\n'
-const initialAfter =
-    'const count: number = 20;\r\n\tconst label = "new";\nconst format = "compact";\n'
+const initialBefore = `type User = { name: string; active: boolean }
+
+export function loadTeam(ids: string[]): Promise<User[]> {
+    // Fetch each teammate, then keep the active ones.
+    return Promise.all(ids.map(id =>
+        fetch('/api/users/' + id).then(res => res.json())
+    )).then(users => users.filter(user => user.active));
+}
+`
+const initialAfter = `type User = { name: string; active: boolean }
+
+export async function loadTeam(ids: string[]): Promise<User[]> {
+    // Fetch in parallel; fail early on a bad response.
+    const users = await Promise.all(ids.map(async id => {
+        const res = await fetch(\`/api/users/\${encodeURIComponent(id)}\`);
+        if (!res.ok) throw new Error(\`User \${id}: \${res.status}\`);
+        return await res.json() as User;
+    }));
+    return users.filter(({ active }) => active);
+}
+`
 const normalize = (text: string) => text.replace(/\r\n?/g, '\n')
 const result = (page: Page) => page.getByRole('region', { name: 'Code differences', exact: true })
 const errors = (page: Page) => {
@@ -48,12 +65,12 @@ test('SSR colors unchanged and changed source without JavaScript', async ({ brow
         await page.goto(route)
         const region = result(page)
         await expect(region.locator('code')).toHaveCount(1)
-        await expect(region.locator('del .th-number')).toHaveText('10')
-        await expect(region.locator('ins .th-number')).toHaveText('20')
-        await expect(region.locator('[data-diff="equal"] .th-keyword').first()).toHaveText('const')
+        await expect(region.locator('del .th-keyword').first()).toHaveText('export')
+        await expect(region.locator('ins .th-keyword').first()).toHaveText('export')
+        await expect(region.locator('[data-diff="equal"] .th-keyword').first()).toHaveText('type')
         for (const token of [
-            region.locator('del .th-number'),
-            region.locator('ins .th-number'),
+            region.locator('del .th-keyword').first(),
+            region.locator('ins .th-keyword').first(),
             region.locator('[data-diff="equal"] .th-keyword').first()
         ]) {
             const color = await token.evaluate((element) => getComputedStyle(element).color)
@@ -82,6 +99,14 @@ test('hydrated editing covers all modes, language fallback, literal source and r
     const region = result(page)
     const before = page.getByLabel('Before', { exact: true })
     const after = page.getByLabel('After', { exact: true })
+    await expect(before).toHaveValue(normalize(initialBefore))
+    await expect(after).toHaveValue(normalize(initialAfter))
+    await expect(page.locator('.status')).toHaveText('Async refactor')
+    await expect(page.getByRole('combobox', { name: 'Language', exact: true })).toHaveValue(
+        'typescript'
+    )
+    await expect(page.getByRole('combobox', { name: 'Theme', exact: true })).toHaveValue('system')
+    await verifySources(region, initialBefore, initialAfter)
     await expect(page.getByRole('combobox', { name: 'Diff mode', exact: true })).toHaveValue('line')
     await before.fill('const value = 10;\n')
     await after.fill('const value = 20;\n')
@@ -114,12 +139,14 @@ test('hydrated editing covers all modes, language fallback, literal source and r
         await expect(region.locator('script,img,br')).toHaveCount(0)
     }
     await page.getByRole('button', { name: 'Reset', exact: true }).click()
+    await expect(page.locator('.status')).toHaveText('Async refactor')
     await expect(before).toHaveValue(normalize(initialBefore))
     await expect(after).toHaveValue(normalize(initialAfter))
     await expect(page.getByRole('combobox', { name: 'Diff mode', exact: true })).toHaveValue('line')
     await expect(page.getByRole('combobox', { name: 'Language', exact: true })).toHaveValue(
         'typescript'
     )
+    await expect(page.getByRole('combobox', { name: 'Theme', exact: true })).toHaveValue('system')
     await verifySources(region, initialBefore, initialAfter)
     expect(messages).toEqual([])
 })
@@ -132,9 +159,10 @@ test('default line mode keeps manual async replacements in complete blocks', asy
     const before = page.getByLabel('Before', { exact: true })
     const after = page.getByLabel('After', { exact: true })
     await expect(mode).toHaveValue('line')
-    await page.getByRole('button', { name: 'Async refactor', exact: true }).click()
-    await expect(mode).toHaveValue('line')
-    const sourceBefore = await before.inputValue()
+    await expect(before).toHaveValue(normalize(initialBefore))
+    await expect(after).toHaveValue(normalize(initialAfter))
+    await expect(page.locator('.status')).toHaveText('Async refactor')
+    const sourceBefore = initialBefore
     const sourceAfter = 'const manual = true;\n'
     await after.fill(sourceAfter)
     await expect(before).toHaveValue(sourceBefore)
@@ -147,6 +175,16 @@ test('default line mode keeps manual async replacements in complete blocks', asy
         .poll(async () => (await region.locator('ins').allTextContents()).map(normalize))
         .toEqual([normalize(sourceAfter)])
     await verifySources(region, sourceBefore, sourceAfter)
+    await page.reload()
+    await expect(before).toHaveValue(normalize(initialBefore))
+    await expect(after).toHaveValue(normalize(initialAfter))
+    await expect(mode).toHaveValue('line')
+    await expect(page.locator('.status')).toHaveText('Async refactor')
+    await expect(page.getByRole('combobox', { name: 'Language', exact: true })).toHaveValue(
+        'typescript'
+    )
+    await expect(page.getByRole('combobox', { name: 'Theme', exact: true })).toHaveValue('system')
+    await verifySources(region, initialBefore, initialAfter)
     expect(messages).toEqual([])
 })
 

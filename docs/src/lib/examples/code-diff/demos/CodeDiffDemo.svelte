@@ -24,31 +24,10 @@
         themeTokenClasses
             .map((token) => `.code-demo .th-${token} { color: var(--th-${token}); }`)
             .join('\n')
-    const initialOriginal =
-        'const count: number = 10;\r\n\tconst label = "old";\nconst format = "compact";\n'
-    const initialModified =
-        'const count: number = 20;\r\n\tconst label = "new";\nconst format = "compact";\n'
-    const contextOriginal =
-        '/* repeated text\nold repeated text */\nconst text = "old repeated text";\nconst re = /(?<year>\\d{4})/;\nconst html = "<script>&</scr' +
-        'ipt>";\n'
-    const contextModified =
-        '/* repeated text\nnew repeated text */\nconst text = "new repeated text";\nconst re = /(?<year>\\d{2})/g;\nconst html = "<img onerror=alert(1)>";\n'
-    let originalText = $state(initialOriginal)
-    let modifiedText = $state(initialModified)
-    let language = $state('typescript')
-    let diffMode = $state<SvelteDiffMode>('line')
-    let theme = $state('system')
-    const presets = [
-        {
-            name: 'Multiline context',
-            before: contextOriginal,
-            after: contextModified,
-            language: 'typescript'
-        },
-        {
-            name: 'Async refactor',
-            language: 'typescript',
-            before: `type User = { name: string; active: boolean }
+    const asyncPreset = {
+        name: 'Async refactor',
+        language: 'typescript',
+        before: `type User = { name: string; active: boolean }
 
 export function loadTeam(ids: string[]): Promise<User[]> {
     // Fetch each teammate, then keep the active ones.
@@ -57,7 +36,7 @@ export function loadTeam(ids: string[]): Promise<User[]> {
     )).then(users => users.filter(user => user.active));
 }
 `,
-            after: `type User = { name: string; active: boolean }
+        after: `type User = { name: string; active: boolean }
 
 export async function loadTeam(ids: string[]): Promise<User[]> {
     // Fetch in parallel; fail early on a bad response.
@@ -69,7 +48,25 @@ export async function loadTeam(ids: string[]): Promise<User[]> {
     return users.filter(({ active }) => active);
 }
 `
+    }
+    const contextOriginal =
+        '/* repeated text\nold repeated text */\nconst text = "old repeated text";\nconst re = /(?<year>\\d{4})/;\nconst html = "<script>&</scr' +
+        'ipt>";\n'
+    const contextModified =
+        '/* repeated text\nnew repeated text */\nconst text = "new repeated text";\nconst re = /(?<year>\\d{2})/g;\nconst html = "<img onerror=alert(1)>";\n'
+    let originalText = $state(asyncPreset.before)
+    let modifiedText = $state(asyncPreset.after)
+    let language = $state(asyncPreset.language)
+    let diffMode = $state<SvelteDiffMode>('line')
+    let theme = $state('system')
+    const presets = [
+        {
+            name: 'Multiline context',
+            before: contextOriginal,
+            after: contextModified,
+            language: 'typescript'
         },
+        asyncPreset,
         {
             name: 'JSON upgrade',
             language: 'json',
@@ -92,7 +89,7 @@ export async function loadTeam(ids: string[]): Promise<User[]> {
 `
         }
     ]
-    let scenario = $state('Small change')
+    let scenario = $state(asyncPreset.name)
     let replaying = $state(false)
     let replayStep = $state(0)
     let replayTimer: ReturnType<typeof setTimeout> | undefined
@@ -158,10 +155,10 @@ export async function loadTeam(ids: string[]): Promise<User[]> {
     }
     const reset = () => {
         cancelReplay()
-        scenario = 'Small change'
-        originalText = initialOriginal
-        modifiedText = initialModified
-        language = 'typescript'
+        scenario = asyncPreset.name
+        originalText = asyncPreset.before
+        modifiedText = asyncPreset.after
+        language = asyncPreset.language
         diffMode = 'line'
         theme = 'system'
     }
