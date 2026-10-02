@@ -1,7 +1,0 @@
-- name: Cleanup on failure
-  if: failure() && steps.ownership.outputs.ready == 'true' && steps.canonical.outcome != 'success'
-  env:
-      CANONICAL_SUCCESS: ${{ steps.canonical.outcome }}
-      GITHUB_TOKEN: ${{ secrets.ACTIONS_KEY }}
-  run: |
-      node .github/scripts/release-publication.mjs cleanup

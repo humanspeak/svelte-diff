@@ -1,4 +1,4 @@
-# Release safety managed by humanspeak/svelte-diff .github/release-workflows/sync.py
+# Release safety managed by humanspeak/docs-kit .github/release-workflows/sync.py
 # 1. Workflow metadata
 name: Publish to NPM
 
@@ -341,10 +341,9 @@ jobs:
             - name: Check library types
               run: pnpm run check
 
-            - name: Test shared release policies offline
+            - name: Test release workflow offline
               run: |
-                  python3 -m unittest discover -s .github/release-workflows -p '*test.py'
-                  node --test .github/scripts/release-workflow.test.mjs .github/scripts/calver-release.test.mjs
+                  node --test .github/scripts/release-workflow.test.mjs
 
             - name: Test
               run: |
