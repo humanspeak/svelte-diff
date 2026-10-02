@@ -1,8 +1,10 @@
 import { fireEvent, render, waitFor } from '@testing-library/svelte'
+import { DiffOp } from 'diff-match-patch-ts'
 import { createRawSnippet, flushSync, tick } from 'svelte'
 import { describe, expect, it, vi } from 'vitest'
 import DiffModesFixture from '../routes/tests/diff-modes/+page.svelte'
 import SvelteDiff from './SvelteDiff.svelte'
+import type { SvelteDiffProps, SvelteDiffTuple } from './index.js'
 import ProcessingCallbackFixture from './test/ProcessingCallbackFixture.svelte'
 
 const textSnippet = (className: string) =>
@@ -230,6 +232,62 @@ describe('SvelteDiff snippet precedence', () => {
         })
         expect(container.querySelector('.renderers-remove')).toBeTruthy()
         expect(container.querySelector('.class-insert')).toBeTruthy()
+    })
+})
+
+describe('SvelteDiff literal source', () => {
+    // Step 1 deliberately passes the future prop without changing the public component type.
+    type LiteralSourceProps = SvelteDiffProps & { expectedPatterns: false }
+
+    it('supports literal source without interpreting named groups', async () => {
+        const source = 'const pattern = /(?<year>\\d{4})/;'
+        const onProcessing = vi.fn()
+        const props: LiteralSourceProps = {
+            originalText: source,
+            modifiedText: source,
+            expectedPatterns: false,
+            onProcessing,
+            rendererClasses: { expected: 'test-expected' }
+        }
+        const { container } = render(SvelteDiff, props)
+
+        await waitFor(() => expect(onProcessing).toHaveBeenCalled())
+        const [, diffs, captures] = onProcessing.mock.lastCall!
+        expect(diffs).toEqual([[0, source]])
+        expect(captures).toBeUndefined()
+        expect(container.querySelectorAll('.test-expected, [data-capture-name]')).toHaveLength(0)
+        expect(container.textContent).toBe(source)
+    })
+
+    it('reconstructs both sides of changed literal source from raw tuples', async () => {
+        const originalText = 'const pattern = /(?<year>\\d{4})/;'
+        const modifiedText = 'const pattern = /(?<year>\\d{2})/g;'
+        const onProcessing = vi.fn()
+        const props: LiteralSourceProps = {
+            originalText,
+            modifiedText,
+            expectedPatterns: false,
+            onProcessing,
+            rendererClasses: { expected: 'test-expected' }
+        }
+        const { container } = render(SvelteDiff, props)
+
+        await waitFor(() => expect(onProcessing).toHaveBeenCalled())
+        const diffs = onProcessing.mock.lastCall![1] as SvelteDiffTuple[]
+        expect(
+            diffs
+                .filter(([op]) => op !== DiffOp.Insert)
+                .map(([, text]) => text)
+                .join('')
+        ).toBe(originalText)
+        expect(
+            diffs
+                .filter(([op]) => op !== DiffOp.Delete)
+                .map(([, text]) => text)
+                .join('')
+        ).toBe(modifiedText)
+        expect(onProcessing.mock.lastCall![2]).toBeUndefined()
+        expect(container.querySelectorAll('.test-expected, [data-capture-name]')).toHaveLength(0)
     })
 })
 
