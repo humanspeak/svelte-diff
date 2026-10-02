@@ -10,7 +10,9 @@
 >
 > **Revision 2026-10-02**: Execution resumed after transient executor/DNS failures before any B source edits. Registry access is now available; TanStack 1.0.0 metadata was reproduced. Corrected the guide mirror path to the nested layout observed in the normal A build. Re-stamped the baseline to current HEAD, which adds only guard records to reviewed A.
 >
-> **Drift check**: `git diff --stat 6d242bf..HEAD -- src/lib package.json pnpm-lock.yaml pnpm-workspace.yaml docs/package.json docs/src/lib docs/src/routes tests docs/tests .github/workflows/docs-diff-modes.yml`
+> **Revision 2026-10-02**: macOS case-insensitive paths make codeDiff.test.ts and CodeDiff.test.ts collide. Use `codeDiff.model.test.ts` for the model suite and `CodeDiff.test.ts` for component tests, retaining every test contract and the existing Vitest discovery. This is a routine filesystem compatibility correction, not a dropped suite.
+>
+> **Drift check**: `git diff --stat 42f2c74..HEAD -- src/lib package.json pnpm-lock.yaml pnpm-workspace.yaml docs/package.json docs/src/lib docs/src/routes tests docs/tests .github/workflows/docs-diff-modes.yml`
 > Plan A and package improvements are expected drift. Verify their resulting
 > contracts explicitly; stop for conflicting changes rather than restoring the
 > baseline excerpts or silently changing the design.
@@ -22,7 +24,7 @@
 - **Risk**: MED
 - **Depends on**: `001-extract-shared-diff-core-and-literal-mode.md`
 - **Category**: direction / feature
-- **Planned at**: commit `6d242bf`, 2026-10-02 (reviewed A plus guard records)
+- **Planned at**: commit `42f2c74`, 2026-10-02 (reviewed A and dependency bootstrap)
 
 ## Why this matters
 
@@ -166,7 +168,7 @@ and avoid shared mutable global request caches.
 | Purpose | Command | Expected on success |
 | --- | --- | --- |
 | Version/API preflight | `pnpm view @tanstack/highlight@1.0.0 version exports --json` | 1.0.0 with core/language/theme entry points |
-| New model units | `pnpm exec vitest run src/lib/codeDiff.test.ts` | all contract cases pass |
+| New model units | `pnpm exec vitest run src/lib/codeDiff.model.test.ts` | all contract cases pass |
 | New component units | `pnpm exec vitest run src/lib/CodeDiff.test.ts` | escaping/semantics/cache tests pass |
 | Root gates | `pnpm run check`; `pnpm exec vitest run src/lib/`; `pnpm run package` | zero check errors, all units, publint pass |
 | Packaged Svelte consumer smoke | `node scripts/verify-code-diff-packaging.mjs` | text-only build has no TanStack module; selective code build has only registered languages |
@@ -206,7 +208,7 @@ source regressions. The docs build's GitHub stats fetch can require network acce
 ## Scope
 
 **In scope**: create `src/lib/code.ts`, `src/lib/codeDiff.ts`,
-`src/lib/codeDiff.test.ts`, `src/lib/CodeDiff.svelte`, `src/lib/CodeDiff.test.ts`,
+`src/lib/codeDiff.model.test.ts`, `src/lib/CodeDiff.svelte`, `src/lib/CodeDiff.test.ts`,
 `src/routes/tests/code-diff/+page.svelte`, `tests/code-diff.test.ts`,
 `docs/src/lib/examples/code-diff/demos/CodeDiffDemo.svelte`,
 `docs/src/routes/examples/code-diff/+page.svelte`,

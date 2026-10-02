@@ -36,3 +36,11 @@ a4f19bc · A PASS and B pre-flight
 - Registry preflight and installed core/type/theme/language declarations match planned 1.0.0. Independently verified full-source token reconstruction for TS and unknown-language fallback, including regex braces, CRLF, tabs and emoji.
 - Full scope review: only optional peer/dev/docs metadata, exact exclusion and lock addition; minimumReleaseAge 2880 retained, all existing exclusions unchanged. No workflow/helper/root source/export changes.
 - Action: commit checkpoint record and dispatch remaining entry/component/model/tests/docs/packaging implementation. B remains IN PROGRESS.
+
+## Checkpoint 5 — 2026-10-02 14:50 — PLAN AMENDED
+
+42f2c74 · model/component test filename collision
+
+- Executor stopped on case-insensitive filesystem collision before overwriting model tests. Distinct model filename codeDiff.model.test.ts retains both suites and existing Vitest discovery.
+- No API, scope intent, assertions or gates are relaxed. macOS naming is a routine implementation constraint; user continued authorized execution.
+- Action: commit plan filename correction and resume separate executor with model rename and full implementation.
