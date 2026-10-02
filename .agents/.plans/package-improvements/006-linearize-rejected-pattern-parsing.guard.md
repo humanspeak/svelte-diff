@@ -27,3 +27,14 @@
 - Production byte identity with 202504c verified; both old test files remain exact byte prefixes, so red predates any implementation.
 - Deterministic red and 13 primitive compatibility passes independently reproduced. No genuine STOP remains.
 - Action: dispatch Steps 2–3 to executor; guard later owns all five-browser green/full diagnostics gates.
+
+## Checkpoint 4 — 2026-10-02 06:19 — ON TRACK / final PASS
+
+88b1b41 · production snapshot; test snapshot 9bdf527
+
+- Guard reads complete scanner delta and prior phase test/fixture diff. Reverse outside/inside entry-state metadata performs constant work per source character; forward name spans are disjoint; only accepted non-overlapping groups allocate substrings. No recursive/suffix/ancestor traversal remains.
+- Independent guard differential compares old/new private scanner outputs on 12012 synthetic primitive inputs with deterministic seed0x604006: zero mismatches. All13 named primitive compatibility cases and fixed three-scale traversal budget test pass in 159-unit full suite.
+- Guard Node24 check0/0; package/publint All good; trunk fmt/check exit0, one existing issue/no new findings; diff hygiene/source snapshot equality pass.
+- Corrected exact browser gates: Chromium isolated1 pass; all five projects isolated one-worker5 passes; full diagnostics two-workers40 passes. Each initial and rerun validates three primitive80000-character null results, finite samples <=2000ms, valid max/metadata/running state. Existing001–005 tests/ceilings unchanged.
+- Guard verified tests/fixture exactly match red snapshot and all module code after scanner is byte-identical to prior source. Four implementation paths total, clean final tracked tree.
+- Action: 006 DONE; re-baseline 007 to reviewed source and preserve linear discovery/global rejection/storage/callback predecessors.

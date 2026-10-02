@@ -2,7 +2,9 @@
 
 > **Executor instructions**: Read fully, follow steps in order, and confirm each verification result. Stop and report if a STOP condition occurs. The operator maintains the batch README; send completion/gate results rather than editing their index unless delegated.
 >
-> **Drift check (run first)**: `git diff --stat fa0cfc9..HEAD -- src/lib/expectedPatterns.ts src/lib/expectedPatterns.test.ts src/lib/SvelteDiff.test.ts tests/expected-patterns.test.ts`. Compare the excerpts against live code. Changes from prerequisites 004 and 006, and independent capture storage 003, are expected: inspect those changes explicitly before applying this plan; do not restore the old code. Stop on unrelated drift or missing prerequisite behavior. Run `git status --short` to separate pre-existing local changes.
+> Revision 2026-10-02: Plans001–006 are DONE. Re-baseline to reviewed88b1b41 and shifted helper/component anchors. Preserve003 own capture properties,004 global invalid/duplicate literal rejection,006 linear discovery plus all tests/fixture/ceilings, and002 untracked callbacks unconditionally. Extraction and regex search flags remain unchanged at this baseline; ordering policy, scope and done criteria are unchanged.
+>
+> **Drift check (run first)**: `git diff --stat 88b1b41..HEAD -- src/lib/expectedPatterns.ts src/lib/expectedPatterns.test.ts src/lib/SvelteDiff.test.ts tests/expected-patterns.test.ts`. Compare the excerpts against live code. Completed prerequisites004/006 and capture storage003 are already in the baseline; retain them and their tests, never restore old code. Stop on unrelated drift or missing prerequisite behavior. Run `git status --short` to separate pre-existing local changes.
 
 ## Status
 
@@ -11,7 +13,7 @@
 - **Risk**: MED
 - **Depends on**: `004-handle-invalid-pattern-compilation.md` and `006-linearize-rejected-pattern-parsing.md`; extraction series executes 003 → 004 → 006 → 007 to serialize shared engine/test changes and preserve validated parser behavior
 - **Category**: bug
-- **Planned at**: commit `fa0cfc9`, 2026-10-02
+- **Planned at**: commit `88b1b41`, 2026-10-02
 
 ## Why this matters
 
@@ -19,8 +21,8 @@ Every compiled line currently starts searching the target at index zero. For tem
 
 ## Current state
 
-- `src/lib/expectedPatterns.ts:243–276` builds context-prefixed, gap-flexible line regexes with `new RegExp(pattern, 'd')`. Literal context is escaped, the gap permits extra target content, and named group bodies retain regex behavior.
-- `src/lib/expectedPatterns.ts:425–445` executes each regex independently:
+- `src/lib/expectedPatterns.ts:266–299` builds context-prefixed, gap-flexible line regexes with `new RegExp(pattern, 'd')`. Literal context is escaped, the gap permits extra target content, and named group bodies retain regex behavior.
+- `src/lib/expectedPatterns.ts:458–485` executes each regex independently:
 
 ```ts
 for (const { groups, regex } of parseResult.linePatterns) {
@@ -32,13 +34,13 @@ for (const { groups, regex } of parseResult.linePatterns) {
 }
 ```
 
-- `src/lib/expectedPatterns.ts:449–453` resolves the source and sorts absolute capture ranges; `tagExpectedRegions` uses a forward cursor from line 507. Preserve the latter algorithm and correct offsets.
-- `src/lib/expectedPatterns.test.ts:227–247` verifies differently prefixed lines but not repeated context. Its tests at lines 98–143 reuse one compiled result against different targets and assert regex object identity; follow that shape for state-reset regressions.
-- `src/lib/SvelteDiff.test.ts:207–238` checks target-only edits with unchanged template, and lines 263–272 require cleaned placeholder fallback for valid templates that fail extraction. Those contracts apply when a later occurrence is missing or out of order.
+- `src/lib/expectedPatterns.ts:486–492` resolves the source and sorts absolute capture ranges; `tagExpectedRegions` uses a forward cursor from line 543. Preserve the latter algorithm and correct offsets.
+- `src/lib/expectedPatterns.test.ts:348–374` verifies differently prefixed lines but not repeated context. Its tests at lines151–198 reuse one compiled result against different targets and assert regex object identity; follow that shape for state-reset regressions.
+- `src/lib/SvelteDiff.test.ts:289–320` checks target-only edits with unchanged template, and lines345–354 require cleaned placeholder fallback for valid templates that fail extraction. Those contracts apply when a later occurrence is missing or out of order.
 - `tests/expected-patterns.test.ts:22–41` edits the existing `text1`/`text2` controls and queries expected/remove/insert classes inside `diff-result`. Use that route as-is; no fixture change is needed.
-- Functions in `expectedPatterns.ts` are typed arrow functions with JSDoc, exemplified by `extractCaptures` at lines 405–421. Add comments/JSDoc for whole-target ordering, absolute positions, and reset behavior; do not add a class or helper package.
+- Functions in `expectedPatterns.ts` are typed arrow functions with JSDoc, exemplified by `extractCaptures` at lines438–455. Add comments/JSDoc for whole-target ordering, absolute positions, and reset behavior; do not add a class or helper package.
 
-Prerequisite 004 must already make parsing return null and cleanTemplate preserve original text for duplicate names anywhere in a template and for regex SyntaxError, while unexpected errors propagate. Prerequisite 006 may change candidate scanning: preserve its behavior and tests. Automatic valid-template interpretation, character default, word/line losslessness and no cleanup, compiled reuse, cached callback identity, linear tagging, compact markup, and SSR remain settled. Regex extraction is outside the diff algorithm deadline by design.
+Completed prerequisite004 makes parsing return null and cleanTemplate preserve original text for duplicate names anywhere in a template and for regex SyntaxError, while unexpected errors propagate. Completed prerequisite006 linearizes candidate scanning: preserve its behavior, fixed-budget tests and browser diagnostic. Automatic valid-template interpretation, character default, word/line losslessness and no cleanup, compiled reuse, cached callback identity, linear tagging, compact markup, and SSR remain settled. Regex extraction is outside the diff algorithm deadline by design.
 
 ## Commands you will need
 

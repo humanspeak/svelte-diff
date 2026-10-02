@@ -22,7 +22,7 @@ An operator/reviewer owns these status rows unless they delegate updates.
 | [003](003-preserve-capture-property-names.md) | Preserve accepted capture property names | P1 | S | LOW | 002, shared component tests | DONE |
 | [004](004-handle-invalid-pattern-compilation.md) | Reject invalid templates without rendering failures | P1 | M | MED | 003, shared parser/tests | DONE |
 | [005](005-enforce-library-ci-gates.md) | Enforce root typechecks and pnpm CI input coverage | P1 | S | LOW | 001, shared release workflow | DONE |
-| [006](006-linearize-rejected-pattern-parsing.md) | Bound rejected-pattern discovery to linear traversal | P1 | M | MED | 004 | IN PROGRESS |
+| [006](006-linearize-rejected-pattern-parsing.md) | Bound rejected-pattern discovery to linear traversal | P1 | M | MED | 004 | DONE |
 | [007](007-match-template-occurrences-in-order.md) | Match expected template contexts in source order | P1 | M | MED | 004, 006 | TODO |
 | [008](008-serialize-release-publication.md) | Serialize publication and protect owned artifacts | P1 | L | MED | 001, 005 | TODO |
 | [009](009-align-svelte-only-documentation.md) | Correct Svelte-only helper documentation | P2 | S | LOW | 004, shared README sections | TODO |
@@ -119,3 +119,5 @@ Plan 004 passed at 7068933: 145 units, 30 expected-pattern cases, 35 unchanged p
 Plan 005 passed at 42ff699: 145 units, seven offline updater regressions, root check/build/package and Trunk pass. Workflow reversal assertions preserve all prior bytes. Plan 006 is re-baselined to this reviewed tip and split into test/fixture baseline evidence, then scanner implementation; guard owns browser red before production edits.
 
 Plan 006 Step 1 at 9bdf527 reproduces all traversal-budget failures and 13 compatibility passes. Original browser grep selected no tests; selector amended to the unique diagnostic title without changing workload/ceiling, before retry on unchanged source.
+
+Plan 006 passed at 88b1b41:159 units, isolated five-browser regression and40 full diagnostic cases; original budgets/ceilings preserved. Independent12012-input scanner comparison has zero mismatch. Plan007 is re-baselined to this reviewed tip and must preserve all parser/storage/callback predecessors.
