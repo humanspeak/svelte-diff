@@ -1,0 +1,12 @@
+{
+    "manager": "pnpm",
+    "event": "push",
+    "manifests": [
+        "package.json",
+        "tombstones/svelte-diff/package.json",
+        "tombstones/svelte-diff-match-patch/package.json"
+    ],
+    "lockfile": null,
+    "readme": "managed",
+    "reference": true
+}

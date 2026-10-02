@@ -1,0 +1,115 @@
+# Release safety managed by humanspeak/svelte-diff .github/release-workflows/sync.py
+name: Release
+
+on:
+    workflow_dispatch:
+    push:
+        branches: [main]
+        paths:
+            - src/**
+            - package.json
+            - pnpm-lock.yaml
+            - pnpm-workspace.yaml
+            - tsconfig*.json
+            - svelte.config.*
+            - .github/scripts/**
+            - .github/release-policy.json
+            - .github/release-source.json
+            - .github/workflows/release.yml
+
+permissions:
+    contents: read
+    pull-requests: read
+
+# Default pending-run replacement guarantees neither every event nor trigger order.
+concurrency:
+    group: repository-release
+    cancel-in-progress: false
+
+jobs:
+    prepare:
+        runs-on: ubuntu-latest
+        outputs:
+            ready: ${{ steps.baseline.outputs.ready }}
+            checkout_sha: ${{ steps.baseline.outputs.checkout_sha }}
+        steps:
+            # Sole bootstrap exception: read-only helper loading at original event SHA.
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+              with:
+                  ref: ${{ github.sha }}
+                  persist-credentials: false
+                  fetch-depth: 0
+            - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+              with:
+                  node-version: 24
+            - name: Select tested main baseline
+              id: baseline
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  EVENT_NAME: ${{ github.event_name }}
+                  EVENT_SHA: ${{ github.sha }}
+                  EVENT_REF: ${{ github.ref }}
+              run: node .github/scripts/calver-release.mjs prepare
+
+    release:
+        needs: [prepare]
+        if: needs.prepare.outputs.ready == 'true'
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+        env:
+            RELEASE_STATE: ${{ runner.temp }}/release-${{ github.run_id }}-${{ github.run_attempt }}.json
+            PREPARED_SHA: ${{ needs.prepare.outputs.checkout_sha }}
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+              with:
+                  ref: ${{ needs.prepare.outputs.checkout_sha }}
+                  persist-credentials: false
+                  fetch-depth: 0
+            - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+            - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+              with:
+                  node-version: 24
+            - name: Install
+              run: pnpm install --prefer-offline --frozen-lockfile --ignore-scripts
+            - name: Check library types
+              run: pnpm run check
+            - name: Test release safety offline
+              run: node --test .github/scripts/*.test.mjs
+            - name: Build and test
+              run: |
+                  pnpm build
+                  pnpm test
+            - name: Import GPG key
+              uses: crazy-max/ghaction-import-gpg@2dc316deee8e90f13e1a351ab510b4d5bc0c82cd # v7
+              with:
+                  gpg_private_key: ${{ secrets.ACTIONS_GPG_PRIVATE_KEY }}
+                  passphrase: ${{ secrets.ACTIONS_GPG_PASSPHRASE }}
+                  git_user_signingkey: true
+                  git_tag_gpgsign: true
+            - name: Recheck tested main and initialize ownership
+              id: ownership
+              run: node .github/scripts/calver-release.mjs begin
+            - name: Generate and sign owned CalVer tag
+              if: steps.ownership.outputs.ready == 'true'
+              id: tag
+              run: node .github/scripts/calver-release.mjs tag
+            - name: Push intended tag
+              if: steps.ownership.outputs.ready == 'true'
+              env:
+                  GITHUB_TOKEN: ${{ secrets.ACTIONS_KEY }}
+              run: |
+                  git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
+                  node .github/scripts/calver-release.mjs push
+            - name: Create owned release with generated notes
+              id: created
+              if: steps.ownership.outputs.ready == 'true'
+              env:
+                  GH_TOKEN: ${{ secrets.ACTIONS_KEY }}
+              run: node .github/scripts/calver-release.mjs release
+            - name: Cleanup on failure
+              if: failure() && steps.ownership.outputs.ready == 'true' && steps.created.outcome != 'success'
+              env:
+                  GH_TOKEN: ${{ secrets.ACTIONS_KEY }}
+                  RELEASE_SUCCESS: ${{ steps.created.outcome }}
+              run: node .github/scripts/calver-release.mjs cleanup

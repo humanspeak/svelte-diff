@@ -23,6 +23,13 @@ on:
             - playwright.config.*
             - tsconfig*.json
             - .github/workflows/run-tests.yml
+            - vitest.config.*
+            - vitest.setup.*
+            - eslint.config.*
+            - .npmrc
+            - .github/scripts/**
+            - .github/release-policy.json
+            - .github/release-source.json
 
 concurrency:
     group: run-tests-${{ github.ref }}
@@ -71,6 +78,12 @@ jobs:
 
             - name: Check library types
               run: pnpm run check
+
+            - name: Test release safety offline
+              run: node --test .github/scripts/*.test.mjs
+
+            - name: Test shared workflow synchronization
+              run: python3 -m unittest discover -s .github/release-workflows -p '*test.py'
 
             - name: Run unit tests
               run: |

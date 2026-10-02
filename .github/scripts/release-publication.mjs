@@ -1,18 +1,28 @@
 import { spawnSync } from 'node:child_process'
+import console from 'node:console'
 import { appendFileSync, readFileSync, renameSync, unlinkSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import { isDeepStrictEqual } from 'node:util'
 
 const shaPattern = /^[a-f0-9]{40}$/
 const versionPattern = /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/
 const statuses = ['not-attempted', 'created', 'unknown']
-const manifests = [
-    'package.json',
-    'tombstones/svelte-diff/package.json',
-    'tombstones/svelte-diff-match-patch/package.json'
-]
-const allowed = [...manifests, 'README.md']
+export const defaultPolicy = { manifests: ['package.json'], lockfile: null, readme: 'unchanged' }
+export const readPolicy = () => {
+    const policy = JSON.parse(readFileSync('.github/release-policy.json', 'utf8'))
+    requireValue(
+        Array.isArray(policy.manifests) &&
+            policy.manifests[0] === 'package.json' &&
+            new Set(policy.manifests).size === policy.manifests.length &&
+            policy.manifests.every((path) => /^(?:[a-zA-Z0-9_-]+\/)*package\.json$/.test(path)) &&
+            [null, 'package-lock.json'].includes(policy.lockfile) &&
+            ['managed', 'unchanged'].includes(policy.readme),
+        'Invalid repository release policy'
+    )
+    return policy
+}
 const retry = 'no release created; use a fresh qualifying main event or manual retry'
 const requireValue = (condition, message) => {
     if (!condition) throw new Error(message)
@@ -55,7 +65,12 @@ const outsideBlock = (text) => {
     requireValue(a < b, 'Invalid managed README block')
     return [text.slice(0, a), text.slice(b + end.length)]
 }
-export const validateMetadata = (before, after, paths) => {
+export const validateMetadata = (before, after, paths, policy = defaultPolicy) => {
+    const allowed = [
+        ...policy.manifests,
+        ...(policy.lockfile ? [policy.lockfile] : []),
+        ...(policy.readme === 'managed' ? ['README.md'] : [])
+    ]
     requireValue(
         paths.length > 0 && paths.every((path) => allowed.includes(path)),
         'Unrecognized release delta'
@@ -63,7 +78,7 @@ export const validateMetadata = (before, after, paths) => {
     const old = JSON.parse(before('package.json')),
         fresh = JSON.parse(after('package.json'))
     requireValue(nextVersion(old.version, fresh.version), 'Invalid version transition')
-    for (const path of manifests) {
+    for (const path of policy.manifests) {
         const a = JSON.parse(before(path)),
             b = JSON.parse(after(path))
         requireValue(
@@ -83,25 +98,51 @@ export const validateMetadata = (before, after, paths) => {
         }
         requireValue(isDeepStrictEqual(a, b), 'Non-version manifest change')
     }
-    requireValue(
-        isDeepStrictEqual(outsideBlock(before('README.md')), outsideBlock(after('README.md'))),
-        'Unmanaged README change'
-    )
+    if (policy.lockfile) {
+        const a = JSON.parse(before(policy.lockfile)),
+            b = JSON.parse(after(policy.lockfile))
+        requireValue(
+            a.version === old.version &&
+                b.version === fresh.version &&
+                a.packages?.['']?.version === old.version &&
+                b.packages?.['']?.version === fresh.version,
+            'Lockfile root version mismatch'
+        )
+        delete a.version
+        delete b.version
+        delete a.packages[''].version
+        delete b.packages[''].version
+        requireValue(isDeepStrictEqual(a, b), 'Non-version lockfile change')
+    }
+    if (policy.readme === 'managed') {
+        const a = before('README.md'),
+            b = after('README.md')
+        // An unchanged README is valid even if a consumer has not installed its footer yet.
+        if (a !== b)
+            requireValue(
+                isDeepStrictEqual(outsideBlock(a), outsideBlock(b)),
+                'Unmanaged README change'
+            )
+    }
     return `v${fresh.version}`
 }
 const main = (exec) => {
     run(exec, 'git', ['fetch', '--no-tags', 'origin', 'refs/heads/main'])
     return oidValue(run(exec, 'git', ['rev-parse', 'FETCH_HEAD']))
 }
-export const selectBaseline = (input, exec = transport) => {
+export const selectBaseline = (input, exec = transport, policy = defaultPolicy) => {
     const noop = (outcome) => ({ outcome, ready: false, message: retry })
-    if (input.skip || (input.event === 'push' && !input.merged)) return noop('skipped')
+    if (input.skip || (['push', 'pull_request'].includes(input.event) && !input.merged))
+        return noop('skipped')
     if (input.event === 'workflow_dispatch' && input.ref !== 'refs/heads/main')
         return noop('unsupported non-main manual request')
-    requireValue(['push', 'workflow_dispatch'].includes(input.event), 'Unsupported event')
+    requireValue(
+        ['push', 'pull_request', 'workflow_dispatch'].includes(input.event),
+        'Unsupported event'
+    )
     requireValue(shaPattern.test(input.eventSha), 'Invalid original event SHA')
     const current = main(exec)
-    if (input.event === 'push' && current !== input.eventSha) {
+    if (input.event !== 'workflow_dispatch' && current !== input.eventSha) {
         if (exec('git', ['merge-base', '--is-ancestor', input.eventSha, current]).code !== 0)
             return noop('stale')
         try {
@@ -132,7 +173,8 @@ export const selectBaseline = (input, exec = transport) => {
                 validateMetadata(
                     (path) => run(exec, 'git', ['show', `${parent}:${path}`]),
                     (path) => run(exec, 'git', ['show', `${commit}:${path}`]),
-                    paths
+                    paths,
+                    policy
                 )
                 parent = commit
             }
@@ -146,6 +188,16 @@ export const selectBaseline = (input, exec = transport) => {
     return { ready: true, outcome: 'ready', checkoutSha: current, version }
 }
 
+export const selectTagBaseline = (input, exec = transport) => {
+    requireValue(['push', 'workflow_dispatch'].includes(input.event), 'Unsupported event')
+    requireValue(shaPattern.test(input.eventSha), 'Invalid original event SHA')
+    if (input.skip || input.ref !== 'refs/heads/main') return { ready: false, outcome: 'skipped' }
+    const current = main(exec)
+    if (input.event === 'push' && current !== input.eventSha)
+        return { ready: false, outcome: 'stale', message: retry }
+    return { ready: true, outcome: 'ready', checkoutSha: current }
+}
+
 export const validateState = (state, identity) => {
     requireValue(
         state &&
@@ -157,10 +209,17 @@ export const validateState = (state, identity) => {
     )
     requireValue(
         shaPattern.test(state.base) &&
-            (state.version === null || versionPattern.test(state.version)) &&
+            (state.version === null ||
+                (state.scheme === 'calver'
+                    ? /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(state.version)
+                    : versionPattern.test(state.version))) &&
             (state.commit === null || shaPattern.test(state.commit)) &&
             (state.tagOid === null || shaPattern.test(state.tagOid)),
         'Malformed artifact identity'
+    )
+    requireValue(
+        state.scheme === undefined || state.scheme === 'calver',
+        'Malformed release scheme'
     )
     requireValue(
         statuses.includes(state.tag) &&
@@ -267,7 +326,8 @@ const remoteTag = (exec, version) => {
 export const validateDelta = (
     state,
     exec = transport,
-    read = (path) => readFileSync(path, 'utf8')
+    read = (path) => readFileSync(path, 'utf8'),
+    policy = defaultPolicy
 ) => {
     requireValue(
         oidValue(run(exec, 'git', ['rev-parse', 'HEAD'])) === state.base,
@@ -285,7 +345,8 @@ export const validateDelta = (
     return validateMetadata(
         (path) => run(exec, 'git', ['show', `${state.base}:${path}`]),
         read,
-        paths
+        paths,
+        policy
     )
 }
 export const pushArtifacts = (path, identity, exec = transport) => {
@@ -299,7 +360,9 @@ export const pushArtifacts = (path, identity, exec = transport) => {
         api(exec, [`${releasePath}/tags/${state.version}`]).status === 404,
         'Version release collision'
     )
-    run(exec, 'git', ['push', 'origin', 'HEAD:refs/heads/main'])
+    if (state.scheme === 'calver')
+        requireValue(state.commit === state.base, 'Untested CalVer commit')
+    else run(exec, 'git', ['push', 'origin', 'HEAD:refs/heads/main'])
     state.tag = 'unknown'
     writeState(path, state, identity)
     const result = exec('git', [
@@ -322,7 +385,7 @@ export const pushArtifacts = (path, identity, exec = transport) => {
     state.tag = 'created'
     writeState(path, state, identity)
 }
-export const createRelease = (path, identity, notes, exec = transport) => {
+export const createRelease = (path, identity, notes, exec = transport, generateNotes = false) => {
     const state = readState(path, identity)
     requireValue(
         state.tag === 'created' && state.release === 'not-attempted',
@@ -338,13 +401,18 @@ export const createRelease = (path, identity, notes, exec = transport) => {
     writeFileSync(
         request,
         JSON.stringify({
-            // trunk-ignore(eslint/camelcase): GitHub release API requires this wire field.
+            // eslint-disable-next-line camelcase -- GitHub release API requires this wire field.
             tag_name: state.version,
-            // trunk-ignore(eslint/camelcase): GitHub release API requires this wire field.
+            // eslint-disable-next-line camelcase -- GitHub release API requires this wire field.
             target_commitish: state.commit,
             name: `Release ${state.version}`,
-            body: notes,
-            // trunk-ignore(eslint/camelcase): GitHub release API requires this wire field.
+            ...(generateNotes
+                ? {
+                      // eslint-disable-next-line camelcase -- GitHub release API requires this wire field.
+                      generate_release_notes: true
+                  }
+                : { body: notes }),
+            // eslint-disable-next-line camelcase -- GitHub release API requires this wire field.
             make_latest: 'true'
         }),
         { mode: 0o600 }
@@ -483,13 +551,17 @@ const cli = () => {
     }
     switch (process.argv[2]) {
         case 'prepare': {
-            const result = selectBaseline({
-                event: env.EVENT_NAME,
-                eventSha: env.EVENT_SHA,
-                ref: env.EVENT_REF,
-                merged: env.PR_FOUND === 'true',
-                skip: env.HAS_SKIP_LABEL === 'true' || env.INPUT_VERSION === 'skip'
-            })
+            const result = selectBaseline(
+                {
+                    event: env.EVENT_NAME,
+                    eventSha: env.EVENT_SHA,
+                    ref: env.EVENT_REF,
+                    merged: env.PR_FOUND === 'true',
+                    skip: env.HAS_SKIP_LABEL === 'true' || env.INPUT_VERSION === 'skip'
+                },
+                transport,
+                readPolicy()
+            )
             output('ready', result.ready)
             output('checkout_sha', result.checkoutSha || '')
             output('outcome', result.outcome)
@@ -510,7 +582,7 @@ const cli = () => {
         }
         case 'validate': {
             const state = readState(path, identity)
-            state.version = validateDelta(state)
+            state.version = validateDelta(state, transport, undefined, readPolicy())
             writeState(path, state, identity)
             break
         }
@@ -518,8 +590,10 @@ const cli = () => {
             const state = readState(path, identity)
             state.commit = oidValue(run(transport, 'git', ['rev-parse', 'HEAD']))
             requireValue(
-                run(transport, 'git', ['rev-list', '--parents', '-n', '1', 'HEAD']).trim() ===
-                    `${state.commit} ${state.base}`,
+                state.scheme === 'calver'
+                    ? state.commit === state.base
+                    : run(transport, 'git', ['rev-list', '--parents', '-n', '1', 'HEAD']).trim() ===
+                          `${state.commit} ${state.base}`,
                 'Version commit has untested parent'
             )
             state.tagOid = oidValue(
@@ -540,7 +614,7 @@ const cli = () => {
         }
         case 'release': {
             let notes = `Changes in this Release\n${env.CUSTOM_MESSAGE || env.PR_TITLE || ''}`
-            if (env.EVENT_NAME === 'push' && env.PR_URL)
+            if (['push', 'pull_request'].includes(env.EVENT_NAME) && env.PR_URL)
                 notes += `\n\nFor more details, see the [Pull Request](${env.PR_URL})`
             createRelease(path, identity, notes)
             break

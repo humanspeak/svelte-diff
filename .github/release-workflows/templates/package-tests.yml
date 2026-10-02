@@ -1,0 +1,52 @@
+# Test workflow managed by humanspeak/svelte-diff shared release source
+name: Run tests
+
+permissions:
+    contents: read
+
+on:
+    workflow_call:
+    pull_request:
+        branches: [main]
+        paths:
+            - src/**
+            - tests/**
+            - package.json
+            - __LOCKFILE__
+            - tsconfig*.json
+            - svelte.config.*
+            - vite.config.*
+            - vitest.config.*
+            - .github/scripts/**
+            - .github/release-policy.json
+            - .github/release-source.json
+            - .github/workflows/run-tests.yml
+
+concurrency:
+    group: run-tests-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    unit-tests:
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                node-version: __NODE_MATRIX__
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+              with:
+                  persist-credentials: false
+            # __MANAGER_SETUP__
+            - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+              with:
+                  node-version: ${{ matrix.node-version }}
+            - name: Install
+              run: __INSTALL__
+            - name: Check library types
+              run: __MANAGER__ run check
+            - name: Test release safety offline
+              run: node --test .github/scripts/*.test.mjs
+            - name: Build and test
+              run: |
+                  __MANAGER__ run build
+                  __MANAGER__ run test

@@ -3,8 +3,9 @@ import { spawnSync } from 'node:child_process'
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
+import process from 'node:process'
 import test from 'node:test'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, URL } from 'node:url'
 
 const checkout = fileURLToPath(new URL('../../', import.meta.url))
 const helper = join(checkout, '.github/scripts/refresh-release-readme.sh')
@@ -160,8 +161,9 @@ test('workflow refreshes after versioning and shim updates, before Git write aut
     if (process.env.RELEASE_UPDATER_TEST_TARGET === 'helper') return
     const run = bumpRun()
     const refresh = uniqueIndex(run, invocation)
-    const version = uniqueIndex(run, 'pnpm version "$BUMP_TYPE" --no-git-tag-version')
-    const shims = uniqueIndex(run, 'done\n')
+    const policy = JSON.parse(readFileSync(join(checkout, '.github/release-policy.json'), 'utf8'))
+    const version = uniqueIndex(run, `${policy.manager} version "$BUMP_TYPE" --no-git-tag-version`)
+    const shims = run.includes('for SHIM in ') ? uniqueIndex(run, 'done\n') : version + 1
     const authentication = uniqueIndex(
         run,
         'git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/'

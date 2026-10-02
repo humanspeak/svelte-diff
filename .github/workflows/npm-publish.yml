@@ -1,3 +1,4 @@
+# Release safety managed by humanspeak/svelte-diff .github/release-workflows/sync.py
 # 1. Workflow metadata
 name: Publish to NPM
 
@@ -28,6 +29,19 @@ on:
             - package.json
             - pnpm-lock.yaml
             - .github/workflows/npm-publish.yml
+            - pnpm-workspace.yaml
+            - tsconfig*.json
+            - svelte.config.*
+            - vite.config.*
+            - vitest.config.*
+            - vitest.setup.*
+            - playwright.config.*
+            - eslint.config.*
+            - .npmrc
+            - .github/scripts/**
+            - .github/release-policy.json
+            - .github/release-source.json
+
     workflow_dispatch:
         inputs:
             # trunk-ignore(checkov/CKV_GHA_7): We need manual version control for releases
@@ -133,12 +147,12 @@ jobs:
         steps:
             # Sole bootstrap exception: read-only helper loading at original event SHA.
             - name: Bootstrap baseline helper
-              uses: actions/checkout@v7 # zizmor: ignore[unpinned-uses]
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
               with:
                   ref: ${{ github.sha }}
                   persist-credentials: false
                   fetch-depth: 0
-            - uses: actions/setup-node@v7 # zizmor: ignore[unpinned-uses]
+            - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
               with:
                   node-version: 24
             - name: Select tested baseline
@@ -326,6 +340,11 @@ jobs:
 
             - name: Check library types
               run: pnpm run check
+
+            - name: Test shared release policies offline
+              run: |
+                  python3 -m unittest discover -s .github/release-workflows -p '*test.py'
+                  node --test .github/scripts/release-workflow.test.mjs .github/scripts/calver-release.test.mjs
 
             - name: Test
               run: |
