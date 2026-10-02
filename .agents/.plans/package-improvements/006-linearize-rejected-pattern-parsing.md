@@ -2,8 +2,10 @@
 
 > **Executor instructions**: Follow every step and verification command. Stop and report on the STOP conditions; do not improvise. Update only your row in the sibling README when finished, unless the reviewer maintains that index. This is an implementation handoff, not permission to publish, install dependencies, change existing diagnostic ceilings, or rewrite other plans.
 >
-> **Drift check (run first)**: `git diff --stat fa0cfc9..HEAD -- src/lib/expectedPatterns.ts src/lib/expectedPatterns.test.ts src/routes/tests/component-performance/006/+page.svelte tests/component-performance.test.ts`
-> Compare changes and the excerpts below before proceeding. Earlier plans may intentionally change capture storage or extraction, but must leave the scanner behavior and exemplar tests described here intact. Stop on an unexplained mismatch.
+> Revision 2026-10-02: Plans 001–005 are DONE. Re-baseline to reviewed 42ff699; preserve 003 own capture properties and 004 invalid/duplicate rejection plus all predecessor tests. Scanner remains unchanged. Codex cannot run browsers: dispatch Step 1 tests/fixture only, then guard reproduces the fixed browser red gate before a separate production-edit dispatch. This changes execution ownership, not thresholds, semantics, scope, or done criteria.
+>
+> **Drift check (run first)**: `git diff --stat 42ff699..HEAD -- src/lib/expectedPatterns.ts src/lib/expectedPatterns.test.ts src/routes/tests/component-performance/006/+page.svelte tests/component-performance.test.ts`
+> Compare changes and the excerpts below before proceeding. Completed 003/004 changed capture storage and validation, but leave the scanner behavior and exemplar tests described here intact. Stop on an unexplained mismatch.
 
 ## Status
 
@@ -12,7 +14,7 @@
 - **Risk**: MED
 - **Depends on**: `004-handle-invalid-pattern-compilation.md`; retain its rejection contract and serialize shared parser/test edits before plan 007
 - **Category**: perf
-- **Planned at**: commit `fa0cfc9`, 2026-10-02
+- **Planned at**: commit `42ff699`, 2026-10-02
 
 ## Why this matters
 
@@ -56,7 +58,7 @@ if (depth === 0 && !hasNestedNamedGroup) {
 }
 ```
 
-`src/lib/expectedPatterns.test.ts:464` checks only one malformed opener followed by 50k ordinary characters; it does not cover repeated candidates. The compatibility requirement at `src/lib/expectedPatterns.test.ts:484` is explicit:
+`src/lib/expectedPatterns.test.ts:585` checks only one malformed opener followed by 50k ordinary characters; it does not cover repeated candidates. The compatibility requirement at `src/lib/expectedPatterns.test.ts:605` is explicit:
 
 ```ts
 const text = '(?<outer>(?<inner>foo))'
@@ -122,6 +124,8 @@ Add ordinary primitive-string semantic cases, modeling the existing tests: rejec
 
 Create the standalone 006 fixture. After painting `running`, call `parseExpectedPatterns` on a primitive 80,000-character string containing 16,000 repeated unclosed named markers. Run one small warmup, then three measured calls; all outputs must be null and every call must finish in at most **2000 ms**. Expose maximum elapsed time, ceiling, sample values, input length, output validity, and failure reasons. Errors must remain rendered as `fail`, not throw before diagnostics can be read. Reuse the 002 state/paint pattern and `assertDiagnosticPass` in a new Playwright test named `006 rejects repeated malformed patterns within the discovery ceiling`; validate three samples and rerun completion. Do not mount the other expensive diagnostics in this route.
 
+**Browser ownership**: Codex Step 1 stops after adding tests/fixture and supported unit evidence, before editing production. Guard snapshots the additions, runs the unchanged-scanner browser red command, and records raw samples. If that gate passes, the named STOP still applies. Only a confirmed red authorizes the second executor dispatch for Steps 2–3.
+
 **Verify**: `pnpm test:only src/lib/expectedPatterns.test.ts -t 'rejected candidates have bounded source traversal'` → FAIL on the source-traversal budget, not on a facade exception or missing method. `pnpm exec playwright test tests/component-performance.test.ts --grep '^006 ' --project=chromium --workers=1` → FAIL on the 2000-ms ceiling with output-null validation intact; retain raw samples. If the old implementation passes the real-string ceiling, STOP and report the measured result rather than tightening the ceiling ad hoc. Run `pnpm test:only src/lib/expectedPatterns.test.ts -t 'scanner compatibility'` → all new primitive compatibility cases PASS before editing production code; use this describe title for the new semantic group.
 
 ### Step 2: Eliminate repeated suffix scans while preserving candidate-local boundaries
@@ -142,7 +146,7 @@ Run the new regression in the five configured browser projects with one worker, 
 
 - Anchor red failure: repeated rejected candidates exceed a deliberately loose linear input-access budget; the primitive browser workload exceeds its fixed 2000-ms ceiling on the old scanner.
 - Green result: both complexity observations pass without any threshold increase; the same primitive fixtures retain exact prior groups and template output.
-- Existing exemplar: `expectedPatterns.test.ts:484` rejects the outer group but emits the inner group; `:496` covers escapes and `:505` covers character classes.
+- Existing exemplar: `expectedPatterns.test.ts:605` rejects the outer group but emits the inner group; `:617` covers escapes and `:626` covers character classes.
 - Keep the existing single-opener 50k trailing-character test. It tests a distinct path; do not replace it with only the repeated-marker case.
 - Maintain the facade as a counting input adapter, never as a replica scanner or expected-output oracle. A future native scanner may require an equivalent test-only traversal observer; retain real primitive cases and browser evidence when changing that observer.
 
