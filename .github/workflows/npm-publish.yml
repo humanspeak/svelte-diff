@@ -1,3 +1,4 @@
+# Release safety managed by humanspeak/docs-kit .github/release-workflows/sync.py
 # 1. Workflow metadata
 name: Publish to NPM
 
@@ -28,6 +29,19 @@ on:
             - package.json
             - pnpm-lock.yaml
             - .github/workflows/npm-publish.yml
+            - pnpm-workspace.yaml
+            - tsconfig*.json
+            - svelte.config.*
+            - vite.config.*
+            - vitest.config.*
+            - vitest.setup.*
+            - playwright.config.*
+            - eslint.config.*
+            - .npmrc
+            - .github/scripts/**
+            - .github/release-policy.json
+            - .github/release-source.json
+
     workflow_dispatch:
         inputs:
             # trunk-ignore(checkov/CKV_GHA_7): We need manual version control for releases
@@ -327,6 +341,10 @@ jobs:
             - name: Check library types
               run: pnpm run check
 
+            - name: Test release workflow offline
+              run: |
+                  node --test .github/scripts/release-workflow.test.mjs
+
             - name: Test
               run: |
                   node --test .github/scripts/refresh-release-readme.test.mjs .github/scripts/release-publication.test.mjs
@@ -433,7 +451,6 @@ jobs:
         runs-on: ubuntu-latest
         environment: production
         env:
-            RELEASE_STATE: ${{ runner.temp }}/release-${{ github.run_id }}-${{ github.run_attempt }}.json
             PREPARED_SHA: ${{ needs.prepare.outputs.checkout_sha }}
         permissions:
             contents: write
@@ -443,6 +460,10 @@ jobs:
             id-token: write
 
         steps:
+            - name: Initialize release state path
+              run: |
+                  printf 'RELEASE_STATE=%s/release-%s-%s.json\n' "$RUNNER_TEMP" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" >> "$GITHUB_ENV"
+
             - name: Checkout
               uses: actions/checkout@v7 # zizmor: ignore[unpinned-uses]
               with:
