@@ -56,7 +56,8 @@ If the capture groups do not match, SvelteDiff cleans the template before comput
 The pattern body is still compiled as JavaScript regular expression syntax.
 ```
 
-  Its line 102 says mismatches use cleaned placeholders. Clarify that only a valid parsed template with a missing target match is cleaned; rejected invalid/duplicate templates are literal. The guide's examples/frontmatter are authored MDsveX; preserve that format and existing trusted-pattern guidance.
+Its line 102 says mismatches use cleaned placeholders. Clarify that only a valid parsed template with a missing target match is cleaned; rejected invalid/duplicate templates are literal. The guide's examples/frontmatter are authored MDsveX; preserve that format and existing trusted-pattern guidance.
+
 - `docs/vite.config.ts:29–40` runs docMirrorsPlugin and llmsFullPlugin during a normal build, and `docs/package.json:7–11` exposes build/check scripts. Generated docs mirrors are build outputs, not authored files to patch by hand.
 - Match the exported typed arrow/JSDoc convention at `src/lib/expectedPatterns.ts:328–336`. Helpers take string input and return a documented nullable result. Tests use `describe`/`it`/`expect`; add `vi` only for narrowly scoped error-class tests.
 
@@ -66,17 +67,17 @@ The component deliberately interprets valid expected patterns automatically; kee
 
 Use the already installed pnpm 12.6.0/Node toolchain. These are gates for a separately authorized executor; the planning task does not authorize execution, installs, dependency changes, commits, pushes, or PRs.
 
-| Purpose | Command | Expected on success |
-| --- | --- | --- |
-| Typecheck | `pnpm run check` | exit 0; 0 errors, 0 warnings |
-| All library units | `pnpm exec vitest run src/lib/` | exit 0; every existing/new test passes |
-| Browser integration | `pnpm exec playwright test --config=playwright.config.ts tests/expected-patterns.test.ts` | exit 0; all configured projects pass |
-| Completed performance behavior | `pnpm exec playwright test --config=playwright.config.ts tests/component-performance.test.ts` | exit 0; existing ceilings, cached identity, compact DOM, SSR pass |
-| Format | `trunk fmt` | exit 0; inspect resulting diff for scope |
-| Lint | `trunk check` | exit 0; no new findings |
-| Package | `pnpm run package` | exit 0; svelte-package/publint succeed |
-| Authored guide typecheck | Python wrapper below | exit 0; no newly introduced diagnostics; generated worker restored |
-| Authored guide rendering/mirror generation | `pnpm --filter docs run build` | exit 0; normal build generates mirrors/llms outputs |
+| Purpose                                    | Command                                                                                       | Expected on success                                                |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Typecheck                                  | `pnpm run check`                                                                              | exit 0; 0 errors, 0 warnings                                       |
+| All library units                          | `pnpm exec vitest run src/lib/`                                                               | exit 0; every existing/new test passes                             |
+| Browser integration                        | `pnpm exec playwright test --config=playwright.config.ts tests/expected-patterns.test.ts`     | exit 0; all configured projects pass                               |
+| Completed performance behavior             | `pnpm exec playwright test --config=playwright.config.ts tests/component-performance.test.ts` | exit 0; existing ceilings, cached identity, compact DOM, SSR pass  |
+| Format                                     | `trunk fmt`                                                                                   | exit 0; inspect resulting diff for scope                           |
+| Lint                                       | `trunk check`                                                                                 | exit 0; no new findings                                            |
+| Package                                    | `pnpm run package`                                                                            | exit 0; svelte-package/publint succeed                             |
+| Authored guide typecheck                   | Python wrapper below                                                                          | exit 0; no newly introduced diagnostics; generated worker restored |
+| Authored guide rendering/mirror generation | `pnpm --filter docs run build`                                                                | exit 0; normal build generates mirrors/llms outputs                |
 
 Trunk is authoritative (`.trunk/trunk.yaml:25–87`); do not substitute legacy package lint scripts. The operator-reported audit baseline for the unchanged library is 123 passing tests and `svelte-check` 0 errors/0 warnings; fa0cfc9 changes package/README versions only. This planning pass did not rerun those gates. Counts can increase as sibling plans land. Playwright config starts the repository preview server at port 4173 and runs configured desktop/mobile projects; do not replace it with docs-app configuration.
 

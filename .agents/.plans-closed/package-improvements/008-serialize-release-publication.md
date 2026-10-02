@@ -72,17 +72,17 @@ git push --delete origin "$RELEASE_VERSION" || true
 
 Run from the repository root with the installed pnpm 12/Node 24 toolchain. Do not install dependencies or run a live release to verify this work.
 
-| Purpose | Command | Expected on success |
-| --- | --- | --- |
-| New release behavior tests | `node --test .github/scripts/release-publication.test.mjs` | All offline tests pass after implementation |
-| Red ownership regression | `node --test --test-name-pattern='never deletes pre-existing release artifacts' .github/scripts/release-publication.test.mjs` | Red in Step 1; green in Step 4 |
-| Script syntax | `node --check .github/scripts/release-publication.mjs` | Exit 0 |
-| Root typecheck | `pnpm check` | Exit 0; zero root errors/warnings |
-| Complete root units | `pnpm test:only` | Exit 0; baseline 123 plus selected-plan regressions |
-| Predecessor updater gate | `node --test .github/scripts/refresh-release-readme.test.mjs` | All offline cases pass, including workflow order |
-| Build/package gate | `pnpm run build` | Exit 0; svelte-package and publint succeed |
-| Repository formatting/lint | `trunk fmt` then `trunk check` | Exit 0; YAML, shell, JavaScript, and security checks pass |
-| Scope/whitespace | `git status --short` and `git diff --check` | Only scoped executor changes; exit 0 |
+| Purpose                    | Command                                                                                                                       | Expected on success                                       |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| New release behavior tests | `node --test .github/scripts/release-publication.test.mjs`                                                                    | All offline tests pass after implementation               |
+| Red ownership regression   | `node --test --test-name-pattern='never deletes pre-existing release artifacts' .github/scripts/release-publication.test.mjs` | Red in Step 1; green in Step 4                            |
+| Script syntax              | `node --check .github/scripts/release-publication.mjs`                                                                        | Exit 0                                                    |
+| Root typecheck             | `pnpm check`                                                                                                                  | Exit 0; zero root errors/warnings                         |
+| Complete root units        | `pnpm test:only`                                                                                                              | Exit 0; baseline 123 plus selected-plan regressions       |
+| Predecessor updater gate   | `node --test .github/scripts/refresh-release-readme.test.mjs`                                                                 | All offline cases pass, including workflow order          |
+| Build/package gate         | `pnpm run build`                                                                                                              | Exit 0; svelte-package and publint succeed                |
+| Repository formatting/lint | `trunk fmt` then `trunk check`                                                                                                | Exit 0; YAML, shell, JavaScript, and security checks pass |
+| Scope/whitespace           | `git status --short` and `git diff --check`                                                                                   | Only scoped executor changes; exit 0                      |
 
 The build job must retain unconditional `pnpm run check`, `pnpm build`, and `pnpm test` (coverage-enabled) in CI, plus the new native release tests; local final gates include the updater test and build listed above. The authoritative lint command is Trunk, not package.json's legacy lint command. Do not weaken suppressions, test predicates, gate dependency lists, or assertion thresholds to make this plan pass.
 

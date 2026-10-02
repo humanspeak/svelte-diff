@@ -1,9 +1,11 @@
 # Package improvement plans
 
+**CLOSED — 2026-10-02: all ten plans DONE / guard PASS.** Delivered callback and capture correctness, robust and linear pattern parsing, ordered matching, CI and release safety, and Svelte/documentation onboarding corrections on `chore/package-improvements`. Independent evidence is recorded in each guard report. Code-diff A/B remain TODO in their separate active batch. Opening a PR is the next operator decision; no push, PR, live release or deployment was performed.
+
 Written with the improve skill on 2026-10-02 against fresh `origin/main` commit
-`fa0cfc9` (package v0.4.2), on `chore/package-improvements`. This is a planning
-batch: no source implementation, commit, push, PR, publication, or deployment
-was performed or is authorized by creation of these files.
+`fa0cfc9` (package v0.4.2), on `chore/package-improvements`. These files were initially a planning
+batch; creating them did not authorize implementation or publication. Subsequent
+dispatch authorization, verification and completion are recorded below.
 
 The maintainer selected audit findings 1–10. Numbers preserve that mapping.
 Finding 9 was explicitly changed from headless compatibility to **removing the
@@ -15,18 +17,18 @@ Execute 001 through 010 in order by default. Operational dependencies below
 prevent shared-file conflicts even where fixes are otherwise independent.
 An operator/reviewer owns these status rows unless they delegate updates.
 
-| Plan | Title | Priority | Effort | Risk | Depends on | Status |
-| --- | --- | --- | --- | --- | --- | --- |
-| [001](001-pin-release-updater.md) | Pin the release updater and isolate credentials | P1 | M | MED | — | DONE |
-| [002](002-isolate-processing-callbacks.md) | Isolate processing callback state reads | P1 | S | LOW | — | DONE |
-| [003](003-preserve-capture-property-names.md) | Preserve accepted capture property names | P1 | S | LOW | 002, shared component tests | DONE |
-| [004](004-handle-invalid-pattern-compilation.md) | Reject invalid templates without rendering failures | P1 | M | MED | 003, shared parser/tests | DONE |
-| [005](005-enforce-library-ci-gates.md) | Enforce root typechecks and pnpm CI input coverage | P1 | S | LOW | 001, shared release workflow | DONE |
-| [006](006-linearize-rejected-pattern-parsing.md) | Bound rejected-pattern discovery to linear traversal | P1 | M | MED | 004 | DONE |
-| [007](007-match-template-occurrences-in-order.md) | Match expected template contexts in source order | P1 | M | MED | 004, 006 | DONE |
-| [008](008-serialize-release-publication.md) | Serialize publication and protect owned artifacts | P1 | L | MED | 001, 005 | DONE |
-| [009](009-align-svelte-only-documentation.md) | Correct Svelte-only helper documentation | P2 | S | LOW | 004, shared README sections | DONE |
-| [010](010-fix-docs-onboarding.md) | Document initial packaging, watchers, and docs checks | P2 | S | LOW | — | BLOCKED (STOP: tracked stats refresh) |
+| Plan                                              | Title                                                 | Priority | Effort | Risk | Depends on                   | Status |
+| ------------------------------------------------- | ----------------------------------------------------- | -------- | ------ | ---- | ---------------------------- | ------ |
+| [001](001-pin-release-updater.md)                 | Pin the release updater and isolate credentials       | P1       | M      | MED  | —                            | DONE   |
+| [002](002-isolate-processing-callbacks.md)        | Isolate processing callback state reads               | P1       | S      | LOW  | —                            | DONE   |
+| [003](003-preserve-capture-property-names.md)     | Preserve accepted capture property names              | P1       | S      | LOW  | 002, shared component tests  | DONE   |
+| [004](004-handle-invalid-pattern-compilation.md)  | Reject invalid templates without rendering failures   | P1       | M      | MED  | 003, shared parser/tests     | DONE   |
+| [005](005-enforce-library-ci-gates.md)            | Enforce root typechecks and pnpm CI input coverage    | P1       | S      | LOW  | 001, shared release workflow | DONE   |
+| [006](006-linearize-rejected-pattern-parsing.md)  | Bound rejected-pattern discovery to linear traversal  | P1       | M      | MED  | 004                          | DONE   |
+| [007](007-match-template-occurrences-in-order.md) | Match expected template contexts in source order      | P1       | M      | MED  | 004, 006                     | DONE   |
+| [008](008-serialize-release-publication.md)       | Serialize publication and protect owned artifacts     | P1       | L      | MED  | 001, 005                     | DONE   |
+| [009](009-align-svelte-only-documentation.md)     | Correct Svelte-only helper documentation              | P2       | S      | LOW  | 004, shared README sections  | DONE   |
+| [010](010-fix-docs-onboarding.md)                 | Document initial packaging, watchers, and docs checks | P2       | S      | LOW  | —                            | DONE   |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (reason) | REJECTED (reason).
 Effort includes regression verification; 001/004/008 are larger than the initial
@@ -52,7 +54,7 @@ this index; follow the operator's dispatch instructions.
   remain regression constraints. New performance fixture 006 belongs to this
   batch; do not rewrite earlier plans, change their workloads/ceilings, or mount
   their workloads inside the new route.
-- Package improvements finish before the separate [code-diff batch](../code-diff/README.md).
+- Package improvements finish before the separate [code-diff batch](../../.plans/code-diff/README.md).
   There, A supplies shared literal computation and B consumes it for syntax
   highlighting. Do not begin the component extraction while these fixes are
   still changing its contracts.
@@ -131,3 +133,5 @@ Plan 008 passed at eb3b994 after operator-authorized, line-level Trunk ignores a
 Plan 009 passed at 2c28500: exact one-sentence Svelte-only prose correction, unchanged imports/signatures/fallback table and all other README bytes; 171 units, check 0/0 and Trunk gates pass. Plan 010 preflight retains its unchanged fa0cfc9 README baseline and named tracked-regeneration STOP.
 
 Plan 010 source snapshot a0d024d contains the verified docs README update; package/check/171 units, normal docs build and exact worker checks before/after pass. The build refreshed tracked docs/src/lib/github-stats.json (stars/timestamp), triggering its named STOP. That generated change remains uncommitted; 010 BLOCKED and batch active pending the operator decision recorded in its guard report. Code-diff A/B remain TODO.
+
+Plan 010 passed at source snapshot a0d024d after operator-authorized exact restoration of the build-refreshed statistics blob. Guard confirms clean source scope and final docs check 0/0; earlier STOP history is retained. All ten plans are DONE/PASS. Batch retired to .agents/.plans-closed/package-improvements; code-diff A/B remain active TODO and PR is the next operator decision.

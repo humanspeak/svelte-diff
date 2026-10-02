@@ -19,3 +19,17 @@ a0d024d · final review
 - Verification build regenerated tracked docs/src/lib/github-stats.json. Diff: stars 7 -> 10; updatedAt 2026-07-17T20:23:35.783Z -> 2026-10-02T12:29:46.778Z. Baseline blob 6269e3dd70f8f541f9ff318c0292abfa6065dddb; generated blob 0ad229ffbf7f951fc5be391614f931516a2933fa. No other generated tracked path changed.
 - This is a build side effect, not executor source drift. Plan Step 3 and named STOP require reporting rather than silently accepting/discarding tracked generated output. Conductor stops, preserves stats uncommitted, marks 010 BLOCKED and leaves batch active. No source/manual restoration, live release, deployment, IndexNow, push or PR.
 - Final recommendation NO-PASS solely on the named tracked-regeneration STOP; authored documentation and all actual command gates are otherwise verified. Operator decision on that exact statistics file is needed before final scope can be clean and the batch retired.
+
+## Checkpoint 3 — 2026-10-02 — ON TRACK (final PASS)
+
+a0d024d · authored source snapshot; c6619f1 · latest guard record before closure
+
+- Operator explicitly authorized exact pre-build stats restoration and closing the batch. Correction executor restored only docs/src/lib/github-stats.json from the existing blob; guard independently verifies hash 6269e3dd70f8f541f9ff318c0292abfa6065dddb, empty path diff and completely clean working tree. No source snapshot commit needed for a byte-identical restoration.
+- Earlier source/full build/root/type/unit/Trunk gates remain valid: no implementation change followed them. Guard reran the exact documented docs wrapper after restoration: zero errors/warnings, worker restored and no backup. No rebuild to regenerate the incidental file again.
+- Named STOP resolved by explicit operator decision, not silently skipped. Authored scope is again only docs/README.md. Recommendation PASS; current report overwritten, earlier STOP preserved here. Conductor marks all ten DONE, archives batch and repairs cross-batch links. Code-diff A/B remain unexecuted; PR is the next operator decision, not opened.
+
+## Checkpoint 4 — 2026-10-02 — ON TRACK (batch closure)
+
+- All ten rows DONE and ten guard reports PASS. Batch moved to .agents/.plans-closed/package-improvements; both cross-batch README links resolve. A/B status remains TODO.
+- Closed records now pass the normal Markdown formatter/linter: table padding and list indentation normalized, API-source URLs made autolinks, literal capture-key identifiers marked as code, and the claim-search table pipe escaped. Guard confirms historical non-closure content and fenced-code content are preserved, ignoring Markdown formatting/list indentation.
+- Exact pre-build stats hash retained, no generated data or implementation change in closure. Final ordinary commit hook remains required; no push, PR or publication.

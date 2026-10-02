@@ -43,23 +43,22 @@ expect(secondCallback.mock.calls[0][1]).toBe(firstDiffs)
 
 The Svelte 5/TypeScript library deliberately defaults to character diffing. Word/line diffs remain lossless and skip cleanup. Preserve automatic expected-pattern interpretation for valid templates, compiled-pattern reuse on target-only edits, cached diff array identity on callback-only edits, forward expected-region tagging, compact DOM rendering, and meaningful SSR. Do not reopen the completed `.agents/.plans/component-performance/` initiative. Regex extraction remains outside the algorithm timeout by design.
 
-
 ## Commands you will need
 
 Use the existing pnpm 12.6.0/Node toolchain. No install, dependency changes, builds, commits, pushes, or PRs are authorized by this planning task; the commands below are gates for a separately authorized executor. Run from the executor checkout root.
 
-| Purpose | Command | Expected on success |
-| --- | --- | --- |
-| Typecheck | `pnpm run check` | exit 0; 0 errors, 0 warnings |
-| All library units | `pnpm exec vitest run src/lib/` | exit 0; all existing and new tests pass |
-| Format | `trunk fmt` | exit 0; inspect changed files against scope |
-| Lint | `trunk check` | exit 0; no new findings |
-| Package | `pnpm run package` | exit 0; svelte-package and publint succeed |
+| Purpose           | Command                         | Expected on success                         |
+| ----------------- | ------------------------------- | ------------------------------------------- |
+| Typecheck         | `pnpm run check`                | exit 0; 0 errors, 0 warnings                |
+| All library units | `pnpm exec vitest run src/lib/` | exit 0; all existing and new tests pass     |
+| Format            | `trunk fmt`                     | exit 0; inspect changed files against scope |
+| Lint              | `trunk check`                   | exit 0; no new findings                     |
+| Package           | `pnpm run package`              | exit 0; svelte-package and publint succeed  |
 
 `.trunk/trunk.yaml:25–87` enables the repository lint/format tools and ignores plan Markdown. Trunk is authoritative; do not substitute the legacy `pnpm run lint` command. The operator-reported audit baseline for the unchanged library contains 123 passing tests and `svelte-check` 0 errors/0 warnings; the fa0cfc9 refresh changes package/README versions only. This planning pass did not rerun those gates. Counts will increase as sibling plans land.
 
-| Browser integration gate | Command | Expected on success |
-| --- | --- | --- |
+| Browser integration gate                    | Command                                                                                       | Expected on success                  |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------ |
 | Cached callback / compact / SSR diagnostics | `pnpm exec playwright test --config=playwright.config.ts tests/component-performance.test.ts` | exit 0; all configured projects pass |
 
 ## Scope

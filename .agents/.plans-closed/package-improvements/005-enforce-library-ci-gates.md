@@ -25,12 +25,12 @@ The library's build and runtime tests do not enforce its TypeScript contract. Th
 - `.github/workflows/run-tests.yml:12` includes `src/**`, `tests/**`, `package.json`, `package-lock.json`, config globs, and its own workflow path, but omits `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `vitest.setup.ts`, and root ESLint config.
 - `.github/workflows/run-tests.yml:69` runs:
 
-  ```yaml
-  - name: Run unit tests
-    run: |
-        pnpm build
-        pnpm test
-  ```
+    ```yaml
+    - name: Run unit tests
+      run: |
+          pnpm build
+          pnpm test
+    ```
 
 - `.github/workflows/npm-publish.yml:289` has the same build/test commands in its build matrix. Its `build` result already gates publication; preserve that dependency graph.
 - `vite.config.ts:19` declares `setupFiles: ['vitest.setup.ts']`. `vitest.setup.ts:1` configures matchers and timer mocks; changing it affects every test. `eslint.config.mjs:14` is the root lint baseline, with Trunk authority from `.trunk/trunk.yaml`.
@@ -39,15 +39,15 @@ The library's build and runtime tests do not enforce its TypeScript contract. Th
 
 ## Commands you will need
 
-| Purpose | Command | Expected on success |
-| --- | --- | --- |
-| Typecheck | `pnpm run check` | Exit 0, zero errors/warnings |
-| Library tests | `pnpm exec vitest run src/lib/` | All pass; baseline 123 |
+| Purpose                    | Command                                                       | Expected on success                                           |
+| -------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------- |
+| Typecheck                  | `pnpm run check`                                              | Exit 0, zero errors/warnings                                  |
+| Library tests              | `pnpm exec vitest run src/lib/`                               | All pass; baseline 123                                        |
 | Release updater regression | `node --test .github/scripts/refresh-release-readme.test.mjs` | All offline cases pass, including shared-workflow integration |
-| Build/package | `pnpm run build` | Exit 0; package/publint succeed |
-| Format | `trunk fmt` | Exit 0 |
-| Lint | `trunk check` | Exit 0 |
-| Hygiene | `git diff --check` | Exit 0 |
+| Build/package              | `pnpm run build`                                              | Exit 0; package/publint succeed                               |
+| Format                     | `trunk fmt`                                                   | Exit 0                                                        |
+| Lint                       | `trunk check`                                                 | Exit 0                                                        |
+| Hygiene                    | `git diff --check`                                            | Exit 0                                                        |
 
 ## Scope
 

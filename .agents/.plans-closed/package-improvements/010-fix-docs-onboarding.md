@@ -21,19 +21,19 @@ The docs workspace consumes generated library output, but its onboarding instruc
 
 - `docs/README.md:9` currently instructs:
 
-  ```sh
-  pnpm install
-  pnpm --filter docs dev
-  ```
+    ```sh
+    pnpm install
+    pnpm --filter docs dev
+    ```
 
 - `docs/README.md:14` claims port 8235. `docs/vite.config.ts:85` actually contains `server: { port: 8523, fs: { allow: ['..'] } }`.
 - `docs/package.json:22` uses `"@humanspeak/svelte-diff": "workspace:*"`, while `package.json:35` resolves the library to `./dist/index.js`. Install alone does not generate this output.
 - Existing root scripts at `package.json:52`:
 
-  ```json
-  "dev:all": "concurrently -k -n pkg,docs -c green,cyan \"pnpm -w -r --filter @humanspeak/svelte-diff run dev:pkg\" \"pnpm --filter docs run dev\"",
-  "dev:pkg": "svelte-kit sync && svelte-package --watch"
-  ```
+    ```json
+    "dev:all": "concurrently -k -n pkg,docs -c green,cyan \"pnpm -w -r --filter @humanspeak/svelte-diff run dev:pkg\" \"pnpm --filter docs run dev\"",
+    "dev:pkg": "svelte-kit sync && svelte-package --watch"
+    ```
 
 - `package.json:57` packages with `svelte-kit sync && svelte-package && publint`. Recommend initial `pnpm run package` before either docs-only dev or `pnpm run dev:all`.
 - `docs/README.md:19` documents `pnpm --filter docs check` then build. The ordinary check is useful before a docs build; after build, generated `docs/.svelte-kit/cloudflare/_worker.js` can be scanned as source. Exemplar `.github/workflows/docs-diff-modes.yml:53` moves this generated file to `.js.source-check-backup`, runs `pnpm --filter docs check`, and restores it in a Python `finally`, propagating the exit code. Preserve that safety pattern in the documented post-build command.
@@ -42,17 +42,17 @@ The docs workspace consumes generated library output, but its onboarding instruc
 
 ## Commands you will need
 
-| Purpose | Command | Expected on success |
-| --- | --- | --- |
-| Initial library output | `pnpm run package` | Exit 0; `dist/index.js` exists; publint succeeds |
-| Both development watchers | `pnpm run dev:all` | Package watcher and docs server start; docs uses 8523 if free |
-| Docs-only development | `pnpm --filter docs dev` | Docs server starts after initial packaging |
-| Docs build | `pnpm --filter docs build` | Exit 0; generated artifacts rebuilt |
-| Docs source check | Documented Python wrapper from Step 2 | Exit 0; worker restored if initially present |
-| Root typecheck | `pnpm run check` | Exit 0; zero errors/warnings |
-| Library tests | `pnpm exec vitest run src/lib/` | All pass; baseline 123 |
-| Format/lint | `trunk fmt` then `trunk check` | Both exit 0 |
-| Hygiene | `git diff --check` | Exit 0 |
+| Purpose                   | Command                               | Expected on success                                           |
+| ------------------------- | ------------------------------------- | ------------------------------------------------------------- |
+| Initial library output    | `pnpm run package`                    | Exit 0; `dist/index.js` exists; publint succeeds              |
+| Both development watchers | `pnpm run dev:all`                    | Package watcher and docs server start; docs uses 8523 if free |
+| Docs-only development     | `pnpm --filter docs dev`              | Docs server starts after initial packaging                    |
+| Docs build                | `pnpm --filter docs build`            | Exit 0; generated artifacts rebuilt                           |
+| Docs source check         | Documented Python wrapper from Step 2 | Exit 0; worker restored if initially present                  |
+| Root typecheck            | `pnpm run check`                      | Exit 0; zero errors/warnings                                  |
+| Library tests             | `pnpm exec vitest run src/lib/`       | All pass; baseline 123                                        |
+| Format/lint               | `trunk fmt` then `trunk check`        | Both exit 0                                                   |
+| Hygiene                   | `git diff --check`                    | Exit 0                                                        |
 
 ## Scope
 

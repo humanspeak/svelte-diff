@@ -77,18 +77,18 @@ Named-group names remain ASCII `[a-zA-Z_][a-zA-Z0-9_]*`. Inside a candidate, esc
 
 Run from the repository root, using the installed pnpm 12 toolchain. Do not install packages or alter package-manager pins to get a command working.
 
-| Purpose | Command | Expected on success |
-| --- | --- | --- |
-| Targeted units | `pnpm test:only src/lib/expectedPatterns.test.ts` | All target tests pass after Step 2 |
-| Red/green complexity test | `pnpm test:only src/lib/expectedPatterns.test.ts -t 'rejected candidates have bounded source traversal'` | Red in Step 1; green in Step 2 |
-| New browser regression | `pnpm exec playwright test tests/component-performance.test.ts --grep '006 rejects repeated malformed patterns within the discovery ceiling' --project=chromium --workers=1` | Diagnostic pass, three samples each at most 2000 ms |
-| New browser matrix | `pnpm exec playwright test tests/component-performance.test.ts --grep '006 rejects repeated malformed patterns within the discovery ceiling' --workers=1` | All five configured projects pass |
-| Existing browser diagnostics | `pnpm exec playwright test tests/component-performance.test.ts --workers=2` | All existing and new diagnostics pass, original ceilings intact |
-| Typecheck | `pnpm check` | Exit 0, zero errors/warnings in the root check |
-| Complete units | `pnpm test:only` | Exit 0; baseline 123 tests plus selected-plan regressions |
-| Package | `pnpm run package` | Exit 0; svelte-package and publint succeed |
-| Format/lint | `trunk fmt` then `trunk check` | Exit 0; no out-of-scope formatting changes |
-| Scope | `git status --short` and `git diff --check` | Only allowed edits; no whitespace errors |
+| Purpose                      | Command                                                                                                                                                                      | Expected on success                                             |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| Targeted units               | `pnpm test:only src/lib/expectedPatterns.test.ts`                                                                                                                            | All target tests pass after Step 2                              |
+| Red/green complexity test    | `pnpm test:only src/lib/expectedPatterns.test.ts -t 'rejected candidates have bounded source traversal'`                                                                     | Red in Step 1; green in Step 2                                  |
+| New browser regression       | `pnpm exec playwright test tests/component-performance.test.ts --grep '006 rejects repeated malformed patterns within the discovery ceiling' --project=chromium --workers=1` | Diagnostic pass, three samples each at most 2000 ms             |
+| New browser matrix           | `pnpm exec playwright test tests/component-performance.test.ts --grep '006 rejects repeated malformed patterns within the discovery ceiling' --workers=1`                    | All five configured projects pass                               |
+| Existing browser diagnostics | `pnpm exec playwright test tests/component-performance.test.ts --workers=2`                                                                                                  | All existing and new diagnostics pass, original ceilings intact |
+| Typecheck                    | `pnpm check`                                                                                                                                                                 | Exit 0, zero errors/warnings in the root check                  |
+| Complete units               | `pnpm test:only`                                                                                                                                                             | Exit 0; baseline 123 tests plus selected-plan regressions       |
+| Package                      | `pnpm run package`                                                                                                                                                           | Exit 0; svelte-package and publint succeed                      |
+| Format/lint                  | `trunk fmt` then `trunk check`                                                                                                                                               | Exit 0; no out-of-scope formatting changes                      |
+| Scope                        | `git status --short` and `git diff --check`                                                                                                                                  | Only allowed edits; no whitespace errors                        |
 
 Trunk is the lint authority (`.trunk/trunk.yaml`), even though package.json still has a legacy lint command. Browser commands invoke the configured local build/preview server; do not install browsers automatically when binaries are absent.
 

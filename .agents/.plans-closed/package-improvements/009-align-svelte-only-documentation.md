@@ -23,9 +23,9 @@ The README promises framework-agnostic helpers but documents imports from the Sv
 
 - `README.md:309` begins the authored `Programmatic API` section. Line 311 reads:
 
-  ```text
-  The expected-pattern engine is also exported as framework-agnostic functions, so you can compute matches and tag diffs without mounting the component:
-  ```
+    ```text
+    The expected-pattern engine is also exported as framework-agnostic functions, so you can compute matches and tag diffs without mounting the component:
+    ```
 
 - `README.md:313` imports `parseExpectedPatterns`, `extractCaptures`, `tagExpectedRegions`, and `cleanTemplate` from `@humanspeak/svelte-diff`; preserve this example and the signatures table at line 322.
 - `package.json:32` has only the `types` and `svelte` root export conditions. `src/lib/index.ts:3` imports `./SvelteDiff.svelte`. These are read-only evidence, not files to change.
@@ -36,14 +36,14 @@ The README promises framework-agnostic helpers but documents imports from the Sv
 
 ## Commands you will need
 
-| Purpose | Command | Expected on success |
-| --- | --- | --- |
-| Claim inventory | `rg -n 'framework[- ]agnostic|without mounting' README.md docs/README.md docs/src/routes/docs docs/static/llms-prepend.md docs/static/llms-append.md` | No unsupported own-package claim after editing; search can return 1 for no matches |
-| Typecheck | `pnpm run check` | Exit 0, zero errors/warnings |
-| Library tests | `pnpm exec vitest run src/lib/` | All pass; baseline 123 |
-| Format | `trunk fmt` | Exit 0 |
-| Lint | `trunk check` | Exit 0 |
-| Hygiene | `git diff --check` | Exit 0 |
+| Purpose         | Command                                                                                                                                                | Expected on success                                                                |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
+| Claim inventory | `rg -n 'framework[- ]agnostic\|without mounting' README.md docs/README.md docs/src/routes/docs docs/static/llms-prepend.md docs/static/llms-append.md` | No unsupported own-package claim after editing; search can return 1 for no matches |
+| Typecheck       | `pnpm run check`                                                                                                                                       | Exit 0, zero errors/warnings                                                       |
+| Library tests   | `pnpm exec vitest run src/lib/`                                                                                                                        | All pass; baseline 123                                                             |
+| Format          | `trunk fmt`                                                                                                                                            | Exit 0                                                                             |
+| Lint            | `trunk check`                                                                                                                                          | Exit 0                                                                             |
+| Hygiene         | `git diff --check`                                                                                                                                     | Exit 0                                                                             |
 
 ## Scope
 

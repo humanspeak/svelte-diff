@@ -13,6 +13,6 @@ b3448d3 · pre-flight
 40c286c · final PASS
 
 - Full source/test diff reviewed. Ordinary public record prototype, descriptors, enumeration, serialization, component callback delivery, and raw reconstruction preserved for every accepted name.
-- Guard temporary historical replay independently observed __proto__ value loss and [object Object] substitution; new test now passes.
+- Guard temporary historical replay independently observed `__proto__` value loss and [object Object] substitution; new test now passes.
 - Configured Node-24 gates: root check 0/0, 131 units, 25 expected-pattern browser cases across all five projects, package/publint, Trunk fmt/check, and git diff --check pass. Trunk reports one existing issue and zero new ones.
 - Action: mark 003 DONE, retain source scope, and pre-flight 004. Docs source-check wrapper also passed 0/0 at this reviewed tip and restored the generated worker.

@@ -46,15 +46,15 @@ Completed prerequisite004 makes parsing return null and cleanTemplate preserve o
 
 Use the existing pnpm 12.6.0/Node environment; no new installs or dependency changes. These gates are for a separately authorized executor, not permission to execute/commit from this planning task.
 
-| Purpose | Command | Expected on success |
-| --- | --- | --- |
-| Typecheck | `pnpm run check` | exit 0; 0 errors, 0 warnings |
-| Library units | `pnpm exec vitest run src/lib/` | exit 0; all tests pass |
-| Expected-pattern browser integration | `pnpm exec playwright test --config=playwright.config.ts tests/expected-patterns.test.ts` | exit 0; every configured project passes |
-| Completed performance behavior | `pnpm exec playwright test --config=playwright.config.ts tests/component-performance.test.ts` | exit 0; existing ceilings and SSR/compact/cached identity pass |
-| Format | `trunk fmt` | exit 0; inspect scope of changed files |
-| Lint | `trunk check` | exit 0; no new findings |
-| Package | `pnpm run package` | exit 0; svelte-package and publint pass |
+| Purpose                              | Command                                                                                       | Expected on success                                            |
+| ------------------------------------ | --------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| Typecheck                            | `pnpm run check`                                                                              | exit 0; 0 errors, 0 warnings                                   |
+| Library units                        | `pnpm exec vitest run src/lib/`                                                               | exit 0; all tests pass                                         |
+| Expected-pattern browser integration | `pnpm exec playwright test --config=playwright.config.ts tests/expected-patterns.test.ts`     | exit 0; every configured project passes                        |
+| Completed performance behavior       | `pnpm exec playwright test --config=playwright.config.ts tests/component-performance.test.ts` | exit 0; existing ceilings and SSR/compact/cached identity pass |
+| Format                               | `trunk fmt`                                                                                   | exit 0; inspect scope of changed files                         |
+| Lint                                 | `trunk check`                                                                                 | exit 0; no new findings                                        |
+| Package                              | `pnpm run package`                                                                            | exit 0; svelte-package and publint pass                        |
 
 Trunk is repository lint/format authority (`.trunk/trunk.yaml:25–87`), not legacy package lint scripts. The operator-reported audit baseline for the unchanged library is 123 passing unit tests and svelte-check 0 errors/0 warnings; fa0cfc9 changes package/README versions only and this planning pass did not rerun those gates; prerequisite tests increase counts. Use root Playwright configuration, which serves preview at 4173 and runs desktop/mobile projects, rather than docs-app tooling.
 

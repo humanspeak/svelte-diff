@@ -1,8 +1,8 @@
 # Code-diff plans
 
 Written with the improve skill on 2026-10-02 against fresh `origin/main`
-`fa0cfc9`, on the planning branch `chore/package-improvements`. Complete the
-[package-improvements batch](../package-improvements/README.md) first. These are
+`fa0cfc9`, on the planning branch `chore/package-improvements`. See the completed
+[package-improvements batch](../../.plans-closed/package-improvements/README.md) record. These are
 implementation handoffs for the maintainer-selected A–B feature, not source
 changes or permission to publish/deploy.
 
