@@ -12,7 +12,9 @@
     "self_features": [
         "Drop-in Svelte 5 component (renders the diff for you, not just an algorithm)",
         "diff-match-patch engine (via diff-match-patch-ts) with a configurable timeout guard for large texts",
-        "Configurable cleanup — semantic and efficiency modes",
+        "Character, whole-word, and whole-line diff modes via diffMode",
+        "Configurable character-mode cleanup — semantic and efficiency modes",
+        "Optional CodeDiff component via @humanspeak/svelte-diff/code — full-source syntax highlighting with a caller-supplied TanStack highlighter and selectively registered languages",
         "Expected patterns — mark dynamic regions (dates, names) as 'expected' instead of diffs",
         "Customizable rendering via CSS classes OR Svelte snippets",
         "Real-time reactive updates (Svelte 5 runes)",
