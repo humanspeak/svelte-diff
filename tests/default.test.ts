@@ -3,6 +3,8 @@ import { expect, test } from '@playwright/test'
 test.describe('SvelteDiffMatchPatch', () => {
     test.beforeEach(async ({ page }) => {
         await page.goto('/')
+        // Typing before hydration is lost, leaving the default diff rendered.
+        await expect(page.locator('[data-hydrated="true"]')).toBeAttached()
     })
 
     test('renders a visible diff', async ({ page }) => {

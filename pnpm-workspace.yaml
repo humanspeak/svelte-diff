@@ -7,6 +7,7 @@ allowBuilds:
     # pnpm 11 matches git-hosted dependencies by package name and resolved URL.
     # Refresh this commit when the docs-kit tag in docs/package.json changes.
     '@sentry/cli': true
+    core-js: false
     esbuild: true
     sharp: true
     workerd: true
