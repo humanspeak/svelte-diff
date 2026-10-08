@@ -44,7 +44,7 @@ const config = {
             mode: 'hash',
             directives: {
                 'default-src': ['self'],
-                'script-src': ['self', 'unsafe-inline', 'https://t.svelte.page'],
+                'script-src': ['self', 'unsafe-inline', 'https://j.svelte.page'],
                 'style-src': ['self', 'unsafe-inline'],
                 'img-src': ['self', 'data:', 'https:'],
                 'font-src': ['self', 'data:'],
