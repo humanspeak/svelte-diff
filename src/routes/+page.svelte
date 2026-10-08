@@ -1,5 +1,6 @@
 <script lang="ts">
     import SvelteDiff from '$lib/index.js'
+    import { onMount } from 'svelte'
 
     let text1 = $state(`I am the very model of a modern Major-General,
 I've information vegetable, animal, and mineral,
@@ -14,9 +15,15 @@ From wicked puns and stupid jokes to anvils that drop on your head.`)
     let diffTimeout = $state(1)
     let cleanupSemantic = $state(false)
     let cleanupEfficiency = $state(4)
+    // Lets E2E tests wait for hydration before typing into the bound textareas.
+    let hydrated = $state(false)
+
+    onMount(() => {
+        hydrated = true
+    })
 </script>
 
-<div class="max-w-4xl mx-auto p-4 space-y-6">
+<div class="max-w-4xl mx-auto p-4 space-y-6" data-hydrated={hydrated}>
     <h1 class="text-2xl font-bold mb-4">Diff, Match and Patch</h1>
     <h2 class="text-xl font-semibold mb-4">Demo of Diff</h2>
 
