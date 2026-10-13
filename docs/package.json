@@ -31,7 +31,7 @@
         "@eslint/js": "^10.0.1",
         "@humanspeak/svelte-motion": "^0.9.3",
         "@lucide/svelte": "^1.33.0",
-        "@sveltejs/adapter-cloudflare": "^7.2.9",
+        "@sveltejs/adapter-cloudflare": "^8.0.0",
         "@sveltejs/kit": "^2.70.3",
         "@sveltejs/vite-plugin-svelte": "^7.3.0",
         "@tailwindcss/typography": "^0.5.20",
