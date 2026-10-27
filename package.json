@@ -83,7 +83,7 @@
         "@eslint/js": "^10.0.1",
         "@playwright/test": "^1.62.1",
         "@sveltejs/adapter-auto": "^7.0.1",
-        "@sveltejs/kit": "^2.70.3",
+        "@sveltejs/kit": "^3.0.0",
         "@sveltejs/package": "^2.5.8",
         "@sveltejs/vite-plugin-svelte": "^7.3.0",
         "@tanstack/highlight": "1.0.0",
