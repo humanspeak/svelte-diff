@@ -1,7 +1,7 @@
 <script lang="ts">
-    import { examples } from '$lib/examplesIndex'
+    import { examples } from '#lib/examplesIndex.js'
     import { BrutIndexV2 } from '@humanspeak/docs-kit'
-    import { getSeoContext } from '$lib/components/contexts/Seo/Seo.context'
+    import { getSeoContext } from '#lib/components/contexts/Seo/Seo.context.js'
     import rootPkg from '../../../../package.json'
 
     const seo = getSeoContext()

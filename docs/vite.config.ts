@@ -1,3 +1,4 @@
+import { rehypeKeepCase } from '@humanspeak/docs-kit/mdsvex'
 import {
     demoManifestPlugin,
     docMirrorsPlugin,
@@ -8,14 +9,34 @@ import {
     sitemapManifestPlugin,
     socialCardsPlugin
 } from '@humanspeak/docs-kit/vite'
+import adapter from '@sveltejs/adapter-cloudflare'
 import { sveltekit } from '@sveltejs/kit/vite'
+import { vitePreprocess } from '@sveltejs/vite-plugin-svelte'
 import tailwindcss from '@tailwindcss/vite'
+import { mdsvex } from 'mdsvex'
+import { createHighlighter } from 'shiki'
 import { defineConfig } from 'vite'
 
 import { competitors, ours } from './src/lib/compare-data.js'
 import { docsConfig } from './src/lib/docs-config.js'
 
 const indexNowKey = '3f47a8d0c1be4b0ca5f8d7e2a9136c44'
+
+const highlighter = await createHighlighter({
+    themes: ['github-light', 'one-dark-pro'],
+    langs: [
+        'javascript',
+        'typescript',
+        'html',
+        'svelte',
+        'css',
+        'json',
+        'bash',
+        'shell',
+        'markdown',
+        'diff'
+    ]
+})
 
 export default defineConfig({
     plugins: [
@@ -80,7 +101,48 @@ export default defineConfig({
             failOnError: false
         }),
         tailwindcss(),
-        sveltekit()
+        sveltekit({
+            preprocess: [
+                vitePreprocess(),
+                mdsvex({
+                    rehypePlugins: [rehypeKeepCase],
+                    extensions: ['.md', '.svx'],
+                    highlight: {
+                        highlighter: async (code, lang) => {
+                            lang ??= 'text'
+                            const lightHtml = highlighter.codeToHtml(code, {
+                                lang,
+                                theme: 'github-light'
+                            })
+                            const darkHtml = highlighter.codeToHtml(code, {
+                                lang,
+                                theme: 'one-dark-pro'
+                            })
+                            const encoded = Buffer.from(code).toString('base64')
+                            const combinedHtml = `<div class="shiki-container" data-code="${encoded}" data-lang="${lang}"><div class="shiki-light">${lightHtml}</div><div class="shiki-dark">${darkHtml}</div></div>`
+                            return `{@html ${JSON.stringify(combinedHtml)}}`
+                        }
+                    }
+                })
+            ],
+            extensions: ['.svelte', '.svx'],
+            adapter: adapter(),
+            csp: {
+                mode: 'hash',
+                directives: {
+                    'default-src': ['self'],
+                    'script-src': ['self', 'unsafe-inline', 'https://j.svelte.page'],
+                    'style-src': ['self', 'unsafe-inline'],
+                    'img-src': ['self', 'data:', 'https:'],
+                    'font-src': ['self', 'data:'],
+                    'connect-src': ['self', 'https:'],
+                    'frame-ancestors': ['none'],
+                    'form-action': ['self'],
+                    'base-uri': ['self'],
+                    'upgrade-insecure-requests': true
+                }
+            }
+        })
     ],
     server: {
         port: 8523,

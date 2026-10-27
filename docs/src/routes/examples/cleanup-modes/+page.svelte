@@ -1,9 +1,9 @@
 <script lang="ts">
     import { CodeReferenceV2, ExampleV2, formatSheetLabel, type ExampleSection } from '@humanspeak/docs-kit'
     import { ListTree, WandSparkles } from '@lucide/svelte'
-    import { getSeoContext } from '$lib/components/contexts/Seo/Seo.context'
-    import { demoCodeSample } from '$lib/demo-loaders'
-    import CleanupModes from '$lib/examples/cleanup-modes/demos/CleanupModes.svelte'
+    import { getSeoContext } from '#lib/components/contexts/Seo/Seo.context.js'
+    import { demoCodeSample } from '#lib/demo-loaders.js'
+    import CleanupModes from '#lib/examples/cleanup-modes/demos/CleanupModes.svelte'
 
     const seo = getSeoContext()
     if (seo) {

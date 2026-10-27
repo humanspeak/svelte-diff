@@ -1,4 +1,4 @@
-import { examples } from '$lib/examplesIndex'
+import { examples } from '#lib/examplesIndex.js'
 import type { Breadcrumb, NavSection } from '@humanspeak/docs-kit'
 import {
     ArrowRightLeft,

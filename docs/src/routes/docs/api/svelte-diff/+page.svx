@@ -4,7 +4,7 @@ description: Complete SvelteDiff component API including props, renderer precede
 ---
 
 <script>
-    import { getSeoContext } from '$lib/components/contexts/Seo/Seo.context'
+    import { getSeoContext } from '#lib/components/contexts/Seo/Seo.context.js'
 
     const seo = getSeoContext()
     if (seo) {

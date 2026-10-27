@@ -1,9 +1,9 @@
 <script lang="ts">
     import { CodeReferenceV2, ExampleV2, formatSheetLabel, type ExampleSection } from '@humanspeak/docs-kit'
     import { Gauge, RefreshCw } from '@lucide/svelte'
-    import { getSeoContext } from '$lib/components/contexts/Seo/Seo.context'
-    import { demoCodeSample } from '$lib/demo-loaders'
-    import LiveEditor from '$lib/examples/live-editor/demos/LiveEditor.svelte'
+    import { getSeoContext } from '#lib/components/contexts/Seo/Seo.context.js'
+    import { demoCodeSample } from '#lib/demo-loaders.js'
+    import LiveEditor from '#lib/examples/live-editor/demos/LiveEditor.svelte'
 
     const seo = getSeoContext()
     if (seo) {
