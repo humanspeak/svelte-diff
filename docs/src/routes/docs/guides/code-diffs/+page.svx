@@ -4,7 +4,7 @@ description: Compare literal source with optional whole-source syntax highlighti
 ---
 
 <script>
-    import { getSeoContext } from '$lib/components/contexts/Seo/Seo.context'
+    import { getSeoContext } from '#lib/components/contexts/Seo/Seo.context.js'
     const seo = getSeoContext()
     if (seo) {
         seo.title = 'Code Diffs | Svelte Diff'

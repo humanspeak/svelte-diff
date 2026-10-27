@@ -4,7 +4,7 @@ description: Choose semantic cleanup, efficiency cleanup, or raw diff output for
 ---
 
 <script>
-    import { getSeoContext } from '$lib/components/contexts/Seo/Seo.context'
+    import { getSeoContext } from '#lib/components/contexts/Seo/Seo.context.js'
 
     const seo = getSeoContext()
     if (seo) {

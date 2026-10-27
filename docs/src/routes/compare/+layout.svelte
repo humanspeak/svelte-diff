@@ -1,9 +1,9 @@
 <script lang="ts">
     import { CompareLayoutV2, buildCompareBreadcrumbs, enhanceCodeBlocks } from '@humanspeak/docs-kit'
-    import favicon from '$lib/assets/logo.svg'
-    import { getCompetitor } from '$lib/compare-data'
-    import { docsConfig } from '$lib/docs-config'
-    import { headerNav } from '$lib/docsNav'
+    import favicon from '#lib/assets/logo.svg'
+    import { getCompetitor } from '#lib/compare-data.js'
+    import { docsConfig } from '#lib/docs-config.js'
+    import { headerNav } from '#lib/docsNav.js'
     import rootPkg from '../../../../package.json'
     import '@fontsource-variable/inter/index.css'
     import '@fontsource-variable/jetbrains-mono/index.css'

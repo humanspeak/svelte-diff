@@ -1,9 +1,9 @@
 <script lang="ts">
     import { CodeReferenceV2, ExampleV2, formatSheetLabel, type ExampleSection } from '@humanspeak/docs-kit'
     import { Activity, Timer } from '@lucide/svelte'
-    import { getSeoContext } from '$lib/components/contexts/Seo/Seo.context'
-    import { demoCodeSample } from '$lib/demo-loaders'
-    import Timing from '$lib/examples/timing/demos/Timing.svelte'
+    import { getSeoContext } from '#lib/components/contexts/Seo/Seo.context.js'
+    import { demoCodeSample } from '#lib/demo-loaders.js'
+    import Timing from '#lib/examples/timing/demos/Timing.svelte'
 
     const seo = getSeoContext()
     if (seo) {

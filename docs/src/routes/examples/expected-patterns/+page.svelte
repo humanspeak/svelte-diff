@@ -1,9 +1,9 @@
 <script lang="ts">
     import { CodeReferenceV2, ExampleV2, formatSheetLabel, type ExampleSection } from '@humanspeak/docs-kit'
     import { Regex, ShieldCheck } from '@lucide/svelte'
-    import { getSeoContext } from '$lib/components/contexts/Seo/Seo.context'
-    import { demoCodeSample } from '$lib/demo-loaders'
-    import ExpectedPatterns from '$lib/examples/expected-patterns/demos/ExpectedPatterns.svelte'
+    import { getSeoContext } from '#lib/components/contexts/Seo/Seo.context.js'
+    import { demoCodeSample } from '#lib/demo-loaders.js'
+    import ExpectedPatterns from '#lib/examples/expected-patterns/demos/ExpectedPatterns.svelte'
 
     const seo = getSeoContext()
     if (seo) {

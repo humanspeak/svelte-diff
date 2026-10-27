@@ -6,9 +6,9 @@
         type ExampleSection
     } from '@humanspeak/docs-kit'
     import { ListTree, WandSparkles } from '@lucide/svelte'
-    import { getSeoContext } from '$lib/components/contexts/Seo/Seo.context'
-    import { demoCodeSample } from '$lib/demo-loaders'
-    import CodeDiffDemo from '$lib/examples/code-diff/demos/CodeDiffDemo.svelte'
+    import { getSeoContext } from '#lib/components/contexts/Seo/Seo.context.js'
+    import { demoCodeSample } from '#lib/demo-loaders.js'
+    import CodeDiffDemo from '#lib/examples/code-diff/demos/CodeDiffDemo.svelte'
 
     const seo = getSeoContext()
     if (seo) {

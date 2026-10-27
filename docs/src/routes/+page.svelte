@@ -11,9 +11,9 @@
         type SvelteDiffTiming,
         type SvelteDiffTuple
     } from '@humanspeak/svelte-diff'
-    import favicon from '$lib/assets/logo.svg'
-    import { docsConfig } from '$lib/docs-config'
-    import { headerNav } from '$lib/docsNav'
+    import favicon from '#lib/assets/logo.svg'
+    import { docsConfig } from '#lib/docs-config.js'
+    import { headerNav } from '#lib/docsNav.js'
     import type { PageData } from './$types'
     import '@fontsource-variable/inter/index.css'
     import '@fontsource-variable/jetbrains-mono/index.css'
